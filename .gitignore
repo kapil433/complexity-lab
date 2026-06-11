@@ -15,6 +15,7 @@ outputs/
 # Quarto build
 /.quarto/
 /_site/
+/_freeze/
 experiments/*_files/
 
 # Streamlit
@@ -25,3 +26,5 @@ experiments/*_files/
 Thumbs.db
 .idea/
 .vscode/
+
+**/*.quarto_ipynb
