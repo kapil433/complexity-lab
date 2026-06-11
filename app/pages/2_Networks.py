@@ -9,13 +9,14 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query
+from common import query, render_card
 
 from complexity_lab.networks import build as nb
 from complexity_lab.networks import metrics as nm
 
 st.set_page_config(page_title="Networks", layout="wide")
 st.title("OEM–State Network")
+render_card("oem-state-network")
 
 edges = query("SELECT * FROM oem_state_edges")
 years = sorted(edges["year"].unique())

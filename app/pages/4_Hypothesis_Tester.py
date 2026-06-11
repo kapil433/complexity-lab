@@ -8,12 +8,13 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query
+from common import query, render_card
 
 from complexity_lab.analysis import econometrics
 
 st.set_page_config(page_title="Hypothesis Tester", layout="wide")
 st.title("Hypothesis Tester")
+render_card("hypothesis-tester")
 st.caption(
     "Quick interactive checks on the state×year panel. Covariates carry quality flags "
     "(see docs/data-dictionary.md) — treat 'approximate'/'estimate' series accordingly."

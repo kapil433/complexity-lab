@@ -13,6 +13,8 @@ website:
         text: Home
       - href: experiments/index.qmd
         text: Experiments
+      - href: experiments/guide.qmd
+        text: Guide
       - href: https://github.com/kapil433/complexity-lab
         text: GitHub
   sidebar:

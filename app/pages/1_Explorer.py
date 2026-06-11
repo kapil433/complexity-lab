@@ -7,10 +7,11 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import load_geojson, query, year_range_slider
+from common import load_geojson, query, render_card, year_range_slider
 
 st.set_page_config(page_title="Explorer", layout="wide")
 st.title("Explorer")
+render_card("descriptive-baseline")
 
 panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
 y0, y1 = year_range_slider(panel)

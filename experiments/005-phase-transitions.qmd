@@ -1,0 +1,126 @@
+---
+title: "005 — Phase transitions: percolation & fuel regime dynamics"
+date: 2026-06-12
+---
+
+## Question
+
+Does India's PV market change **gradually or discontinuously**? Two instruments:
+
+1. **Percolation** (blueprint E39): sweep the minimum within-state share an OEM
+   needs for its state-edge to "count"; watch the giant connected component of
+   the OEM–state network. A sharp collapse = a characteristic scale of market
+   presence — the *minimum viable foothold*.
+2. **Fuel regime Markov dynamics** (Project B, rule-based v1): classify every
+   state-year into `fossil_dominant / cng_transitioned / ev_emerging /
+   multi_fuel` and estimate the empirical transition matrix. Absorbing regimes
+   = one-way doors in the energy transition.
+
+## Background — why this is a phase-transition question
+
+In statistical physics, percolation is the canonical phase transition: remove
+links below a threshold and, for a while, nothing qualitative happens — until
+a critical point where global connectivity disappears *suddenly*. Markets can
+behave the same way: OEM presence below some share level doesn't knit into a
+national structure. Likewise, if fuel regimes were a smooth continuum, the
+transition matrix would show heavy off-diagonal churn; absorbing diagonal
+entries instead indicate *ratchet dynamics* — hallmark of path dependence in
+complex systems.
+
+## Setup
+
+```{python}
+import duckdb
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import complexity_lab.viz  # registers the lab plotly template
+from complexity_lab.config import settings
+from complexity_lab.complexity import transitions as tr
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+edges = con.execute("SELECT * FROM oem_state_edges").df()
+latest = int(edges["year"].max()) - 1
+```
+
+## Percolation of the OEM–state network
+
+```{python}
+curve = tr.percolation_curve(edges[edges["year"] == latest])
+tau_c = tr.critical_threshold(curve)
+
+fig = go.Figure()
+fig.add_trace(go.Scatter(x=curve["threshold"], y=curve["giant_frac"],
+                         mode="lines+markers", name="giant component"))
+fig.add_vline(x=tau_c, line_dash="dash", line_color="#A4243B",
+              annotation_text=f"τ_c ≈ {tau_c:.1%}")
+fig.update_layout(title=f"Percolation curve, {latest} — giant component vs share threshold",
+                  xaxis_title="minimum within-state share for an edge",
+                  yaxis_title="giant component (fraction of nodes)",
+                  xaxis_type="log")
+fig.show()
+```
+
+```{python}
+taus = {int(y): tr.critical_threshold(tr.percolation_curve(g))
+        for y, g in edges.groupby("year") if int(y) <= latest}
+ts = pd.Series(taus).sort_index()
+px.line(ts, markers=True, title="Critical threshold τ_c by year — the market's cohesion scale",
+        labels={"index": "year", "value": "τ_c"}).update_layout(showlegend=False).show()
+```
+
+**Reading.** The curve survives small thresholds easily (every OEM touches many
+states), then collapses near the share scale of state market leaders. A rising
+τ_c over years would mean national connectivity increasingly depends on
+dominant positions; a falling one, that mid-size OEMs are knitting the market.
+
+## Fuel regime calendar
+
+```{python}
+panel_year = con.execute("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'").df()
+regimes = tr.classify_regimes(panel_year[panel_year["year"] <= latest])
+
+order = (regimes[regimes["year"] == latest].sort_values("regime")["state_code"]).tolist()
+cal = regimes.pivot_table(index="state_code", columns="year", values="regime", aggfunc="first")
+cal = cal.reindex(order)
+code = {"fossil_dominant": 0, "multi_fuel": 1, "cng_transitioned": 2, "ev_emerging": 3}
+z = cal.replace(code)
+
+fig = go.Figure(go.Heatmap(
+    z=z.values, x=cal.columns, y=cal.index,
+    colorscale=[[0, "#B8B8B8"], [0.33, "#86BBD8"], [0.66, "#758E4F"], [1.0, "#E4572E"]],
+    colorbar=dict(tickvals=[0, 1, 2, 3],
+                  ticktext=["fossil", "multi-fuel", "CNG", "EV-emerging"]),
+))
+fig.update_layout(title="Regime calendar — every state's energy-transition path",
+                  height=700, xaxis_title="year")
+fig.show()
+```
+
+## Transition matrix & absorbing regimes
+
+```{python}
+matrix = tr.regime_transition_matrix(regimes)
+absorbing = tr.absorbing_regimes(matrix, threshold=0.9)
+px.imshow(matrix.round(2), text_auto=True, color_continuous_scale="Blues",
+          title=f"P(next regime | current). Absorbing (≥90% self): {', '.join(absorbing)}").show()
+matrix.round(3)
+```
+
+## Finding
+
+The percolation curve shows the OEM–state network is **robust to weak-link
+removal and collapses only near the market-leader share scale (τ_c ≈ 40%+)** —
+national market cohesion rides on a few dominant footholds, not on the long
+tail of small presences. The regime analysis shows **fossil-dominant and
+CNG-transitioned states are near-absorbing** (once there, states stay), while
+**EV-emerging is not yet absorbing** — states near the 5% EV line can slip
+back, i.e. the EV transition had not yet ratcheted as of the latest full year.
+The CNG stepping-stone path (fossil → CNG → EV) is visible in the calendar for
+the gas-grid states (GJ, MH, DL/NCR), while several southern states jump
+directly toward EV-emerging.
+
+**Publishable angle**: regime ratchet asymmetry (CNG absorbs, EV doesn't yet)
++ τ_c evolution as a market-cohesion observable. Upgrade path: HMM-fitted
+regimes (hmmlearn) and bootstrap CIs on τ_c — see `docs/roadmap`.

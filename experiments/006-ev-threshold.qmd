@@ -1,0 +1,105 @@
+---
+title: "006 — EV tipping points: threshold regression per state"
+date: 2026-06-12
+---
+
+## Question
+
+Is there a share level beyond which EV adoption **feeds on itself** —
+chargers become viable, EVs visible, resale trusted — so growth accelerates
+without fresh policy? Or does growth **bend down** (saturation) as the
+early-adopter pool drains?
+
+## Background — thresholds as the signature of feedback
+
+In complex adaptive systems, positive feedback shows up as *convexity*:
+the change in adoption (Δs) rises more than linearly with the level (s).
+We test it with a hinge regression per state:
+
+$$\Delta s_t = a + b\,s_{t-1} + c\,\max(0,\, s_{t-1}-\tau) + \varepsilon$$
+
+Grid-search τ; a **positive** hinge coefficient `c` means growth accelerates
+past τ (tipping); a **negative** one means deceleration past τ (saturation).
+The SSE gain over a straight line tells us whether the threshold is real
+structure. Shares are 3-month smoothed to avoid mean-reversion artefacts.
+
+```{python}
+import duckdb
+import pandas as pd
+import plotly.express as px
+import complexity_lab.viz  # lab plotly template
+from complexity_lab.config import settings
+from complexity_lab.complexity.transitions import tipping_summary
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+mp = con.execute(
+    "SELECT state_code, year, month, ev_share FROM panel_state_month "
+    "WHERE state_code <> 'ALL' ORDER BY state_code, year, month").df()
+
+tips_full = tipping_summary(mp, "ev_share")
+policy_era = mp[(mp["year"] < 2024) | ((mp["year"] == 2024) & (mp["month"] <= 3))]
+tips_policy = tipping_summary(policy_era, "ev_share")
+```
+
+## The verdict across states
+
+```{python}
+def classify(t):
+    if t["sse_gain"] < 0.1:
+        return "no clear threshold"
+    return "tipping (accelerates)" if t["hinge_coef"] > 0 else "saturation (decelerates)"
+
+summary = pd.DataFrame({
+    "full series": tips_full.apply(classify, axis=1).value_counts(),
+    "policy era (≤ Mar 2024)": tips_policy.apply(classify, axis=1).value_counts(),
+}).fillna(0).astype(int)
+summary
+```
+
+```{python}
+sat = tips_full[(tips_full["hinge_coef"] < 0) & (tips_full["sse_gain"] > 0.1)].copy()
+sat["tau_pct"] = sat["tau"] * 100
+fig = px.scatter(sat.reset_index(), x="tau_pct", y="sse_gain", text="state_code",
+                 size="max_share", title="Saturation thresholds: where EV growth bends down",
+                 labels={"tau_pct": "τ* — EV share where growth decelerates (%)",
+                         "sse_gain": "threshold model improvement (SSE gain)"})
+fig.update_traces(textposition="top center")
+fig.show()
+```
+
+## Threshold level vs income & infrastructure
+
+```{python}
+cov = con.execute(
+    "SELECT state_code, MAX(pc_income_inr) pc_income_inr, MAX(ev_chargers) ev_chargers "
+    "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code").df().set_index("state_code")
+j = sat.join(cov)
+fig = px.scatter(j.reset_index(), x="pc_income_inr", y="tau_pct",
+                 size="ev_chargers", text="state_code", log_x=True,
+                 title="Richer states bend later: saturation threshold vs per-capita income",
+                 labels={"pc_income_inr": "per-capita NSDP (INR, log)",
+                         "tau_pct": "τ* (%)"})
+fig.update_traces(textposition="top center")
+fig.show()
+print("Spearman corr(τ*, income):",
+      round(float(j["tau_pct"].corr(j["pc_income_inr"], method="spearman")), 3))
+```
+
+## Finding
+
+Across 30 scanned states, **no state shows super-linear tipping — in either
+the full series or the FAME-II policy era**. The dominant pattern is
+**saturation**: EV share growth decelerates beyond a state-specific level τ*,
+exactly what bounded logistic diffusion past its inflection looks like.
+This is a substantive negative result: at state grain, India's EV adoption
+2012–2026 behaves like **classic imitation-driven diffusion with a soft
+ceiling**, not a runaway cascade — visibility/charging feedbacks are real
+(Bass q ≫ p in experiment 002) but they do not (yet) overcome the shrinking
+adopter pool. The *level* of the ceiling varies systematically: states with
+higher income bend later (higher τ*), suggesting the binding constraint is
+the affordability frontier, not enthusiasm.
+
+**Policy reading**: pushing states "past the tipping point" is the wrong
+mental model on this data; raising the ceiling (price parity, charging
+density) is the right one. **Publishable angle**: saturation-threshold map +
+its income gradient, as a counterpoint to tipping-point rhetoric.

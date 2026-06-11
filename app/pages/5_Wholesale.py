@@ -7,10 +7,11 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import get_connection, query
+from common import get_connection, query, render_card
 
 st.set_page_config(page_title="Wholesale", layout="wide")
 st.title("Wholesale — dispatches, models, nowcast")
+render_card("wholesale-retail-nowcast")
 
 tables = {r[0] for r in get_connection().execute("SHOW TABLES").fetchall()}
 if "wholesale" not in tables:

@@ -9,12 +9,13 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query
+from common import query, render_card
 
 from complexity_lab.simulation.diffusion import bass_cumulative, fit_bass, project_bass
 
 st.set_page_config(page_title="Diffusion Lab", layout="wide")
 st.title("Diffusion Lab — Bass model")
+render_card("ev-diffusion-states")
 
 fuel = st.radio("Technology", ["EV", "CNG"], horizontal=True)
 col = "ev_regs" if fuel == "EV" else "cng_regs"

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import duckdb
+import pandas as pd
 
 from complexity_lab.analysis import descriptive, distributions
 from complexity_lab.experiments.registry import experiment
@@ -83,6 +84,94 @@ def ev_diffusion_states(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
         "median_p": round(float(fits["p"].median()), 5),
         "median_q": round(float(fits["q"].median()), 4),
         "spearman_q_vs_income": round(corr_q_income, 3) if corr_q_income is not None else None,
+    }
+
+
+@experiment(
+    "phase-transitions",
+    description="Percolation transition of the OEM-state network and Markov dynamics of state fuel regimes.",
+)
+def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.complexity import transitions as tr
+
+    edges = con.execute("SELECT * FROM oem_state_edges").df()
+    latest_year = int(edges["year"].max()) - 1
+
+    curve = tr.percolation_curve(edges[edges["year"] == latest_year])
+    curve.to_parquet(out_dir / "percolation_curve.parquet")
+    tau_c = tr.critical_threshold(curve)
+
+    # percolation point per year — has the market's cohesion scale moved?
+    tau_by_year = {
+        int(y): tr.critical_threshold(tr.percolation_curve(g))
+        for y, g in edges.groupby("year")
+        if int(y) <= latest_year
+    }
+    pd.Series(tau_by_year, name="tau_c").rename_axis("year").to_frame().to_parquet(
+        out_dir / "critical_threshold_by_year.parquet"
+    )
+
+    panel_year = con.execute(
+        "SELECT * FROM panel_state_year WHERE state_code <> 'ALL'"
+    ).df()
+    regimes = tr.classify_regimes(panel_year[panel_year["year"] <= latest_year])
+    regimes.to_parquet(out_dir / "fuel_regimes.parquet")
+    matrix = tr.regime_transition_matrix(regimes)
+    matrix.to_parquet(out_dir / "regime_transition_matrix.parquet")
+    absorbing = tr.absorbing_regimes(matrix, threshold=params.get("absorbing_threshold", 0.9))
+
+    return {
+        "latest_year": latest_year,
+        "critical_threshold": round(tau_c, 4),
+        "absorbing_regimes": absorbing,
+        "n_ev_emerging_states": int((regimes[regimes["year"] == latest_year]["regime"] == "ev_emerging").sum()),
+    }
+
+
+@experiment(
+    "ev-threshold",
+    description="EV tipping-point scan: piecewise threshold regression of adoption growth per state.",
+)
+def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.complexity.transitions import tipping_summary
+
+    month_panel = con.execute(
+        "SELECT state_code, year, month, ev_share FROM panel_state_month "
+        "WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
+    ).df()
+    min_share = params.get("min_share", 0.01)
+
+    # Full series vs subsidy era (FAME-II ran until March 2024): comparing the
+    # two scans separates genuine tipping from the post-subsidy plateau.
+    tips = tipping_summary(month_panel, "ev_share", min_share_reached=min_share)
+    tips.to_parquet(out_dir / "ev_tipping_by_state.parquet")
+    policy_era = month_panel[
+        (month_panel["year"] < 2024) | ((month_panel["year"] == 2024) & (month_panel["month"] <= 3))
+    ]
+    tips_policy = tipping_summary(policy_era, "ev_share", min_share_reached=min_share)
+    tips_policy.to_parquet(out_dir / "ev_tipping_policy_era.parquet")
+
+    cov = con.execute(
+        "SELECT state_code, MAX(pc_income_inr) pc_income_inr, MAX(ev_chargers) ev_chargers "
+        "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code"
+    ).df().set_index("state_code")
+    joined = tips.join(cov, how="left")
+    joined.to_parquet(out_dir / "ev_tipping_with_covariates.parquet")
+
+    accelerating = tips_policy[(tips_policy["hinge_coef"] > 0) & (tips_policy["sse_gain"] > 0.1)]
+    return {
+        "n_states_scanned": len(tips),
+        "full_series": {
+            "n_accelerating": int(((tips["hinge_coef"] > 0) & (tips["sse_gain"] > 0.1)).sum()),
+            "n_saturating": int((tips["hinge_coef"] < 0).sum()),
+        },
+        "policy_era_to_2024_03": {
+            "n_accelerating": len(accelerating),
+            "n_saturating": int((tips_policy["hinge_coef"] < 0).sum()),
+            "median_tau_accelerating": round(float(accelerating["tau"].median()), 4)
+            if len(accelerating)
+            else None,
+        },
     }
 
 

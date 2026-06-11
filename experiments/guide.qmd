@@ -1,0 +1,44 @@
+---
+title: "Experiment Guide — background, concepts & math"
+date: 2026-06-12
+toc: true
+---
+
+Every experiment and method in this lab carries a structured card: the
+question it answers, how it works, its concepts in plain English, the math
+with a toy example, how to read the results, and where it breaks. This page
+renders the full registry — it is generated from
+`complexity_lab/experiments/cards.py`, the same source the app pages use.
+
+```{python}
+#| echo: false
+#| output: asis
+from complexity_lab.experiments.cards import all_cards
+
+for c in all_cards():
+    print(f"## {c.name}\n")
+    print(f"`{c.id}` · **{c.category}** · {c.tier}\n")
+    print(f"**Why this matters.** {c.question}\n")
+    print(f"**Method.** {c.method}\n")
+    print("**How it works**\n")
+    for i, step in enumerate(c.how_it_works, 1):
+        print(f"{i}. {step}")
+    print("\n**Concepts in plain English**\n")
+    for term, meaning in c.plain_english.items():
+        print(f"- **{term}** — {meaning}")
+    print("\n**Math made simple**\n")
+    print(c.math + "\n")
+    print("**Read the results**\n")
+    for item in c.look_for:
+        print(f"- {item}")
+    print("\n**Do not over-interpret when**\n")
+    for item in c.limitations:
+        print(f"- {item}")
+    print("\n**Who acts on this**\n")
+    for item in c.decisions:
+        print(f"- {item}")
+    print(f"\n*Data: {'; '.join(c.data_used)}.*")
+    if c.related:
+        print(f" *Related: {', '.join(c.related)}.*")
+    print("\n---\n")
+```

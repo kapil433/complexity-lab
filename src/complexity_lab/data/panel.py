@@ -55,8 +55,11 @@ conc AS (
 )
 SELECT b.*,
        MAKE_DATE(b.year, b.month, 1)                        AS date,
-       b.ev_regs::DOUBLE  / NULLIF(b.total_regs, 0)         AS ev_share,
-       b.cng_regs::DOUBLE / NULLIF(b.total_regs, 0)         AS cng_share,
+       b.ev_regs::DOUBLE     / NULLIF(b.total_regs, 0)      AS ev_share,
+       b.cng_regs::DOUBLE    / NULLIF(b.total_regs, 0)      AS cng_share,
+       b.petrol_regs::DOUBLE / NULLIF(b.total_regs, 0)      AS petrol_share,
+       b.diesel_regs::DOUBLE / NULLIF(b.total_regs, 0)      AS diesel_share,
+       b.hybrid_regs::DOUBLE / NULLIF(b.total_regs, 0)      AS hybrid_share,
        c.hhi_oem, c.entropy_oem, c.n_oems
 FROM base b
 LEFT JOIN conc c USING (state_code, year, month)
@@ -88,14 +91,23 @@ conc AS (
 enriched AS (
     SELECT b.*,
            PRINTF('%d-%02d', b.year, (b.year + 1) % 100)    AS fy_starting,
-           b.ev_regs::DOUBLE  / NULLIF(b.total_regs, 0)     AS ev_share,
-           b.cng_regs::DOUBLE / NULLIF(b.total_regs, 0)     AS cng_share,
+           b.ev_regs::DOUBLE     / NULLIF(b.total_regs, 0)  AS ev_share,
+           b.cng_regs::DOUBLE    / NULLIF(b.total_regs, 0)  AS cng_share,
+           b.petrol_regs::DOUBLE / NULLIF(b.total_regs, 0)  AS petrol_share,
+           b.diesel_regs::DOUBLE / NULLIF(b.total_regs, 0)  AS diesel_share,
+           b.hybrid_regs::DOUBLE / NULLIF(b.total_regs, 0)  AS hybrid_share,
            c.hhi_oem, c.entropy_oem, c.n_oems
     FROM base b
     LEFT JOIN conc c USING (state_code, year)
 )
 SELECT e.*,
        e.total_regs::DOUBLE / NULLIF(LAG(e.total_regs) OVER w, 0) - 1 AS yoy_growth,
+       (e.ev_share     - LAG(e.ev_share)     OVER w) * 100  AS ev_share_chg_pp,
+       (e.cng_share    - LAG(e.cng_share)    OVER w) * 100  AS cng_share_chg_pp,
+       (e.petrol_share - LAG(e.petrol_share) OVER w) * 100  AS petrol_share_chg_pp,
+       (e.diesel_share - LAG(e.diesel_share) OVER w) * 100  AS diesel_share_chg_pp,
+       (e.hybrid_share - LAG(e.hybrid_share) OVER w) * 100  AS hybrid_share_chg_pp,
+       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0) AS regs_per_1000_capita,
        inc.pc_nsdp_current_inr                              AS pc_income_inr,
        urb.urban_pct,
        cng.stations                                          AS cng_stations,
@@ -104,6 +116,8 @@ SELECT e.*,
        fp_d.price_avg_inr                                    AS diesel_price_inr,
        fp_c.price_avg_inr                                    AS cng_price_inr
 FROM enriched e
+LEFT JOIN ref_population pop
+       ON pop.state_code = e.state_code
 LEFT JOIN ref_state_income inc
        ON inc.state_code = e.state_code AND inc.fy = e.fy_starting
 LEFT JOIN ref_urbanization urb
@@ -145,6 +159,27 @@ WHERE state_code <> 'ALL'
 GROUP BY state_code, state_name, maker, year, fy
 """
 
+_SQL_MAKER_SHARE = """
+CREATE OR REPLACE TABLE maker_state_share AS
+WITH base AS (
+    SELECT state_code, state_name, maker, year, SUM("count") AS regs
+    FROM registrations
+    GROUP BY state_code, state_name, maker, year
+),
+shares AS (
+    SELECT *,
+           regs::DOUBLE / NULLIF(SUM(regs) OVER (PARTITION BY state_code, year), 0) AS share,
+           RANK() OVER (PARTITION BY state_code, year ORDER BY regs DESC)           AS rnk
+    FROM base
+)
+SELECT s.*,
+       (s.share - LAG(s.share) OVER w) * 100        AS share_chg_pp,
+       LAG(s.rnk) OVER w - s.rnk                    AS rank_chg
+FROM shares s
+WINDOW w AS (PARTITION BY s.state_code, s.maker ORDER BY s.year)
+ORDER BY s.state_code, s.year, s.rnk
+"""
+
 
 def build_panels(db_path: Path | None = None) -> dict[str, int]:
     """(Re)build panel tables. Returns row counts."""
@@ -153,9 +188,11 @@ def build_panels(db_path: Path | None = None) -> dict[str, int]:
         con.execute(_SQL_PANEL_MONTH)
         con.execute(_SQL_PANEL_YEAR)
         con.execute(_SQL_EDGES)
+        con.execute(_SQL_MAKER_SHARE)
         return {
             "panel_state_month": con.execute("SELECT COUNT(*) FROM panel_state_month").fetchone()[0],
             "panel_state_year": con.execute("SELECT COUNT(*) FROM panel_state_year").fetchone()[0],
+            "maker_state_share": con.execute("SELECT COUNT(*) FROM maker_state_share").fetchone()[0],
         }
     finally:
         con.close()
