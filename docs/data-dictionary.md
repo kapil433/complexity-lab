@@ -47,7 +47,7 @@
 | `urbanization.csv` | all states | official/derived | Census of India 2011 |
 | `cng_stations.csv` | all states, 2024 (+ national 2025) | official_derived | PNGRB RTI R-1855 (31.05.2024), GA→state allocation |
 | `ev_charging.csv` | all states 2025, partial 2024 | reported/approximate | Ministry of Power via ORF/PIB |
-| `fuel_prices.csv` | Delhi 2012–2026 (annual avg), ALL=Delhi proxy | approximate | PPAC/IOCL/IGL price revisions, compiled |
+| `fuel_prices.csv` | Delhi 2012–2026; 33 states 2017–2026 (GA/NE/AN/DN 2022–26 only); CNG 7 states (annual avg), ALL=Delhi proxy | approximate | Delhi: PPAC/IOCL/IGL compiled. States: Delhi series + capital-city differentials from era-anchored RSP snapshots 2019/2021/2025 (PPAC/OMC-sourced); see `scripts/compile_state_fuel_prices.py`. Caveat: HR/PB use shared capital Chandigarh (Punjab in-state pumps ~₹3/l higher) |
 | `road_tax.csv` | 25 states, as-of 2024 | approximate | State transport dept notifications, single-band simplification |
 | `policy_events.csv` | 27 events 2013–2025 | official | MoHI/MoRTH/GST Council/state EV policies |
 | `dealer_counts.csv` | national only | placeholder | FADA commentary |
@@ -55,7 +55,10 @@
 
 ## Logged data TODOs
 
-- **State-wise fuel price levels** from PPAC state bulletins (currently Delhi proxy).
+- **Gujarat CNG price series** (largest CNG market; no archived city anchors found —
+  petrol/diesel covered, CNG falls back to the Delhi proxy).
+- **Pre-2017 state fuel price levels** (daily-pricing era only; earlier years fall
+  back to the ALL proxy by design).
 - **CNG station history** (pre-2024 state series; only national anchors exist here).
 - **EV charger time series** (currently a 2025 cross-section + 2024 partial).
 - **State-wise dealer counts** (FADA or OEM dealer-locator scrape).

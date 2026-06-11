@@ -1,10 +1,15 @@
-# Retail fuel prices, calendar-year averages (INR/litre; CNG INR/kg), Delhi pump prices.
-# Delhi serves as the national bellwether series (state_code ALL mirrors DL) because
-# post-deregulation price *movements* are near-identical across states; *levels* differ
-# by state VAT. State-wise level expansion from PPAC state bulletins is a logged TODO
-# (docs/data-dictionary.md). Values are approximate annual means compiled from
-# PPAC/IOCL/IGL published price revisions — use for trend/shock analysis, not accounting.
-# 2026 is partial (Jan-Jun).
+# Retail fuel prices, calendar-year averages (INR/litre; CNG INR/kg), state-capital pump prices.
+# Delhi is the directly-compiled bellwether series (state_code ALL mirrors DL). Other states
+# 2017-2026: Delhi annual average + capital-city differential from era-anchored RSP snapshots
+# (Jan-2019 -> 2017-19, Mar-2021 -> 2020-21, Feb-2025 -> 2022-26), PPAC/OMC-sourced; see
+# scripts/compile_state_fuel_prices.py and data/raw/ppac/ for anchors. Valid because
+# post-deregulation price *movements* are near-identical across states; *levels* differ by
+# state VAT (which the differentials capture per era). Caveats: HR/PB use shared capital
+# Chandigarh (UT VAT — Punjab in-state pumps run ~Rs 3/l higher); GJ=Ahmedabad, AP=Guntur,
+# JK=Srinagar; GA/NE states/AN/DN have 2022-26 only; LA/LD absent; CNG only where city gas
+# exists (DL MH KA TS 2017-, UP HR MP 2020-), representative city-gas city where the capital
+# lacks CNG. Pre-2017 non-DL years intentionally absent -> panel falls back to ALL proxy.
+# Use for trend/shock/cross-state level analysis, not accounting. 2026 is partial (Jan-Jun).
 state_code,year,fuel,price_avg_inr,source,quality
 DL,2012,Petrol,68.5,PPAC/IOCL Delhi RSP compiled,approximate
 DL,2013,Petrol,70.3,PPAC/IOCL Delhi RSP compiled,approximate
@@ -96,3 +101,614 @@ ALL,2023,CNG,76.5,Delhi proxy,proxy
 ALL,2024,CNG,75.1,Delhi proxy,proxy
 ALL,2025,CNG,75.7,Delhi proxy,proxy
 ALL,2026,CNG,76.0,Delhi proxy,proxy
+AN,2022,Petrol,86.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2023,Petrol,84.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2024,Petrol,82.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2025,Petrol,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2026,Petrol,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AN,2022,Diesel,80.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2023,Diesel,80.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2024,Diesel,78.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2025,Diesel,78.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AN,2026,Diesel,78.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AP,2017,Petrol,72.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2018,Petrol,79.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2019,Petrol,76.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2020,Petrol,82.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2021,Petrol,102.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2022,Petrol,112.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2023,Petrol,110.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2024,Petrol,108.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2025,Petrol,108.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2026,Petrol,108.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AP,2017,Diesel,62.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2018,Diesel,72.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2019,Diesel,70.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2020,Diesel,77.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2021,Diesel,96.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2022,Diesel,99.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2023,Diesel,98.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2024,Diesel,96.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2025,Diesel,96.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AP,2026,Diesel,96.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AR,2022,Petrol,94.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2023,Petrol,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2024,Petrol,91.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2025,Petrol,90.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2026,Petrol,90.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AR,2022,Diesel,83.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2023,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2024,Diesel,81.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2025,Diesel,80.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AR,2026,Diesel,80.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AS,2017,Petrol,67.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2018,Petrol,75.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2019,Petrol,71.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2020,Petrol,73.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2021,Petrol,93.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2022,Petrol,101.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2023,Petrol,100.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2024,Petrol,98.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2025,Petrol,98.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2026,Petrol,98.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+AS,2017,Diesel,57.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2018,Diesel,67.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2019,Diesel,65.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2020,Diesel,68.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2021,Diesel,87.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2022,Diesel,92.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2023,Diesel,91.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2024,Diesel,90.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2025,Diesel,89.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+AS,2026,Diesel,89.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+BR,2017,Petrol,72.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2018,Petrol,79.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2019,Petrol,76.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2020,Petrol,78.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2021,Petrol,98.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2022,Petrol,109.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2023,Petrol,107.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2024,Petrol,105.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2025,Petrol,105.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2026,Petrol,105.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+BR,2017,Diesel,60.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2018,Diesel,70.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2019,Diesel,68.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2020,Diesel,73.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2021,Diesel,92.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2022,Diesel,95.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2023,Diesel,94.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2024,Diesel,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2025,Diesel,92.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+BR,2026,Diesel,92.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+CG,2017,Petrol,66.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2018,Petrol,74.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2019,Petrol,70.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2020,Petrol,74.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2021,Petrol,94.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2022,Petrol,104.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2023,Petrol,102.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2024,Petrol,100.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2025,Petrol,100.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2026,Petrol,100.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+CG,2017,Diesel,60.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2018,Diesel,70.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2019,Diesel,68.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2020,Diesel,75.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2021,Diesel,93.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2022,Diesel,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2023,Diesel,95.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2024,Diesel,93.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2025,Diesel,93.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CG,2026,Diesel,93.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+CH,2017,Petrol,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2018,Petrol,71.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2019,Petrol,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2020,Petrol,73.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2021,Petrol,93.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2022,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2023,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2024,Petrol,94.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2025,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2026,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+CH,2017,Diesel,54.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2018,Diesel,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2019,Diesel,62.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2020,Diesel,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2021,Diesel,86.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2022,Diesel,85.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2023,Diesel,84.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2024,Diesel,83.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2025,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+CH,2026,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+DN,2022,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2023,Petrol,94.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2024,Petrol,92.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2025,Petrol,92.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2026,Petrol,92.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+DN,2022,Diesel,91.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2023,Diesel,90.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2024,Diesel,88.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2025,Diesel,88.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+DN,2026,Diesel,88.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+GA,2022,Petrol,101.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2023,Petrol,99.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2024,Petrol,97.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2025,Petrol,97.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2026,Petrol,97.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+GA,2022,Diesel,91.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2023,Diesel,91.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2024,Diesel,89.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2025,Diesel,89.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GA,2026,Diesel,89.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+GJ,2017,Petrol,65.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2018,Petrol,73.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2019,Petrol,69.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2020,Petrol,73.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2021,Petrol,93.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2022,Petrol,98.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2023,Petrol,97.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2024,Petrol,95.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2025,Petrol,95.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2026,Petrol,95.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+GJ,2017,Diesel,60.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2018,Diesel,70.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2019,Diesel,68.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2020,Diesel,74.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2021,Diesel,93.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2022,Diesel,93.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2023,Diesel,92.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2024,Diesel,91.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2025,Diesel,90.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+GJ,2026,Diesel,90.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+HP,2017,Petrol,67.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2018,Petrol,74.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2019,Petrol,70.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2020,Petrol,74.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2021,Petrol,94.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2022,Petrol,98.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2023,Petrol,96.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2024,Petrol,95.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2025,Petrol,94.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2026,Petrol,94.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+HP,2017,Diesel,55.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2018,Diesel,65.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2019,Diesel,63.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2020,Diesel,67.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2021,Diesel,86.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2022,Diesel,90.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2023,Diesel,89.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2024,Diesel,87.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2025,Diesel,87.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HP,2026,Diesel,87.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+HR,2017,Petrol,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2018,Petrol,71.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2019,Petrol,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2020,Petrol,73.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2021,Petrol,93.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2022,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2023,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2024,Petrol,94.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2025,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2026,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+HR,2017,Diesel,54.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2018,Diesel,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2019,Diesel,62.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2020,Diesel,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2021,Diesel,86.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2022,Diesel,85.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2023,Diesel,84.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2024,Diesel,83.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2025,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+HR,2026,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+HR,2020,CNG,53.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2021,CNG,60.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2022,CNG,81.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2023,CNG,82.5,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2024,CNG,81.1,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2025,CNG,81.7,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+HR,2026,CNG,82.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+JH,2017,Petrol,67.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2018,Petrol,74.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2019,Petrol,70.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2020,Petrol,73.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2021,Petrol,93.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2022,Petrol,101.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2023,Petrol,100.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2024,Petrol,98.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2025,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2026,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+JH,2017,Diesel,58.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2018,Diesel,68.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2019,Diesel,66.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2020,Diesel,73.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2021,Diesel,91.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2022,Diesel,95.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2023,Diesel,94.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2024,Diesel,93.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2025,Diesel,92.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JH,2026,Diesel,92.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+JK,2017,Petrol,72.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2018,Petrol,80.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2019,Petrol,76.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2020,Petrol,79.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2021,Petrol,99.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2022,Petrol,103.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2023,Petrol,101.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2024,Petrol,99.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2025,Petrol,99.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2026,Petrol,99.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+JK,2017,Diesel,58.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2018,Diesel,68.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2019,Diesel,66.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2020,Diesel,72.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2021,Diesel,90.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2022,Diesel,87.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2023,Diesel,86.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2024,Diesel,85.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2025,Diesel,84.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+JK,2026,Diesel,84.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+KA,2017,Petrol,70.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2018,Petrol,78.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2019,Petrol,74.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2020,Petrol,79.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2021,Petrol,99.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2022,Petrol,106.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2023,Petrol,104.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2024,Petrol,103.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2025,Petrol,102.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2026,Petrol,102.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+KA,2017,Diesel,59.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2018,Diesel,69.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2019,Diesel,67.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2020,Diesel,73.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2021,Diesel,91.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2022,Diesel,91.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2023,Diesel,90.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2024,Diesel,89.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2025,Diesel,88.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KA,2026,Diesel,88.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+KA,2017,CNG,51.2,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2018,CNG,55.2,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2019,CNG,58.2,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2020,CNG,50.8,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2021,CNG,57.8,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2022,CNG,80.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2023,CNG,82.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2024,CNG,81.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2025,CNG,81.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+KA,2026,CNG,81.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+KL,2017,Petrol,71.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2018,Petrol,78.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2019,Petrol,75.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2020,Petrol,78.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2021,Petrol,98.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2022,Petrol,111.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2023,Petrol,109.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2024,Petrol,107.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2025,Petrol,107.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2026,Petrol,107.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+KL,2017,Diesel,62.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2018,Diesel,72.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2019,Diesel,70.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2020,Diesel,74.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2021,Diesel,93.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2022,Diesel,99.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2023,Diesel,98.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2024,Diesel,96.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2025,Diesel,96.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+KL,2026,Diesel,96.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MH,2017,Petrol,73.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2018,Petrol,81.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2019,Petrol,77.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2020,Petrol,82.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2021,Petrol,102.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2022,Petrol,107.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2023,Petrol,105.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2024,Petrol,103.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2025,Petrol,103.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2026,Petrol,103.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MH,2017,Diesel,60.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2018,Diesel,70.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2019,Diesel,68.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2020,Diesel,75.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2021,Diesel,94.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2022,Diesel,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2023,Diesel,92.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2024,Diesel,90.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2025,Diesel,90.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MH,2026,Diesel,90.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MH,2017,CNG,43.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2018,CNG,47.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2019,CNG,50.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2020,CNG,48.2,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2021,CNG,55.2,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2022,CNG,74.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2023,CNG,75.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2024,CNG,74.5,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2025,CNG,75.1,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MH,2026,CNG,75.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+ML,2022,Petrol,99.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2023,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2024,Petrol,96.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2025,Petrol,96.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2026,Petrol,96.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+ML,2022,Diesel,90.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2023,Diesel,89.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2024,Diesel,88.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2025,Diesel,87.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+ML,2026,Diesel,87.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MN,2022,Petrol,102.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2023,Petrol,101.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2024,Petrol,99.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2025,Petrol,99.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2026,Petrol,99.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MN,2022,Diesel,88.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2023,Diesel,87.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2024,Diesel,85.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2025,Diesel,85.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MN,2026,Diesel,85.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MP,2017,Petrol,71.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2018,Petrol,78.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2019,Petrol,75.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2020,Petrol,84.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2021,Petrol,104.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2022,Petrol,110.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2023,Petrol,108.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2024,Petrol,106.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2025,Petrol,106.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2026,Petrol,106.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MP,2017,Diesel,58.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2018,Diesel,68.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2019,Diesel,66.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2020,Diesel,76.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2021,Diesel,95.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2022,Diesel,94.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2023,Diesel,93.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2024,Diesel,92.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2025,Diesel,91.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MP,2026,Diesel,91.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MP,2020,CNG,63.3,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2021,CNG,70.3,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2022,CNG,90.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2023,CNG,91.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2024,CNG,90.5,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2025,CNG,91.1,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+MP,2026,CNG,91.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+MZ,2022,Petrol,102.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2023,Petrol,101.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2024,Petrol,99.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2025,Petrol,99.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2026,Petrol,99.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+MZ,2022,Diesel,90.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2023,Diesel,89.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2024,Diesel,88.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2025,Diesel,87.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+MZ,2026,Diesel,87.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+NL,2022,Petrol,101.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2023,Petrol,99.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2024,Petrol,97.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2025,Petrol,97.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2026,Petrol,97.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+NL,2022,Diesel,91.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2023,Diesel,90.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2024,Diesel,89.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2025,Diesel,88.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+NL,2026,Diesel,88.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+OD,2017,Petrol,67.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2018,Petrol,74.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2019,Petrol,71.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2020,Petrol,77.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2021,Petrol,97.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2022,Petrol,105.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2023,Petrol,103.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2024,Petrol,101.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2025,Petrol,101.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2026,Petrol,101.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+OD,2017,Diesel,62.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2018,Diesel,72.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2019,Diesel,70.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2020,Diesel,75.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2021,Diesel,94.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2022,Diesel,95.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2023,Diesel,94.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2024,Diesel,93.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2025,Diesel,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+OD,2026,Diesel,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+PB,2017,Petrol,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2018,Petrol,71.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2019,Petrol,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2020,Petrol,73.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2021,Petrol,93.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2022,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2023,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2024,Petrol,94.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2025,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2026,Petrol,94.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+PB,2017,Diesel,54.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2018,Diesel,64.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2019,Diesel,62.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2020,Diesel,68.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2021,Diesel,86.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2022,Diesel,85.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2023,Diesel,84.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2024,Diesel,83.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2025,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PB,2026,Diesel,82.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+PY,2017,Petrol,67.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2018,Petrol,74.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2019,Petrol,71.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2020,Petrol,76.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2021,Petrol,96.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2022,Petrol,100.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2023,Petrol,98.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2024,Petrol,96.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2025,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2026,Petrol,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+PY,2017,Diesel,59.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2018,Diesel,69.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2019,Diesel,67.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2020,Diesel,71.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2021,Diesel,90.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2022,Diesel,89.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2023,Diesel,88.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2024,Diesel,87.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2025,Diesel,86.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+PY,2026,Diesel,86.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+RJ,2017,Petrol,68.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2018,Petrol,76.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2019,Petrol,72.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2020,Petrol,83.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2021,Petrol,103.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2022,Petrol,108.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2023,Petrol,106.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2024,Petrol,104.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2025,Petrol,104.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2026,Petrol,104.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+RJ,2017,Diesel,59.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2018,Diesel,69.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2019,Diesel,67.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2020,Diesel,76.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2021,Diesel,95.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2022,Diesel,92.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2023,Diesel,91.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2024,Diesel,90.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2025,Diesel,89.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+RJ,2026,Diesel,89.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+SK,2022,Petrol,105.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2023,Petrol,103.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2024,Petrol,102.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2025,Petrol,101.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2026,Petrol,101.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+SK,2022,Diesel,91.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2023,Diesel,90.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2024,Diesel,89.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2025,Diesel,88.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+SK,2026,Diesel,88.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TN,2017,Petrol,70.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2018,Petrol,78.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2019,Petrol,74.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2020,Petrol,78.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2021,Petrol,98.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2022,Petrol,104.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2023,Petrol,102.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2024,Petrol,101.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2025,Petrol,100.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2026,Petrol,100.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TN,2017,Diesel,61.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2018,Diesel,71.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2019,Diesel,69.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2020,Diesel,73.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2021,Diesel,91.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2022,Diesel,95.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2023,Diesel,94.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2024,Diesel,92.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2025,Diesel,92.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TN,2026,Diesel,92.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TR,2022,Petrol,101.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2023,Petrol,99.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2024,Petrol,98.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2025,Petrol,97.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2026,Petrol,97.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TR,2022,Diesel,89.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2023,Diesel,88.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2024,Diesel,87.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2025,Diesel,86.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TR,2026,Diesel,86.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TS,2017,Petrol,72.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2018,Petrol,79.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2019,Petrol,76.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2020,Petrol,80.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2021,Petrol,100.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2022,Petrol,111.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2023,Petrol,109.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2024,Petrol,107.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2025,Petrol,107.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2026,Petrol,107.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TS,2017,Diesel,63.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2018,Diesel,73.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2019,Diesel,71.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2020,Diesel,75.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2021,Diesel,94.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2022,Diesel,98.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2023,Diesel,97.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2024,Diesel,96.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2025,Diesel,95.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+TS,2026,Diesel,95.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+TS,2017,CNG,58.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2018,CNG,62.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2019,CNG,65.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2020,CNG,65.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2021,CNG,72.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2022,CNG,91.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2023,CNG,92.9,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2024,CNG,91.5,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2025,CNG,92.1,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+TS,2026,CNG,92.4,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+UK,2017,Petrol,68.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2018,Petrol,75.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2019,Petrol,72.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2020,Petrol,75.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2021,Petrol,95.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2022,Petrol,97.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2023,Petrol,95.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2024,Petrol,93.5,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2025,Petrol,93.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2026,Petrol,93.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+UK,2017,Diesel,57.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2018,Diesel,67.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2019,Diesel,65.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2020,Diesel,69.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2021,Diesel,87.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2022,Diesel,91.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2023,Diesel,90.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2024,Diesel,88.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2025,Diesel,88.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UK,2026,Diesel,88.1,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+UP,2017,Petrol,68.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2018,Petrol,75.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2019,Petrol,71.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2020,Petrol,74.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2021,Petrol,94.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2022,Petrol,98.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2023,Petrol,96.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2024,Petrol,94.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2025,Petrol,94.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2026,Petrol,94.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+UP,2017,Diesel,56.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2018,Diesel,66.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2019,Diesel,64.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2020,Diesel,68.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2021,Diesel,87.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2022,Diesel,90.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2023,Diesel,89.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2024,Diesel,88.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2025,Diesel,87.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+UP,2026,Diesel,87.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+UP,2020,CNG,57.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2021,CNG,64.0,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2022,CNG,79.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2023,CNG,81.1,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2024,CNG,79.7,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2025,CNG,80.3,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series,approximate
+UP,2026,CNG,80.6,City-gas CNG snapshots 2019/2021/2024 differential on Delhi series (partial year),approximate
+WB,2017,Petrol,70.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2018,Petrol,77.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2019,Petrol,74.0,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2020,Petrol,76.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2021,Petrol,96.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2022,Petrol,108.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2023,Petrol,106.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2024,Petrol,105.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2025,Petrol,104.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2026,Petrol,104.9,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
+WB,2017,Diesel,59.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2018,Diesel,69.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2019,Diesel,67.2,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2020,Diesel,71.3,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2021,Diesel,89.8,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2022,Diesel,94.6,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2023,Diesel,93.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2024,Diesel,92.4,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2025,Diesel,91.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series,approximate
+WB,2026,Diesel,91.7,Capital-city RSP snapshots 2019/2021/2025 differential on Delhi series (partial year),approximate
