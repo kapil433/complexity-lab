@@ -1,0 +1,90 @@
+---
+title: "004 — Wholesale vs retail: channel structure and nowcasting"
+date: 2026-06-11
+---
+
+::: {.callout-note}
+This experiment requires the local (non-committed) wholesale dataset:
+`uv run lab wholesale`. On machines without it (e.g. CI), the cells below
+detect the missing table and skip gracefully.
+:::
+
+## Question
+
+Wholesale dispatches (factory → dealer) are observable before registrations
+settle. (1) What is the lead/lag and inventory structure between the two?
+(2) Can wholesale nowcast the current month's registrations better than a
+seasonal baseline? (3) What does model/segment grain add?
+
+## Setup
+
+```{python}
+import duckdb
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.analysis.nowcast import cross_correlation, nowcast_eval
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+HAS_WS = "wholesale" in tables
+rw = (con.execute("SELECT * FROM retail_wholesale_month ORDER BY date").df()
+      if HAS_WS else None)
+print("wholesale table present:", HAS_WS)
+```
+
+```{python}
+if HAS_WS:
+    px.line(rw, x="date", y=["retail", "wholesale"],
+            title="National retail (registrations) vs wholesale (dispatches), full-coverage era").show()
+```
+
+## Channel inventory ratio
+
+```{python}
+if HAS_WS:
+    px.line(rw, x="date", y="ws_retail_ratio",
+            title="Wholesale/retail ratio — sustained >1 means channel stock build").show()
+```
+
+## Lead/lag structure
+
+```{python}
+if HAS_WS:
+    xc = cross_correlation(rw.set_index("date")["retail"], rw.set_index("date")["wholesale"])
+    px.bar(xc.reset_index(), x="lag", y="corr",
+           title="corr(retail growth_t, wholesale growth_{t-k}) — k>0: wholesale leads").show()
+```
+
+## Out-of-sample nowcast
+
+```{python}
+if HAS_WS:
+    res = nowcast_eval(rw, test_months=12)
+    p = res["predictions"]
+    px.line(p, x="date", y=["actual", "nowcast", "baseline"], markers=True,
+            title=(f"One-step OOS: nowcast MAPE {res['mape_nowcast']:.1%} "
+                   f"vs baseline {res['mape_baseline']:.1%}")).show()
+```
+
+## Segment mix (model grain)
+
+```{python}
+if HAS_WS:
+    seg = con.execute("""
+        SELECT segment5, year, SUM(wholesale) AS units FROM ws_segment_month
+        WHERE year BETWEEN 2022 AND 2025 GROUP BY segment5, year""").df()
+    px.area(seg, x="year", y="units", color="segment5", groupnorm="percent",
+            title="Wholesale segment mix, 2022–2025 (share of units)").show()
+```
+
+## Finding
+
+Wholesale and retail are most correlated **contemporaneously** (≈0.65 on
+monthly growth) with the wholesale/retail ratio averaging ~1.07 — a persistent
+channel-stock build typical of festive-season pipeline filling. A simple
+nowcast (retail ~ wholesale + seasonal memory) beats the seasonal-naive
+baseline out of sample (≈4.6% vs ≈5.9% MAPE over the last 12 months) —
+wholesale is a usable same-month signal while VAHAN's recent months are still
+filling in. **Data caveat**: the source is full-industry only from 2022-04
+(`coverage = 'full'`); the 2017–2022 portion is a ~50-city sample useful for
+long city histories, not national totals.

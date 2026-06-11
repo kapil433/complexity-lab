@@ -19,6 +19,7 @@ dependencies = [
     "streamlit>=1.40",
     "pydantic-settings>=2.6",
     "pyarrow>=18.0",
+    "pyxlsb>=1.0.10",
 ]
 
 [project.optional-dependencies]

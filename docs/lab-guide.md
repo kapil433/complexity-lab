@@ -14,6 +14,8 @@ Rebuild the database after changing raw/reference data:
 ```powershell
 uv run lab ingest
 uv run lab panel
+uv run lab wholesale            # local-only proprietary source (uses parquet cache)
+uv run lab wholesale --refresh  # re-read the source XLSB after it's updated
 ```
 
 ## Adding an experiment (the contract)

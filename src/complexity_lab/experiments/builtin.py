@@ -87,6 +87,44 @@ def ev_diffusion_states(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
 
 
 @experiment(
+    "wholesale-retail-nowcast",
+    description="Wholesale dispatches vs retail registrations: lead/lag structure, channel-inventory ratio, and an out-of-sample nowcast of registrations.",
+)
+def wholesale_retail_nowcast(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.analysis.nowcast import cross_correlation, nowcast_eval
+
+    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+    if "wholesale" not in tables:
+        raise RuntimeError("wholesale table missing — run `uv run lab wholesale` first")
+
+    rw = con.execute("SELECT * FROM retail_wholesale_month ORDER BY date").df()
+    rw.to_parquet(out_dir / "retail_wholesale_month.parquet")
+
+    xc = cross_correlation(rw.set_index("date")["retail"], rw.set_index("date")["wholesale"])
+    xc.to_parquet(out_dir / "cross_correlation.parquet")
+
+    res = nowcast_eval(rw, test_months=params.get("test_months", 12))
+    res["predictions"].to_parquet(out_dir / "nowcast_oos_predictions.parquet")
+
+    seg = con.execute(
+        "SELECT segment5, year, SUM(wholesale) AS units FROM ws_segment_month "
+        "WHERE year >= 2022 GROUP BY segment5, year ORDER BY year, units DESC"
+    ).df()
+    seg.to_parquet(out_dir / "segment_mix_by_year.parquet")
+
+    best_lead = int(xc["corr"].idxmax())
+    return {
+        "months_joined": len(rw),
+        "mean_ws_retail_ratio": round(float(rw["ws_retail_ratio"].mean()), 3),
+        "best_corr_lag": best_lead,
+        "best_corr": round(float(xc["corr"].max()), 3),
+        "mape_nowcast": round(res["mape_nowcast"], 4),
+        "mape_baseline": round(res["mape_baseline"], 4),
+        "n_oos_months": res.get("n_oos", 0),
+    }
+
+
+@experiment(
     "oem-state-network",
     description="Bipartite OEM–state network: centrality, communities and temporal evolution across BS6/COVID/EV eras.",
 )

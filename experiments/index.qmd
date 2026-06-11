@@ -11,5 +11,6 @@ then render). Numbering is chronological.
 | 001 | [Descriptive baseline](001-descriptive-baseline.qmd) | What does the market look like — size, mix, concentration, seasonality? |
 | 002 | [EV diffusion across states](002-ev-diffusion-states.qmd) | Do EV adoption curves follow Bass dynamics, and what differentiates fast states? |
 | 003 | [OEM–state network evolution](003-oem-state-network.qmd) | How has the market's network topology shifted across BS6 / COVID / EV eras? |
+| 004 | [Wholesale vs retail nowcast](004-wholesale-retail-nowcast.qmd) | Can dispatches nowcast registrations? What's the channel-inventory structure? *(needs local wholesale data)* |
 
 **Add an experiment**: copy `_template.qmd`, number it, commit — CI renders it here.

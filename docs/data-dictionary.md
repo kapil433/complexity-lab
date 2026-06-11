@@ -12,6 +12,9 @@
 | `panel_state_month` | state × month | Fuel pivots, EV/CNG shares, OEM HHI/entropy. |
 | `panel_state_year` | state × year | Same + YoY growth + covariates joined. |
 | `oem_state_edges` | state × maker × year | Network edge list (view). |
+| `wholesale` | city × model × month | **Local only** (proprietary; never committed). FY2017-18→present. Built by `lab wholesale`. |
+| `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~6% of volume). |
+| `retail_wholesale_month` | month | National retail vs wholesale join, full-coverage era only — the nowcasting workhorse. |
 
 ## Known caveats (read before inferring)
 
@@ -25,6 +28,15 @@
 4. **Covariate quality flags.** Every reference CSV carries `source` and
    `quality` columns: `official` > `official_derived` > `reported` >
    `approximate` > `proxy` > `estimate` > `placeholder`. Filter on them.
+5. **Wholesale coverage break (2022-04).** Before FY2022-23 the wholesale
+   source is a ~50-city sample (~7% of industry volume); after, full industry.
+   Rows carry a `coverage` flag (`sample`/`full`) — most analyses should filter
+   `coverage = 'full'`. Maruti's ARENA/NEXA channels are merged into
+   `maker = 'Maruti Suzuki'` (channel kept in `channel`); `maker_vahan` maps to
+   the registration bundle's OEM names (e.g. Skoda→Volkswagen Group,
+   Citroen/Fiat→Stellantis) for cross-source joins.
+6. **Wholesale data is proprietary** — the raw XLSB and all derived caches are
+   gitignored (`data/raw/wholesale*`); only the city→state mapping is committed.
 
 ## Reference CSVs (`data/reference/`)
 
@@ -47,6 +59,6 @@
 - **CNG station history** (pre-2024 state series; only national anchors exist here).
 - **EV charger time series** (currently a 2025 cross-section + 2024 partial).
 - **State-wise dealer counts** (FADA or OEM dealer-locator scrape).
-- **Wholesale data** ingest once files land (see `data/wholesale.py` stub;
-  set `LAB_WHOLESALE_DIR`).
 - **AP+Telangana covariate reconciliation** (population-weighted combination).
+- **Wholesale city→state mapping tail** (~6% of volume unmapped; extend
+  `city_state.csv` beyond the top 250 cities).

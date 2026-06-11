@@ -12,6 +12,9 @@ data/lab.duckdb
 data/lab.duckdb.wal
 outputs/
 
+# Proprietary wholesale data — never commit (raw or derived caches)
+data/raw/wholesale*
+
 # Quarto build
 /.quarto/
 /_site/
