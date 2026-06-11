@@ -1,0 +1,120 @@
+"""Built-in experiments — also the canonical examples for writing new ones."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import duckdb
+
+from complexity_lab.analysis import descriptive, distributions
+from complexity_lab.experiments.registry import experiment
+from complexity_lab.networks import build as nb
+from complexity_lab.networks import metrics as nm
+from complexity_lab.simulation.diffusion import fit_bass_by_state
+
+
+@experiment(
+    "descriptive-baseline",
+    description="Market size, growth, fuel mix, seasonality and OEM concentration — the baseline every other experiment builds on.",
+)
+def descriptive_baseline(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    year_panel = con.execute("SELECT * FROM panel_state_year").df()
+    month_panel = con.execute(
+        "SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY year, month"
+    ).df()
+
+    summary = descriptive.summary_table(year_panel[year_panel["state_code"] != "ALL"])
+    summary.to_parquet(out_dir / "state_summary.parquet")
+
+    seasonality = descriptive.seasonality_profile(
+        month_panel[month_panel["year"].between(2013, 2025)]
+    )
+    seasonality.to_parquet(out_dir / "seasonality_all_india.parquet")
+
+    edges = con.execute("SELECT * FROM oem_state_edges").df()
+    conc = descriptive.concentration_series(edges, "year", "maker")
+    conc.to_parquet(out_dir / "oem_concentration_by_year.parquet")
+
+    latest = year_panel[(year_panel["state_code"] != "ALL")]
+    latest_year = int(latest["year"].max()) - 1
+    sizes = latest[latest["year"] == latest_year].set_index("state_code")["total_regs"]
+    zipf = distributions.zipf_exponent(sizes)
+    gini = distributions.gini(sizes)
+
+    return {
+        "latest_full_year": latest_year,
+        "state_gini": round(gini, 4),
+        "zipf_slope": round(zipf["slope"], 4),
+        "zipf_r2": round(zipf["r2"], 4),
+        "hhi_latest": round(float(conc["hhi"].iloc[-2]), 1),
+    }
+
+
+@experiment(
+    "ev-diffusion-states",
+    description="Bass diffusion fits of EV adoption per state; parameters vs income/infrastructure covariates.",
+)
+def ev_diffusion_states(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    month_panel = con.execute(
+        "SELECT * FROM panel_state_month WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
+    ).df()
+    fits = fit_bass_by_state(month_panel, value_col="ev_regs", min_total=params.get("min_total", 1000))
+    fits.to_parquet(out_dir / "bass_fits_by_state.parquet")
+
+    year_panel = con.execute(
+        "SELECT state_code, year, pc_income_inr, ev_chargers, urban_pct "
+        "FROM panel_state_year WHERE state_code <> 'ALL'"
+    ).df()
+    latest_cov = (
+        year_panel.dropna(subset=["pc_income_inr"])
+        .sort_values("year")
+        .groupby("state_code")
+        .tail(1)
+        .set_index("state_code")
+    )
+    joined = fits.join(latest_cov, how="left")
+    joined.to_parquet(out_dir / "bass_fits_with_covariates.parquet")
+
+    ok = joined.dropna(subset=["q", "pc_income_inr"])
+    corr_q_income = float(ok["q"].corr(ok["pc_income_inr"], method="spearman")) if len(ok) > 4 else None
+    return {
+        "n_states_fit": int(fits["q"].notna().sum()),
+        "median_p": round(float(fits["p"].median()), 5),
+        "median_q": round(float(fits["q"].median()), 4),
+        "spearman_q_vs_income": round(corr_q_income, 3) if corr_q_income is not None else None,
+    }
+
+
+@experiment(
+    "oem-state-network",
+    description="Bipartite OEM–state network: centrality, communities and temporal evolution across BS6/COVID/EV eras.",
+)
+def oem_state_network(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    edges = con.execute("SELECT * FROM oem_state_edges").df()
+
+    graphs = nb.temporal_graphs(edges, time_col="year")
+    evolution = nm.temporal_metric_series(graphs)
+    evolution.to_parquet(out_dir / "network_evolution_by_year.parquet")
+
+    latest_year = int(edges["year"].max()) - 1
+    g = nb.share_weighted_graph(edges[edges["year"] == latest_year])
+    cent = nm.centrality_table(g)
+    cent.to_parquet(out_dir / "centrality_latest.parquet")
+    comm = nm.communities(g)
+    comm.to_parquet(out_dir / "communities_latest.parquet")
+    nm.export_gexf(g, out_dir / f"oem_state_{latest_year}.gexf")
+
+    sim = nb.state_similarity_graph(edges[edges["year"] == latest_year])
+    nm.export_gexf(sim, out_dir / f"state_similarity_{latest_year}.gexf")
+
+    (out_dir / "top_nodes.json").write_text(
+        json.dumps(cent.head(15).reset_index().to_dict(orient="records"), indent=2, default=str)
+    )
+    return {
+        "latest_year": latest_year,
+        "modularity_latest": round(float(comm.attrs["modularity"]), 4),
+        "n_communities_latest": int(comm.attrs["n_communities"]),
+        "density_trend_first": round(float(evolution["density"].iloc[0]), 4),
+        "density_trend_last": round(float(evolution["density"].iloc[-1]), 4),
+    }

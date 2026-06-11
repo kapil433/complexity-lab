@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: uv sync --all-extras
+      - name: Lint
+        run: uv run ruff check .
+      - name: Build database (exercises ingest + panel)
+        run: |
+          uv run lab ingest
+          uv run lab panel
+      - name: Test
+        run: uv run pytest
+      - name: Smoke-run an experiment
+        run: uv run lab run descriptive-baseline

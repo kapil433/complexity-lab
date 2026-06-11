@@ -1,0 +1,33 @@
+---
+title: "Complexity Lab"
+---
+
+A research lab studying **India's passenger-vehicle market as a complex system**:
+VAHAN registration data (2012–2026, state × month × OEM × fuel) joined with
+state covariates — per-capita income, urbanization, CNG/EV infrastructure,
+fuel prices, road tax, policy events.
+
+Every page under **Experiments** is a reproducible Quarto notebook committed to
+[the repo](https://github.com/kapil433/complexity-lab); the site re-renders on push.
+
+## Analytical ladder
+
+1. **Descriptive** — size, growth, fuel mix, seasonality, concentration
+2. **Distributions** — heavy tails, rank–size, inequality
+3. **Econometrics** — panel regressions, Granger, changepoints
+4. **Networks** — OEM–state bipartite structure and its evolution
+5. **Complexity** — entropy/diversity, early-warning signals
+6. **Simulation** — Bass diffusion, agent-based adoption
+
+## Reproduce locally
+
+```bash
+uv sync --all-extras
+uv run lab ingest && uv run lab panel
+uv run lab app        # interactive lab
+quarto preview        # this site
+```
+
+*Data: Vahan Intelligence (vahanintelligence.in), based on VAHAN/Parivahan
+public data (MoRTH, GoI). Reference series carry per-file provenance and
+quality flags — see the data dictionary in the repo.*

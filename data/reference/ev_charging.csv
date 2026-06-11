@@ -1,0 +1,46 @@
+# Public EV charging stations by state.
+# 2025 cross-section: Ministry of Power figures as compiled by ORF (Oct 2025) /
+# indiadatamap (Nov 2025); national total 29,277 (as of Aug 2025). Several mid-table
+# values are visibly rounded in the source — flagged approximate.
+# 2024 anchors: Ministry of Power via PIB/EVreporter (12,146 national, Feb 2024).
+state_code,year,public_chargers,source,quality
+ALL,2024,12146,Ministry of Power via PIB (Feb 2024),official
+ALL,2025,29277,Ministry of Power (Aug 2025) via ORF,official
+MH,2024,3079,Ministry of Power via EVreporter (Feb 2024),official
+DL,2024,1886,Ministry of Power via EVreporter (Feb 2024),official
+KA,2025,5880,MoP via ORF/indiadatamap,reported
+MH,2025,3728,MoP via ORF/indiadatamap,reported
+UP,2025,1989,MoP via ORF/indiadatamap,reported
+DL,2025,1951,MoP via ORF/indiadatamap,reported
+TN,2025,1500,MoP via ORF/indiadatamap,approximate
+GJ,2025,1008,MoP via ORF/indiadatamap,reported
+TS,2025,976,MoP via ORF/indiadatamap,reported
+HR,2025,800,MoP via ORF/indiadatamap,approximate
+RJ,2025,700,MoP via ORF/indiadatamap,approximate
+KL,2025,600,MoP via ORF/indiadatamap,approximate
+BR,2025,521,MoP via ORF/indiadatamap,reported
+MP,2025,500,MoP via ORF/indiadatamap,approximate
+AP,2025,450,MoP via ORF/indiadatamap,approximate
+OD,2025,400,MoP via ORF/indiadatamap,approximate
+WB,2025,350,MoP via ORF/indiadatamap,approximate
+PB,2025,300,MoP via ORF/indiadatamap,approximate
+JH,2025,250,MoP via ORF/indiadatamap,approximate
+CG,2025,200,MoP via ORF/indiadatamap,approximate
+UK,2025,150,MoP via ORF/indiadatamap,approximate
+AS,2025,100,MoP via ORF/indiadatamap,approximate
+HP,2025,80,MoP via ORF/indiadatamap,approximate
+JK,2025,70,MoP via ORF/indiadatamap,approximate
+GA,2025,50,MoP via ORF/indiadatamap,approximate
+CH,2025,40,MoP via ORF/indiadatamap,approximate
+PY,2025,30,MoP via ORF/indiadatamap,approximate
+TR,2025,20,MoP via ORF/indiadatamap,approximate
+MN,2025,15,MoP via ORF/indiadatamap,approximate
+ML,2025,14,MoP via ORF/indiadatamap,approximate
+MZ,2025,13,MoP via ORF/indiadatamap,approximate
+NL,2025,12,MoP via ORF/indiadatamap,approximate
+SK,2025,11,MoP via ORF/indiadatamap,approximate
+AR,2025,10,MoP via ORF/indiadatamap,approximate
+DN,2025,8,MoP via ORF/indiadatamap,approximate
+AN,2025,4,MoP via ORF/indiadatamap,approximate
+LD,2025,2,MoP via ORF/indiadatamap,approximate
+LA,2025,1,MoP via ORF/indiadatamap,approximate

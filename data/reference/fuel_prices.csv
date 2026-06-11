@@ -1,0 +1,98 @@
+# Retail fuel prices, calendar-year averages (INR/litre; CNG INR/kg), Delhi pump prices.
+# Delhi serves as the national bellwether series (state_code ALL mirrors DL) because
+# post-deregulation price *movements* are near-identical across states; *levels* differ
+# by state VAT. State-wise level expansion from PPAC state bulletins is a logged TODO
+# (docs/data-dictionary.md). Values are approximate annual means compiled from
+# PPAC/IOCL/IGL published price revisions — use for trend/shock analysis, not accounting.
+# 2026 is partial (Jan-Jun).
+state_code,year,fuel,price_avg_inr,source,quality
+DL,2012,Petrol,68.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2013,Petrol,70.3,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2014,Petrol,69.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2015,Petrol,63.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2016,Petrol,63.8,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2017,Petrol,68.3,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2018,Petrol,75.7,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2019,Petrol,72.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2020,Petrol,76.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2021,Petrol,96.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2022,Petrol,98.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2023,Petrol,96.7,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2024,Petrol,95.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2025,Petrol,94.7,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2026,Petrol,94.7,PPAC/IOCL Delhi RSP compiled (partial year),approximate
+DL,2012,Diesel,44.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2013,Diesel,50.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2014,Diesel,56.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2015,Diesel,49.7,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2016,Diesel,52.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2017,Diesel,57.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2018,Diesel,67.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2019,Diesel,65.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2020,Diesel,68.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2021,Diesel,87.0,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2022,Diesel,90.5,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2023,Diesel,89.6,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2024,Diesel,88.2,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2025,Diesel,87.6,PPAC/IOCL Delhi RSP compiled,approximate
+DL,2026,Diesel,87.6,PPAC/IOCL Delhi RSP compiled (partial year),approximate
+DL,2012,CNG,37.0,IGL Delhi price revisions compiled,approximate
+DL,2013,CNG,43.0,IGL Delhi price revisions compiled,approximate
+DL,2014,CNG,45.0,IGL Delhi price revisions compiled,approximate
+DL,2015,CNG,38.0,IGL Delhi price revisions compiled,approximate
+DL,2016,CNG,37.0,IGL Delhi price revisions compiled,approximate
+DL,2017,CNG,39.0,IGL Delhi price revisions compiled,approximate
+DL,2018,CNG,43.0,IGL Delhi price revisions compiled,approximate
+DL,2019,CNG,46.0,IGL Delhi price revisions compiled,approximate
+DL,2020,CNG,43.0,IGL Delhi price revisions compiled,approximate
+DL,2021,CNG,50.0,IGL Delhi price revisions compiled,approximate
+DL,2022,CNG,75.0,IGL Delhi price revisions compiled,approximate
+DL,2023,CNG,76.5,IGL Delhi price revisions compiled,approximate
+DL,2024,CNG,75.1,IGL Delhi price revisions compiled,approximate
+DL,2025,CNG,75.7,IGL Delhi price revisions compiled,approximate
+DL,2026,CNG,76.0,IGL Delhi price revisions compiled (partial year),approximate
+ALL,2012,Petrol,68.5,Delhi proxy,proxy
+ALL,2013,Petrol,70.3,Delhi proxy,proxy
+ALL,2014,Petrol,69.5,Delhi proxy,proxy
+ALL,2015,Petrol,63.0,Delhi proxy,proxy
+ALL,2016,Petrol,63.8,Delhi proxy,proxy
+ALL,2017,Petrol,68.3,Delhi proxy,proxy
+ALL,2018,Petrol,75.7,Delhi proxy,proxy
+ALL,2019,Petrol,72.0,Delhi proxy,proxy
+ALL,2020,Petrol,76.5,Delhi proxy,proxy
+ALL,2021,Petrol,96.5,Delhi proxy,proxy
+ALL,2022,Petrol,98.5,Delhi proxy,proxy
+ALL,2023,Petrol,96.7,Delhi proxy,proxy
+ALL,2024,Petrol,95.0,Delhi proxy,proxy
+ALL,2025,Petrol,94.7,Delhi proxy,proxy
+ALL,2026,Petrol,94.7,Delhi proxy,proxy
+ALL,2012,Diesel,44.0,Delhi proxy,proxy
+ALL,2013,Diesel,50.5,Delhi proxy,proxy
+ALL,2014,Diesel,56.0,Delhi proxy,proxy
+ALL,2015,Diesel,49.7,Delhi proxy,proxy
+ALL,2016,Diesel,52.5,Delhi proxy,proxy
+ALL,2017,Diesel,57.5,Delhi proxy,proxy
+ALL,2018,Diesel,67.5,Delhi proxy,proxy
+ALL,2019,Diesel,65.5,Delhi proxy,proxy
+ALL,2020,Diesel,68.5,Delhi proxy,proxy
+ALL,2021,Diesel,87.0,Delhi proxy,proxy
+ALL,2022,Diesel,90.5,Delhi proxy,proxy
+ALL,2023,Diesel,89.6,Delhi proxy,proxy
+ALL,2024,Diesel,88.2,Delhi proxy,proxy
+ALL,2025,Diesel,87.6,Delhi proxy,proxy
+ALL,2026,Diesel,87.6,Delhi proxy,proxy
+ALL,2012,CNG,37.0,Delhi proxy,proxy
+ALL,2013,CNG,43.0,Delhi proxy,proxy
+ALL,2014,CNG,45.0,Delhi proxy,proxy
+ALL,2015,CNG,38.0,Delhi proxy,proxy
+ALL,2016,CNG,37.0,Delhi proxy,proxy
+ALL,2017,CNG,39.0,Delhi proxy,proxy
+ALL,2018,CNG,43.0,Delhi proxy,proxy
+ALL,2019,CNG,46.0,Delhi proxy,proxy
+ALL,2020,CNG,43.0,Delhi proxy,proxy
+ALL,2021,CNG,50.0,Delhi proxy,proxy
+ALL,2022,CNG,75.0,Delhi proxy,proxy
+ALL,2023,CNG,76.5,Delhi proxy,proxy
+ALL,2024,CNG,75.1,Delhi proxy,proxy
+ALL,2025,CNG,75.7,Delhi proxy,proxy
+ALL,2026,CNG,76.0,Delhi proxy,proxy

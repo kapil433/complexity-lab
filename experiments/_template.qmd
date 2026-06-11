@@ -1,0 +1,31 @@
+---
+title: "NNN — Short experiment title"
+date: today
+draft: true
+---
+
+## Question
+
+State the hypothesis precisely. What would confirm it, what would refute it?
+
+## Setup
+
+```{python}
+import duckdb
+from complexity_lab.config import settings
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+panel = con.execute("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'").df()
+panel.head()
+```
+
+## Analysis
+
+```{python}
+# Use complexity_lab.analysis / networks / complexity / simulation modules here.
+```
+
+## Finding
+
+One paragraph: what did the data say? Note caveats (covariate quality flags,
+partial years, AP/Telangana caveat — see docs/data-dictionary.md).

@@ -1,0 +1,32 @@
+# Policy & structural event timeline, supplementing the `events` table embedded in
+# the VAHAN bundle (which covers data breaks and national shocks in more detail).
+# state_code = ALL for national events; otherwise the state the policy applies to.
+# category: emission | tax | subsidy | fuel | shock | ev_policy | finance
+event_id,date,state_code,category,label,detail,source,quality
+NEMMP,2013-01,ALL,subsidy,NEMMP 2020 announced,National Electric Mobility Mission Plan target of 6-7M xEV by 2020,MoHI,official
+DSL_DEREG,2014-10,ALL,fuel,Diesel price deregulation,Full market pricing of diesel; narrowed petrol-diesel gap eroded diesel PV share,MoPNG,official
+FAME1,2015-04,ALL,subsidy,FAME-I begins,Demand incentives for xEVs incl. PV,MoHI,official
+DEMON,2016-11,ALL,shock,Demonetisation,Cash crunch hit auto retail H2 FY17,RBI,official
+DIESEL_BAN_NCR,2015-12,DL,emission,NCR 2000cc+ diesel ban (SC),Supreme Court temporary ban on large diesel PV registrations in NCR (till Aug 2016),Supreme Court,official
+BS4,2017-04,ALL,emission,BS-IV nationwide,Pre-buy and inventory effects around enforcement,MoRTH,official
+GST,2017-07,ALL,tax,GST rollout,28% + cess on cars replaced VAT/excise; relative price shifts across segments,GST Council,official
+ILFS,2018-09,ALL,finance,IL&FS default / NBFC crisis,Auto retail financing squeeze FY19-FY20,RBI,official
+FAME2,2019-04,ALL,subsidy,FAME-II begins,Rs 10k cr; PV incentives restricted to commercial/fleet,MoHI,official
+COVID1,2020-03,ALL,shock,COVID-19 lockdown wave 1,National lockdown; April 2020 registrations near zero,GoI,official
+BS6,2020-04,ALL,emission,BS-VI mandatory,Diesel small-car exits (e.g. Maruti diesel discontinued),MoRTH,official
+DL_EV,2020-08,DL,ev_policy,Delhi EV Policy,Purchase incentives + road tax & registration fee waiver,GNCTD,official
+TS_EV,2020-08,TS,ev_policy,Telangana EV Policy,Road tax + registration exemption for first buyers,GoTS,official
+COVID2,2021-04,ALL,shock,COVID-19 wave 2,Regional lockdowns; supply + demand shock,GoI,official
+CHIP,2021-09,ALL,shock,Semiconductor shortage peak,Production cuts; order backlogs especially PV,SIAM/industry,reported
+GJ_EV,2021-07,GJ,ev_policy,Gujarat EV Policy,Per-kWh purchase subsidy; registration incentives,GoG,official
+MH_EV,2021-07,MH,ev_policy,Maharashtra EV Policy,Purchase incentives + road tax exemption,GoM,official
+FUEL_CUT_NOV21,2021-11,ALL,fuel,Central excise cut on petrol/diesel,Rs 5/10 cut; several states cut VAT,MoF,official
+GAS_SHOCK,2022-04,ALL,fuel,Global gas price shock,CNG prices spike ~50% (Russia-Ukraine); dented CNG economics,PPAC,official
+FUEL_CUT_MAY22,2022-05,ALL,fuel,Second excise cut,Rs 8/6 cut on petrol/diesel,MoF,official
+UP_EV,2022-10,UP,ev_policy,UP EV Policy 2022,100% road tax + registration exemption 3y (5y for UP-made),GoUP,official
+RJ_EV,2022-09,RJ,ev_policy,Rajasthan EV Policy,SGST reimbursement + subsidies,GoR,official
+BS6_2,2023-04,ALL,emission,BS-VI Phase 2 (RDE),Real-driving-emissions norms; price increases esp. diesel,MoRTH,official
+TN_EV,2023-02,TN,ev_policy,TN EV Policy 2023,Road tax exemption till Dec 2025 + manufacturing focus,GoTN,official
+EMPS,2024-04,ALL,subsidy,EMPS bridge scheme,Interim e-mobility scheme between FAME-II and PM E-DRIVE (2W/3W only),MoHI,official
+PMEDRIVE,2024-10,ALL,subsidy,PM E-DRIVE begins,Rs 10.9k cr; no private e-car purchase subsidy; charging infra push,MoHI,official
+GST2,2025-09,ALL,tax,GST 2.0 rate rationalisation,Small cars moved to 18% slab (from 28%+cess); large cars 40% flat,GST Council,official

@@ -1,0 +1,35 @@
+project:
+  type: website
+  render:
+    - experiments/
+    - "*.qmd"
+
+website:
+  title: "Complexity Lab"
+  description: "India's PV market as a complex system — experiments on VAHAN registration data"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Home
+      - href: experiments/index.qmd
+        text: Experiments
+      - href: https://github.com/kapil433/complexity-lab
+        text: GitHub
+  sidebar:
+    style: docked
+    contents:
+      - index.qmd
+      - section: Experiments
+        contents: experiments/*.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    code-fold: true
+    fig-width: 9
+    fig-height: 5
+
+execute:
+  freeze: auto
+  warning: false

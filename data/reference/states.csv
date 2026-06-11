@@ -1,0 +1,44 @@
+# Canonical state dimension for the lab.
+# state_name matches the VAHAN bundle's `regions` exactly; geojson_name matches
+# properties.ST_NM in data/raw/india_states.geojson (blank = no geometry, e.g. All India).
+# zone follows Zonal Council groupings (island UTs assigned to their invitee council).
+# Telangana split from Andhra Pradesh on 2014-06-02 — both are present throughout the
+# data range; pre-split AP rows represent undivided AP (see events table).
+state_code,state_name,geojson_name,zone,is_ut
+ALL,All India,,National,0
+AN,Andaman and Nicobar Islands,Andaman & Nicobar,South,1
+AP,Andhra Pradesh,Andhra Pradesh,South,0
+AR,Arunachal Pradesh,Arunachal Pradesh,Northeast,0
+AS,Assam,Assam,Northeast,0
+BR,Bihar,Bihar,East,0
+CH,Chandigarh,Chandigarh,North,1
+CG,Chhattisgarh,Chhattisgarh,Central,0
+DN,Dadra and Nagar Haveli and Daman and Diu,Dadra and Nagar Haveli and Daman and Diu,West,1
+DL,Delhi,Delhi,North,1
+GA,Goa,Goa,West,0
+GJ,Gujarat,Gujarat,West,0
+HR,Haryana,Haryana,North,0
+HP,Himachal Pradesh,Himachal Pradesh,North,0
+JK,Jammu and Kashmir,Jammu & Kashmir,North,1
+JH,Jharkhand,Jharkhand,East,0
+KA,Karnataka,Karnataka,South,0
+KL,Kerala,Kerala,South,0
+LA,Ladakh,Ladakh,North,1
+LD,Lakshadweep,Lakshadweep,South,1
+MP,Madhya Pradesh,Madhya Pradesh,Central,0
+MH,Maharashtra,Maharashtra,West,0
+MN,Manipur,Manipur,Northeast,0
+ML,Meghalaya,Meghalaya,Northeast,0
+MZ,Mizoram,Mizoram,Northeast,0
+NL,Nagaland,Nagaland,Northeast,0
+OD,Odisha,Odisha,East,0
+PY,Puducherry,Puducherry,South,1
+PB,Punjab,Punjab,North,0
+RJ,Rajasthan,Rajasthan,North,0
+SK,Sikkim,Sikkim,Northeast,0
+TN,Tamil Nadu,Tamil Nadu,South,0
+TS,Telangana,Telangana,South,0
+TR,Tripura,Tripura,Northeast,0
+UP,Uttar Pradesh,Uttar Pradesh,Central,0
+UK,Uttarakhand,Uttarakhand,Central,0
+WB,West Bengal,West Bengal,East,0

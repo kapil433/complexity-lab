@@ -1,0 +1,32 @@
+# One-time road tax ("life tax") on private petrol cars and EV treatment, by state.
+# rate_pct_10l = approximate life-tax rate for a ~Rs 10 lakh ex-showroom petrol car.
+# ev_rate_pct = road tax applied to EVs (0 = fully exempt under state EV policy at as_of date).
+# These are coarse, single-band approximations of complex slab structures (price bands,
+# fuel surcharges, cess) — suitable as a cross-state ordinal covariate, not for invoicing.
+# Sources: state transport department notifications & state EV policies, compiled 2024-25.
+state_code,rate_pct_10l,ev_rate_pct,as_of,source,quality
+AP,14.0,0,2024,AP Transport Dept / AP EV policy,approximate
+AS,7.0,0,2024,Assam Transport Dept,approximate
+BR,9.0,0,2024,Bihar Transport Dept / Bihar EV policy 2023,approximate
+CG,9.0,0,2024,CG Transport Dept,approximate
+CH,8.0,0,2024,Chandigarh admin / EV policy 2022,approximate
+DL,7.0,0,2024,Delhi Transport Dept / Delhi EV policy 2020,approximate
+GA,9.0,0,2024,Goa Transport Dept / Goa EV policy 2021,approximate
+GJ,6.0,6,2024,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+HR,8.0,0,2024,Haryana Transport Dept / EV policy 2022,approximate
+HP,7.0,0,2024,HP Transport Dept,approximate
+JK,9.0,0,2024,JK Transport Dept,approximate
+JH,9.0,0,2024,Jharkhand Transport Dept,approximate
+KA,17.0,0,2024,Karnataka Transport Dept / EV exemption since 2016,approximate
+KL,11.0,5,2024,Kerala Transport Dept (EVs 5% reduced),approximate
+MP,9.0,1,2024,MP Transport Dept / MP EV policy 2019,approximate
+MH,11.0,0,2024,Maharashtra Transport Dept / MH EV policy 2021,approximate
+OD,10.0,0,2024,Odisha Transport Dept / Odisha EV policy 2021,approximate
+PY,8.0,0,2024,Puducherry Transport Dept,approximate
+PB,9.0,0,2024,Punjab Transport Dept / Punjab EV policy 2022,approximate
+RJ,9.0,0,2024,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+TN,13.0,0,2024,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TS,14.0,0,2024,Telangana Transport Dept / TS EV policy 2020,approximate
+UP,10.0,0,2024,UP Transport Dept / UP EV policy 2022,approximate
+UK,9.0,0,2024,Uttarakhand Transport Dept,approximate
+WB,10.0,2,2024,WB Transport Dept,approximate

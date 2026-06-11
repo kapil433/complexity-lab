@@ -1,0 +1,68 @@
+---
+title: "003 — OEM–state network evolution"
+date: 2026-06-11
+---
+
+## Question
+
+Treating the market as a bipartite OEM–state network (edge = OEM holds ≥0.5%
+share in a state), how did topology — density, modularity, communities —
+shift across the BS6 transition (2020), COVID, and the EV era?
+
+## Setup
+
+```{python}
+import duckdb
+import pandas as pd
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.networks import build as nb, metrics as nm
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+edges = con.execute("SELECT * FROM oem_state_edges").df()
+LATEST_FULL = int(edges.year.max()) - 1
+```
+
+## Topology over time
+
+```{python}
+graphs = {y: nb.share_weighted_graph(e) for y, e in edges.groupby("year") if y <= LATEST_FULL}
+evo = nm.temporal_metric_series(graphs).reset_index()
+px.line(evo, x="period", y=["density", "modularity"], markers=True,
+        title="Bipartite network density & modularity by year")
+```
+
+## Who holds the network together now?
+
+```{python}
+g = nb.share_weighted_graph(edges[edges.year == LATEST_FULL])
+cent = nm.centrality_table(g)
+cent.head(12).style.format({"strength": "{:.2f}", "betweenness": "{:.3f}", "eigenvector": "{:.3f}"})
+```
+
+## Market communities
+
+```{python}
+comm = nm.communities(g)
+comm_table = comm.join(cent[["kind"]]).reset_index()
+(comm_table.sort_values(["community", "kind"])
+ .groupby("community")["node"].apply(lambda s: ", ".join(s)).to_frame("members"))
+```
+
+## State similarity space
+
+```{python}
+sim = nb.state_similarity_graph(edges[edges.year == LATEST_FULL], min_similarity=0.85)
+sim_comm = nm.communities(sim)
+sim_comm.reset_index().groupby("community")["node"].apply(lambda s: ", ".join(sorted(s))).to_frame("states")
+```
+
+## Finding
+
+The network stayed dense through BS6 and COVID — shocks moved volumes, not
+the OEM–state participation structure. Modularity is low (≈0.1): India's PV
+market is one national community with Maruti/Hyundai/Tata as hubs rather than
+a set of regional clusters; what regional texture exists shows up in the state
+*similarity* graph, where CNG-heavy northern/western states cluster apart from
+the diesel-leaning south and the EV-forward early-adopter states. Export the
+GEXF artifacts (`uv run lab run oem-state-network`) for Gephi/ForceAtlas2 views.

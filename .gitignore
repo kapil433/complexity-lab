@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Lab artifacts (rebuilt from raw + reference via `lab ingest`)
+data/lab.duckdb
+data/lab.duckdb.wal
+outputs/
+
+# Quarto build
+/.quarto/
+/_site/
+experiments/*_files/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

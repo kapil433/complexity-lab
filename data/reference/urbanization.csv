@@ -1,0 +1,44 @@
+# Urban population share by state — Census of India 2011 (last full census; the
+# 2021 census was not conducted). Treat as a slow-moving structural covariate.
+# AP/Telangana figures are the post-bifurcation recalculations of Census 2011.
+# DN is the merged UT (DNH 46.7% + Daman & Diu 75.2%, population-weighted).
+# Ladakh derived from Leh+Kargil districts of Census 2011 J&K.
+# quality: official = straight from census tables; derived = recombined from census tables.
+state_code,urban_pct,rural_pct,census_year,source,quality
+ALL,31.2,68.8,2011,Census of India 2011,official
+AN,37.7,62.3,2011,Census of India 2011,official
+AP,29.6,70.4,2011,Census of India 2011 (post-bifurcation recalc),derived
+AR,22.9,77.1,2011,Census of India 2011,official
+AS,14.1,85.9,2011,Census of India 2011,official
+BR,11.3,88.7,2011,Census of India 2011,official
+CH,97.3,2.7,2011,Census of India 2011,official
+CG,23.2,76.8,2011,Census of India 2011,official
+DN,52.9,47.1,2011,Census of India 2011 (merged UT weighted),derived
+DL,97.5,2.5,2011,Census of India 2011,official
+GA,62.2,37.8,2011,Census of India 2011,official
+GJ,42.6,57.4,2011,Census of India 2011,official
+HR,34.9,65.1,2011,Census of India 2011,official
+HP,10.0,90.0,2011,Census of India 2011,official
+JK,27.2,72.8,2011,Census of India 2011 (excl. Ladakh districts),derived
+JH,24.1,75.9,2011,Census of India 2011,official
+KA,38.7,61.3,2011,Census of India 2011,official
+KL,47.7,52.3,2011,Census of India 2011,official
+LA,22.2,77.8,2011,Census of India 2011 (Leh+Kargil districts),derived
+LD,78.1,21.9,2011,Census of India 2011,official
+MP,27.6,72.4,2011,Census of India 2011,official
+MH,45.2,54.8,2011,Census of India 2011,official
+MN,32.5,67.5,2011,Census of India 2011,official
+ML,20.1,79.9,2011,Census of India 2011,official
+MZ,52.1,47.9,2011,Census of India 2011,official
+NL,28.9,71.1,2011,Census of India 2011,official
+OD,16.7,83.3,2011,Census of India 2011,official
+PY,68.3,31.7,2011,Census of India 2011,official
+PB,37.5,62.5,2011,Census of India 2011,official
+RJ,24.9,75.1,2011,Census of India 2011,official
+SK,25.2,74.8,2011,Census of India 2011,official
+TN,48.4,51.6,2011,Census of India 2011,official
+TS,38.9,61.1,2011,Census of India 2011 (post-bifurcation recalc),derived
+TR,26.2,73.8,2011,Census of India 2011,official
+UP,22.3,77.7,2011,Census of India 2011,official
+UK,30.2,69.8,2011,Census of India 2011,official
+WB,31.9,68.1,2011,Census of India 2011,official

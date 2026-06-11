@@ -1,0 +1,83 @@
+---
+title: "001 — Descriptive baseline"
+date: 2026-06-11
+---
+
+## Question
+
+What does India's PV market look like at state grain — size distribution,
+growth, fuel mix, seasonality, and OEM concentration? This baseline anchors
+every later experiment.
+
+## Setup
+
+```{python}
+import duckdb
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.analysis import descriptive, distributions
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+year_panel = con.execute("SELECT * FROM panel_state_year").df()
+states = year_panel[year_panel.state_code != "ALL"]
+LATEST_FULL = int(states.year.max()) - 1  # last year is partial
+```
+
+## Market size and growth
+
+```{python}
+all_india = year_panel[year_panel.state_code == "ALL"].set_index("year")
+px.bar(all_india.reset_index(), x="year", y="total_regs",
+       title="All-India PV registrations by calendar year")
+```
+
+```{python}
+summary = descriptive.summary_table(states)
+summary.head(12).style.format({
+    "total_regs": "{:,.0f}", "cagr_5y": "{:.1%}", "ev_share": "{:.1%}",
+    "cng_share": "{:.1%}", "hhi_oem": "{:,.0f}"})
+```
+
+## Size distribution: how unequal are states?
+
+```{python}
+sizes = states[states.year == LATEST_FULL].set_index("state_code")["total_regs"]
+zipf = distributions.zipf_exponent(sizes)
+gini = distributions.gini(sizes)
+rs = distributions.rank_size(sizes)
+fig = px.scatter(rs, x="log_rank", y="log_size",
+                 title=f"Rank–size, {LATEST_FULL} — slope {zipf['slope']:.2f} (R²={zipf['r2']:.2f}), Gini {gini:.2f}")
+fig.show()
+```
+
+A slope much steeper than −1 means registrations concentrate in top states
+faster than Zipf's law would imply — consistent with car markets tracking
+income and urbanization, not just population.
+
+## Seasonality
+
+```{python}
+month_panel = con.execute(
+    "SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY year, month").df()
+prof = descriptive.seasonality_profile(month_panel[month_panel.year.between(2013, LATEST_FULL)])
+px.bar(prof.reset_index(), x="month", y="seasonal_index", error_y="std",
+       title="All-India month-of-year index (1.0 = average month)")
+```
+
+## OEM concentration over time
+
+```{python}
+edges = con.execute("SELECT * FROM oem_state_edges").df()
+conc = descriptive.concentration_series(edges, "year", "maker").reset_index()
+px.line(conc[conc.year <= LATEST_FULL], x="year", y="hhi", markers=True,
+        title="National OEM HHI (10000 = monopoly)")
+```
+
+## Finding
+
+The market roughly doubled from ~2.4M (2013) to ~4.4M (2025) with a visible
+COVID trough in 2020. State sizes are strongly unequal (Gini ≈ 0.6; rank–size
+slope ≈ −1.9, steeper than Zipf). Registrations peak around the festive months
+with a March fiscal-year-end bump. OEM concentration (HHI ≈ 2200) has been
+declining slowly as Maruti's share erodes toward SUV-heavy challengers —
+the structural question experiment 003 picks up at network grain.

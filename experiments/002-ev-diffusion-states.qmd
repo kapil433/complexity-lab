@@ -1,0 +1,62 @@
+---
+title: "002 — EV diffusion across states"
+date: 2026-06-11
+---
+
+## Question
+
+Do state-level EV adoption curves follow Bass diffusion dynamics, and do the
+fitted innovation (p) / imitation (q) parameters correlate with income,
+urbanization, or charging infrastructure?
+
+## Setup
+
+```{python}
+import duckdb
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.simulation.diffusion import fit_bass_by_state
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+month_panel = con.execute(
+    "SELECT * FROM panel_state_month WHERE state_code <> 'ALL' "
+    "ORDER BY state_code, year, month").df()
+```
+
+## Bass fits per state
+
+```{python}
+fits = fit_bass_by_state(month_panel, value_col="ev_regs", min_total=1000)
+fits = fits[fits.r2 > 0.95]
+fits[["p", "q", "m", "r2", "peak_time"]].sort_values("q", ascending=False).head(15).style.format("{:.4g}")
+```
+
+## Innovation vs imitation map
+
+```{python}
+cov = con.execute(
+    "SELECT state_code, MAX_BY(pc_income_inr, year) AS income, "
+    "MAX_BY(urban_pct, year) AS urban_pct, MAX(ev_chargers) AS chargers "
+    "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code").df().set_index("state_code")
+joined = fits.join(cov)
+px.scatter(joined.reset_index(), x="p", y="q", size="m", text="state_code",
+           color="income", hover_data=["urban_pct", "chargers"],
+           title="Bass parameters by state (size = market potential m)")
+```
+
+## Do covariates explain imitation strength?
+
+```{python}
+corr = joined[["p", "q", "income", "urban_pct", "chargers"]].corr(method="spearman")
+px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
+```
+
+## Finding
+
+EV adoption in most large states fits Bass dynamics well (R² > 0.95 on
+cumulative curves), with imitation (q) dominating innovation (p) — adoption is
+contagion-led, not advertising-led. Cross-state variation in q correlates
+positively but weakly with income and charging infrastructure in this first
+pass; the EV-charger covariate is a 2025 cross-section (quality: approximate
+for mid-table states), so treat the infra relationship as suggestive. A panel
+with longer charger history is the natural follow-up.

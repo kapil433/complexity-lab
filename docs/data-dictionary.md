@@ -1,0 +1,52 @@
+# Data dictionary
+
+## DuckDB tables (`data/lab.duckdb`, rebuilt via `uv run lab ingest && uv run lab panel`)
+
+| Table | Grain | Notes |
+|---|---|---|
+| `registrations` | state × year × month × maker × fuel | Decoded from `vahan_master.json.gz`. 'All India' (`ALL`) is **pre-aggregated** — never sum states to reproduce it. |
+| `events` | event | Policy/data-break timeline embedded in the bundle (47 events, tiered). |
+| `meta` | key/value | Bundle metadata incl. partial-year flags. |
+| `dim_state` | state | From `reference/states.csv`; includes GeoJSON name mapping. |
+| `ref_*` | varies | One table per reference CSV (below). |
+| `panel_state_month` | state × month | Fuel pivots, EV/CNG shares, OEM HHI/entropy. |
+| `panel_state_year` | state × year | Same + YoY growth + covariates joined. |
+| `oem_state_edges` | state × maker × year | Network edge list (view). |
+
+## Known caveats (read before inferring)
+
+1. **No separate Telangana.** The bundle's 35 regions exclude Telangana; the AP
+   series is continuous through the 2014 bifurcation (see `events` id A01).
+   When joining covariates to AP, consider that AP registrations may span
+   undivided AP — income/urbanization for residual AP are not strictly aligned.
+2. **Partial years.** 2026 (and the latest 1–2 months generally) are partial —
+   `meta` flags them; experiments use `max(year) - 1` as the latest full year.
+3. **All India ≠ Σ states** by design (different RTO coverage).
+4. **Covariate quality flags.** Every reference CSV carries `source` and
+   `quality` columns: `official` > `official_derived` > `reported` >
+   `approximate` > `proxy` > `estimate` > `placeholder`. Filter on them.
+
+## Reference CSVs (`data/reference/`)
+
+| File | Coverage | Quality | Source |
+|---|---|---|---|
+| `states.csv` | 36 + ALL | — | Canonical dim (codes, zones, GeoJSON names) |
+| `state_income.csv` | 33 states, FY2011-12→2024-25 | official | RBI Handbook of Statistics on Indian States 2024-25, Table 19 |
+| `urbanization.csv` | all states | official/derived | Census of India 2011 |
+| `cng_stations.csv` | all states, 2024 (+ national 2025) | official_derived | PNGRB RTI R-1855 (31.05.2024), GA→state allocation |
+| `ev_charging.csv` | all states 2025, partial 2024 | reported/approximate | Ministry of Power via ORF/PIB |
+| `fuel_prices.csv` | Delhi 2012–2026 (annual avg), ALL=Delhi proxy | approximate | PPAC/IOCL/IGL price revisions, compiled |
+| `road_tax.csv` | 25 states, as-of 2024 | approximate | State transport dept notifications, single-band simplification |
+| `policy_events.csv` | 27 events 2013–2025 | official | MoHI/MoRTH/GST Council/state EV policies |
+| `dealer_counts.csv` | national only | placeholder | FADA commentary |
+| `financing.csv` | national, sparse | estimate | CRISIL/JATO/industry |
+
+## Logged data TODOs
+
+- **State-wise fuel price levels** from PPAC state bulletins (currently Delhi proxy).
+- **CNG station history** (pre-2024 state series; only national anchors exist here).
+- **EV charger time series** (currently a 2025 cross-section + 2024 partial).
+- **State-wise dealer counts** (FADA or OEM dealer-locator scrape).
+- **Wholesale data** ingest once files land (see `data/wholesale.py` stub;
+  set `LAB_WHOLESALE_DIR`).
+- **AP+Telangana covariate reconciliation** (population-weighted combination).

@@ -1,0 +1,6 @@
+# PV dealership footprint. State-wise PV dealer counts are NOT published openly by
+# FADA — this file ships national anchors only, as a placeholder for the schema.
+# Replace/extend with FADA state data or OEM dealer-locator scrapes (logged TODO).
+# outlets = PV sales outlets (showrooms), not service centres.
+state_code,year,outlets,source,quality
+ALL,2024,17000,FADA commentary (approx. PV outlets nationally),placeholder
