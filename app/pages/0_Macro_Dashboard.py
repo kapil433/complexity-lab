@@ -13,6 +13,7 @@ from common import get_connection, load_geojson, query, render_card
 from complexity_lab.viz import (
     add_event_markers,
     diverging_bar,
+    indian_axis,
     kpi_value,
     load_events,
     ratio_band_chart,
@@ -45,7 +46,10 @@ c5.metric("OEM concentration (HHI)", f"{row['hhi_oem']:,.0f}",
 monthly = query("SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date")
 fig = px.area(monthly, x="date",
               y=["petrol_regs", "diesel_regs", "cng_regs", "ev_regs", "hybrid_regs"],
-              title="Monthly registrations by fuel — the structural story")
+              title="Monthly registrations by fuel — the structural story",
+              labels={"value": "registrations", "variable": "fuel"})
+fig.for_each_trace(lambda t: t.update(name=t.name.replace("_regs", "").replace("hybrid", "strong hybrid").title()))
+indian_axis(fig, max_value=float(monthly["total_regs"].max()))
 if st.checkbox("Show policy events", value=True):
     fig = add_event_markers(fig, load_events(get_connection()), max_labels=12)
 st.plotly_chart(fig, use_container_width=True)

@@ -9,6 +9,8 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from common import get_connection, query, render_card
 
+from complexity_lab.viz import indian_axis
+
 st.set_page_config(page_title="Wholesale", layout="wide")
 st.title("Wholesale — dispatches, models, nowcast")
 render_card("wholesale-retail-nowcast")
@@ -29,7 +31,10 @@ tab_now, tab_models, tab_seg, tab_ev, tab_city = st.tabs(
 
 with tab_now:
     rw = query("SELECT * FROM retail_wholesale_month ORDER BY date")
-    st.plotly_chart(px.line(rw, x="date", y=["retail", "wholesale"]), use_container_width=True)
+    fig_rw = px.line(rw, x="date", y=["retail", "wholesale"],
+                     title="National retail vs wholesale (units/month)",
+                     labels={"value": "units", "variable": ""})
+    st.plotly_chart(indian_axis(fig_rw), use_container_width=True)
     st.plotly_chart(
         px.line(rw, x="date", y="ws_retail_ratio", title="Wholesale / retail (channel stock build >1)"),
         use_container_width=True,
@@ -53,11 +58,9 @@ with tab_models:
         f"""SELECT model, maker, SUM(wholesale) AS units FROM ws_model_month
             WHERE year = {yr} GROUP BY model, maker ORDER BY units DESC LIMIT {top_n}"""
     )
-    st.plotly_chart(
-        px.bar(models, x="units", y="model", color="maker", orientation="h",
-               height=200 + 22 * top_n),
-        use_container_width=True,
-    )
+    fig_m = px.bar(models, x="units", y="model", color="maker", orientation="h",
+                   height=200 + 22 * top_n, title=f"Top models by dispatches, {yr}")
+    st.plotly_chart(indian_axis(fig_m, axis="x"), use_container_width=True)
     pick = st.selectbox("Model trajectory", sorted(query(
         "SELECT DISTINCT model FROM ws_model_month WHERE year >= 2022")["model"]))
     traj = query(
@@ -87,11 +90,10 @@ with tab_ev:
         "SELECT date, maker, SUM(wholesale) AS units FROM ws_ev_month "
         "WHERE year >= 2022 GROUP BY date, maker ORDER BY date"
     )
-    st.plotly_chart(
-        px.area(ev, x="date", y="units", color="maker",
-                title="EV-only nameplate dispatches by OEM"),
-        use_container_width=True,
-    )
+    fig_ev = px.area(ev, x="date", y="units", color="maker",
+                     title="EV-only nameplate dispatches by OEM (units/month)")
+    st.plotly_chart(indian_axis(fig_ev, max_value=float(ev.groupby("date")["units"].sum().max())),
+                    use_container_width=True)
     fuel = query(
         "SELECT date, fuel, SUM(wholesale) AS units FROM ws_fuel_month "
         "WHERE year >= 2022 GROUP BY date, fuel ORDER BY date"

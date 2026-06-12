@@ -48,9 +48,11 @@ baseline = run_shock_sim(ShockConfig(n_months=n_months, target_cover=target_cove
 result = run_shock_sim(cfg)
 summary = shock_summary(result, baseline)
 
+from complexity_lab.viz import indian_axis, kpi_value  # noqa: E402
+
 k = st.columns(5)
-k[0].metric("Lost sales (units)", f"{summary['total_lost_sales']:,}")
-k[1].metric("Retail gap vs baseline", f"{summary['retail_vs_baseline_gap']:,}")
+k[0].metric("Lost sales (units)", kpi_value(summary["total_lost_sales"]))
+k[1].metric("Retail gap vs baseline", kpi_value(summary["retail_vs_baseline_gap"]))
 k[2].metric("Trough month", summary["trough_month"],
             f"{(summary['trough_retail_vs_baseline'] - 1):+.0%} vs baseline")
 k[3].metric("Recovery month", summary["recovery_month"] if summary["recovery_month"] else "—")
@@ -77,6 +79,7 @@ for w, color in [(cfg.demand_shocks, "rgba(31,119,180,0.12)"), (cfg.supply_shock
 
 fig.update_layout(height=750, margin={"t": 60}, hovermode="x unified",
                   legend={"orientation": "h", "y": 1.06})
+indian_axis(fig, max_value=float(result["demand"].max()))
 st.plotly_chart(fig, use_container_width=True)
 
 st.caption(

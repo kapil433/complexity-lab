@@ -34,10 +34,20 @@ import pandas as pd
 from complexity_lab.config import settings
 from complexity_lab.data.reference import read_reference_csv
 
-DEFAULT_SOURCE = Path(
-    r"D:\D-Dump\Books & Pdfs\AI\Chaos and Complexity theory books\Wholesale Data"
-    r"\2017 to Till Apr-26 MS Data.xlsb"
-)
+_FALLBACK_DIR = Path(r"D:\D-Dump\Books & Pdfs\AI\Chaos and Complexity theory books\Wholesale Data")
+
+
+def default_source() -> Path:
+    """Wholesale source file: LAB_WHOLESALE_DIR (settings) wins; else the known local dir.
+
+    Picks the newest .xlsb in the directory so monthly file replacements are
+    found without a config change.
+    """
+    d = Path(settings.wholesale_dir) if settings.wholesale_dir else _FALLBACK_DIR
+    if d.is_file():
+        return d
+    candidates = sorted(d.glob("*.xlsb"), key=lambda p: p.stat().st_mtime) if d.exists() else []
+    return candidates[-1] if candidates else d / "wholesale.xlsb"
 CACHE_PARQUET = "wholesale_clean.parquet"
 
 # Source maker label (upper-cased) -> (clean maker, channel)
@@ -233,7 +243,7 @@ def ingest_wholesale(
     if use_cache and cache.exists() and source is None:
         df = pd.read_parquet(cache)
     else:
-        src = source or DEFAULT_SOURCE
+        src = source or default_source()
         if not Path(src).exists():
             raise FileNotFoundError(
                 f"Wholesale source not found: {src} (pass --source or set LAB_WHOLESALE_DIR)"

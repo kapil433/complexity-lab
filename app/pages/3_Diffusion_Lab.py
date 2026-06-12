@@ -72,11 +72,16 @@ st.caption(f"Fitting on **{len(cum)} months**: {dates.iloc[0]:%b %Y} → {dates.
 
 fit = fit_bass(cum)
 m_at_bound = bool(np.isfinite(fit.get("m", np.nan)) and fit["m"] >= 0.95 * cum.iloc[-1] * 50)
+from complexity_lab.viz import indian_axis, kpi_value  # noqa: E402
+
 c1, c2, c3, c4 = st.columns(4)
-c1.metric("p (innovation)", f"{fit['p']:.4f}" if pd.notna(fit["p"]) else "—")
-c2.metric("q (imitation)", f"{fit['q']:.3f}" if pd.notna(fit["q"]) else "—")
-c3.metric("m (potential)", f"{fit['m']:,.0f}" if pd.notna(fit["m"]) else "—",
-          "at bound — distrust" if m_at_bound else None)
+c1.metric("p (innovation)", f"{fit['p']:.4f}" if pd.notna(fit["p"]) else "—",
+          help="Spontaneous adoption rate per month — media, launches, intrinsic interest")
+c2.metric("q (imitation)", f"{fit['q']:.3f}" if pd.notna(fit["q"]) else "—",
+          help="Social-contagion rate — healthy consumer durables run ~0.3–0.5")
+c3.metric("m (potential)", kpi_value(fit["m"]) if pd.notna(fit["m"]) else "—",
+          "at bound — distrust" if m_at_bound else None,
+          help="Eventual cumulative market the curve is heading toward")
 c4.metric("R²", f"{fit['r2']:.4f}" if pd.notna(fit["r2"]) else "—")
 if m_at_bound:
     st.warning(
@@ -107,6 +112,7 @@ if pd.notna(fit["p"]):
     fig.add_vline(x=dates.iloc[-1], line_dash="dash", line_color="#888", opacity=0.5)
     fig.update_layout(height=440, yaxis_title=f"Cumulative {fuel} registrations",
                       title=f"{state}: observed vs fit vs scenario (levers reshape the whole curve)")
+    indian_axis(fig)
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.warning("Could not fit Bass model for this series (too small / degenerate).")

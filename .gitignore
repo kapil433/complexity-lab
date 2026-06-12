@@ -15,10 +15,10 @@ outputs/
 # Proprietary wholesale data — never commit (raw or derived caches)
 data/raw/wholesale*
 
-# Quarto build
+# Quarto build (_freeze IS committed: it carries locally-executed results so CI
+# can publish wholesale-dependent experiments without the proprietary data)
 /.quarto/
 /_site/
-/_freeze/
 experiments/*_files/
 
 # Streamlit

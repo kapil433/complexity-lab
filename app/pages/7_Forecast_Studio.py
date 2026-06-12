@@ -78,7 +78,11 @@ fig.add_scatter(x=fc.index, y=fc["hi"], line={"width": 0}, showlegend=False)
 fig.add_scatter(x=fc.index, y=fc["lo"], fill="tonexty", name="95% interval",
                 line={"width": 0}, fillcolor="rgba(214,39,40,0.15)")
 fig.update_layout(title=f"{state} · {series_name} — {horizon}-month forecast ({best})",
-                  margin={"t": 50}, hovermode="x unified")
+                  margin={"t": 50}, hovermode="x unified",
+                  yaxis_title="registrations / month")
+from complexity_lab.viz import indian_axis  # noqa: E402
+
+indian_axis(fig)
 fig = events_toggle_and_overlay(fig)
 st.plotly_chart(fig, use_container_width=True)
 

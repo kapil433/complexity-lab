@@ -2,57 +2,78 @@
 
 A personal research lab for studying **India's passenger-vehicle market as a complex system**,
 built on VAHAN registration data (2012–2026, state × month × OEM × fuel) enriched with
-state-level covariates: per-capita income, urbanization, CNG/EV infrastructure, fuel prices,
-road tax, policy events, dealer footprint and financing penetration.
+state-level covariates — per-capita income, urbanization, CNG/EV infrastructure, state fuel
+prices, road tax, policy events, population — and a proprietary wholesale dispatch dataset
+(city × model × month, local only).
 
-The lab spans the full analytical ladder:
+**Live lab notebook**: [kapil433.github.io/complexity-lab](https://kapil433.github.io/complexity-lab/) —
+13 experiments with full methodological cards, light/dark theme.
 
-| Layer | Module | What it answers |
+| Layer | Where | What it answers |
 |---|---|---|
-| Descriptive | `complexity_lab.analysis.descriptive` | Market size, growth, fuel mix, seasonality, concentration (HHI) |
-| Distributions | `complexity_lab.analysis.distributions` | Power-law / lognormal fits, rank–size, Gini |
-| Econometrics | `complexity_lab.analysis.econometrics` | Panel correlations & regressions, Granger causality, changepoints |
-| Networks | `complexity_lab.networks` | Bipartite OEM–state graphs, centrality, communities, temporal evolution |
-| Complexity | `complexity_lab.complexity` | Diversity/entropy indices, early-warning signals, regime shifts |
-| Simulation | `complexity_lab.simulation` | Bass diffusion fits & scenarios, agent-based adoption models |
+| Descriptive | `analysis/descriptive`, Macro Dashboard | Size, growth, shares, concentration, seasonality |
+| Distributions | `analysis/distributions` | Power laws, rank–size, Gini |
+| Econometrics | `analysis/econometrics` | Panel FE regression, Granger, changepoints, DiD with placebos |
+| Forecasting | `analysis/forecast`, `analysis/nowcast` | Backtested SARIMA/Holt-Winters/naive; wholesale→retail nowcast |
+| Networks | `networks/` | Bipartite OEM–state graphs, contagion, network inference + nulls |
+| Complexity | `complexity/` | HMM fuel regimes, early-warning signals, tipping points, survival |
+| Simulation | `simulation/` | Bass diffusion & counterfactuals, ABM, demand/supply shock model |
 
 ## Quickstart
 
 ```powershell
-uv sync --all-extras          # create env & install
-uv run lab ingest             # build data/lab.duckdb from raw + reference data
-uv run lab panel              # build the state×month / state×year analysis panels
-uv run lab list               # list registered experiments
+uv sync --all-extras           # environment
+uv run lab ingest              # raw bundle + reference CSVs -> data/lab.duckdb
+uv run lab panel               # state x month / state x year analysis panels
+uv run lab wholesale           # local-only proprietary dispatches (optional)
+uv run lab list                # registered experiments
 uv run lab run descriptive-baseline
-uv run lab app                # launch the interactive Streamlit lab
+uv run lab app                 # interactive lab -> http://localhost:8501
 ```
 
-Experiments live in `experiments/` as Quarto documents and are rendered to a website
-(GitHub Pages) on every push — the published lab notebook.
+## The interactive lab (9 pages)
 
-## Layout
+Macro Dashboard · Explorer · Networks · Diffusion Lab (user-controlled fit windows +
+sensitivity scans) · Hypothesis Tester (period slider, wholesale covariates) ·
+Wholesale (nowcast, models, segments, EV proxy) · Phase Transitions (percolation,
+tipping, Markov + HMM regimes) · Forecast Studio (champion-by-backtest) · Shock Lab
+(stock-and-flow channel simulation). Light/dark via app menu → Settings.
 
-```
-data/raw/         VAHAN master bundle (committed, compressed) + India states GeoJSON
-data/reference/   Enrichment CSVs with provenance (income, infra, fuel prices, tax, events…)
-data/lab.duckdb   Built analytical database (gitignored — rebuild with `lab ingest`)
-src/complexity_lab/   The package: data, analysis, networks, complexity, simulation, experiments
-app/              Streamlit lab (Explorer, Networks, Diffusion Lab, Hypothesis Tester)
-experiments/      Quarto experiment notebook — one .qmd per numbered experiment
-docs/             Research questions, data dictionary, reading list, lab guide
-outputs/          Run artifacts (gitignored)
-```
+Every page opens with an explainer card (question, method, plain-English concepts,
+math with toy examples, interpretation guide, limits) — same content as the site's
+[experiment guide](https://kapil433.github.io/complexity-lab/experiments/guide.html).
 
-## Adding an experiment
+## Experiments (the published notebook)
 
-See [docs/lab-guide.md](docs/lab-guide.md). Short version: copy `experiments/_template.qmd`,
-number it, state the hypothesis, run analysis against the panel tables, commit — CI renders it
-into the site.
+001 descriptive baseline · 002 EV diffusion (Bass) · 003 OEM–state network ·
+004 wholesale↔retail nowcast · 005 phase transitions · 006 EV tipping points ·
+007 EV contagion (Moran's I + threshold cascades) · 008 HMM fuel regimes ·
+009 adoption-network horse race (+ out-of-sample + rewiring null) ·
+010 SHEV structural isolation (lead paper) · 011 regime-switch survival ·
+012 hatchback→SUV transition (τ\* ≈ 30%) · 013 SHEV tax-parity counterfactual.
 
-## Data attribution
+Add your own: copy `experiments/_template.qmd`, number it, commit — CI renders it
+into the site. Conventions in [docs/lab-guide.md](docs/lab-guide.md).
+
+## Engineering
+
+- **Validation in CI**: `scripts/validate_numbers.py` runs on every push — internal
+  identities (shares sum to 1, panel == raw totals) plus external anchors (FADA-scale
+  totals, public EV share, Maruti share, wholesale↔retail agreement).
+- **Reproducibility**: DuckDB is a build artifact; everything rebuilds from the
+  committed bundle + reference CSVs. `_freeze/` carries locally-executed notebook
+  results so CI can publish wholesale-dependent experiments without the data.
+- **Data refresh**: monthly ritual in [docs/refresh-runbook.md](docs/refresh-runbook.md).
+- 70+ tests; ruff; experiment registry with timestamped, manifest-ed artifacts.
+
+## Data, licensing, caveats
 
 - Registration data: **Vahan Intelligence** ([vahanintelligence.in](https://www.vahanintelligence.in)),
-  based on VAHAN/Parivahan public data (MoRTH, Government of India). Free for research with attribution.
-- Reference datasets carry per-file provenance headers (`source`, `as_of`, `quality`) —
-  see [docs/data-dictionary.md](docs/data-dictionary.md). Several series are flagged
-  `estimate`/`partial`; treat them accordingly in inference.
+  based on VAHAN/Parivahan public data (MoRTH, GoI) — research use with attribution.
+- Reference CSVs carry per-file provenance (`source`, `quality` columns); read
+  [docs/data-dictionary.md](docs/data-dictionary.md) **before inferring** — it documents
+  the seven caveats that bite (Telangana, partial years, the wholesale coverage break,
+  the 2024 hybrid classification break, …).
+- The wholesale dataset is proprietary: raw and derived files are gitignored; only
+  aggregate chart outputs appear in published experiments.
+- Code: MIT ([LICENSE](LICENSE)).
