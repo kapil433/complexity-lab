@@ -158,9 +158,18 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     city_map = read_reference_csv(settings.reference_dir / "city_state.csv")
     df = df.merge(city_map.rename(columns={"city": "city"}), on="city", how="left")
 
+    # Fuel proxy: wholesale has no fuel column — join the nameplate->fuel map.
+    # ev_only=1 rows are exact; primary_fuel is an approximate allocation.
+    fuel_map = read_reference_csv(settings.reference_dir / "model_fuel_map.csv")
+    df = df.merge(
+        fuel_map[["model", "fuel_variants", "primary_fuel", "ev_only"]], on="model", how="left"
+    )
+    df["ev_only"] = df["ev_only"].fillna(0).astype("int64")
+
     cols = [
         "fy", "year", "month", "date", "zone", "ro", "city", "state_code",
         "maker", "maker_vahan", "channel", "model", "segment3", "segment5",
+        "fuel_variants", "primary_fuel", "ev_only",
         "coverage", "qty",
     ]
     return df[cols]
@@ -182,6 +191,20 @@ FROM wholesale WHERE state_code IS NOT NULL GROUP BY state_code, year, month;
 CREATE OR REPLACE VIEW ws_segment_month AS
 SELECT segment5, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale GROUP BY segment5, year, month;
+
+-- EV dispatches (exact: EV-only nameplates). Multi-fuel nameplates with an EV
+-- variant (Nexon, Punch...) are NOT here — this view undercounts total EV
+-- wholesale but never misattributes ICE volume as EV.
+CREATE OR REPLACE VIEW ws_ev_month AS
+SELECT state_code, maker, model, year, month, MIN(date) AS date, SUM(qty) AS wholesale
+FROM wholesale WHERE ev_only = 1
+GROUP BY state_code, maker, model, year, month;
+
+-- Approximate fuel mix of dispatches via each nameplate's primary fuel.
+CREATE OR REPLACE VIEW ws_fuel_month AS
+SELECT primary_fuel AS fuel, year, month, MIN(date) AS date, SUM(qty) AS wholesale
+FROM wholesale WHERE primary_fuel IS NOT NULL
+GROUP BY primary_fuel, year, month;
 
 -- National retail (registrations) vs wholesale, by month — nowcasting workhorse.
 -- Restricted to the full-coverage era (2022-04 onward); the earlier 50-city

@@ -1,0 +1,76 @@
+# Undirected land-border adjacency between Indian states/UTs (each pair listed once,
+# alphabetical by code). Island territories (AN, LD) have no land borders.
+# Conventions: DL is enclosed by HR and UP. CH borders PB and HR. DN listed with GJ
+# and MH (Dadra & Nagar Haveli + Daman & Diu). PY's main enclave borders TN (Karaikal
+# also TN, Mahe KL, Yanam AP — KL and AP edges included). JK borders LA, HP, PB.
+# Post-2014 AP/TS treated as separate (Vahan AP series is continuous through the split;
+# see data-dictionary caveat 1).
+state_a,state_b
+AP,CG
+AP,KA
+AP,OD
+AP,PY
+AP,TN
+AP,TS
+AR,AS
+AR,NL
+AS,ML
+AS,MN
+AS,MZ
+AS,NL
+AS,TR
+AS,WB
+BR,JH
+BR,UP
+BR,WB
+CG,JH
+CG,MH
+CG,MP
+CG,OD
+CG,TS
+CG,UP
+CH,HR
+CH,PB
+DL,HR
+DL,UP
+DN,GJ
+DN,MH
+GA,KA
+GA,MH
+GJ,MH
+GJ,MP
+GJ,RJ
+HP,HR
+HP,JK
+HP,LA
+HP,PB
+HP,UK
+HP,UP
+HR,PB
+HR,RJ
+HR,UP
+HR,UK
+JH,OD
+JH,UP
+JH,WB
+JK,LA
+JK,PB
+KA,KL
+KA,MH
+KA,TN
+KA,TS
+KL,PY
+KL,TN
+MH,MP
+MH,TS
+MN,MZ
+MN,NL
+MP,RJ
+MP,UP
+MZ,TR
+OD,WB
+PB,RJ
+PY,TN
+RJ,UP
+SK,WB
+UK,UP

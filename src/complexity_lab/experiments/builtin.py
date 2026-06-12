@@ -214,6 +214,51 @@ def wholesale_retail_nowcast(con: duckdb.DuckDBPyConnection, out_dir: Path, **pa
 
 
 @experiment(
+    "ev-contagion",
+    description="EV adoption as contagion on the state-adjacency network: Moran's I, observed cascade, threshold-fit and seed influence.",
+)
+def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.networks.contagion import (
+        fit_tau,
+        load_adjacency,
+        morans_i,
+        observed_adoption_years,
+        seed_influence,
+    )
+
+    threshold = params.get("threshold", 0.02)
+    g = load_adjacency(con)
+    panel = con.execute(
+        "SELECT state_code, year, ev_share FROM panel_state_year WHERE state_code <> 'ALL'"
+    ).df()
+    latest_full = int(panel["year"].max()) - 1
+
+    latest = panel[panel["year"] == latest_full].set_index("state_code")["ev_share"]
+    moran = morans_i(latest, g)
+
+    observed = observed_adoption_years(panel, threshold=threshold)
+    observed.to_frame().to_parquet(out_dir / "observed_adoption_years.parquet")
+
+    fits = fit_tau(g, observed)
+    fits.to_parquet(out_dir / "tau_sweep.parquet")
+    best_tau = float(fits["spearman_rho"].idxmax())
+
+    influence = seed_influence(g, best_tau)
+    influence.to_parquet(out_dir / "seed_influence.parquet")
+
+    return {
+        "threshold": threshold,
+        "latest_full_year": latest_full,
+        "morans_i": round(moran["I"], 3),
+        "morans_p": round(moran["p_value"], 4),
+        "n_states_crossed": int(observed.notna().sum()),
+        "best_tau": best_tau,
+        "best_tau_rho": round(float(fits["spearman_rho"].max()), 3),
+        "top_seed": influence.index[0],
+    }
+
+
+@experiment(
     "oem-state-network",
     description="Bipartite OEM–state network: centrality, communities and temporal evolution across BS6/COVID/EV eras.",
 )

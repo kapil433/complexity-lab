@@ -1,0 +1,127 @@
+# Model -> fuel-variant mapping for wholesale data (which has no fuel column).
+# fuel_variants = all drivetrains the nameplate sold during 2017-2026 (pipe-separated);
+# primary_fuel = the variant believed to dominate its volumes (approximate!);
+# ev_only = 1 means every unit is an EV (the only allocation that is exact).
+# Compiled from OEM lineups/press releases; quality: approximate. Models absent
+# here (~0.2% of volume) get NULL fuel. 'Hybrid' = strong hybrid only.
+model,fuel_variants,primary_fuel,ev_only,quality
+WAGON-R,Petrol|CNG,Petrol,0,approximate
+SWIFT,Petrol|Diesel|CNG,Petrol,0,approximate
+DZIRE,Petrol|Diesel|CNG,Petrol,0,approximate
+NEXON,Petrol|Diesel|EV,Petrol,0,approximate
+CRETA,Petrol|Diesel|EV,Petrol,0,approximate
+ERTIGA,Petrol|Diesel|CNG,Petrol,0,approximate
+PUNCH,Petrol|CNG|EV,Petrol,0,approximate
+VITARA BREZZA,Petrol|Diesel|CNG,Petrol,0,approximate
+NEW BALENO,Petrol|CNG,Petrol,0,approximate
+BALENO,Petrol|Diesel|CNG,Petrol,0,approximate
+SCORPIO,Diesel|Petrol,Diesel,0,approximate
+EECO,Petrol|CNG,Petrol,0,approximate
+VENUE,Petrol|Diesel,Petrol,0,approximate
+FRONX,Petrol|CNG,Petrol,0,approximate
+BOLERO,Diesel,Diesel,0,approximate
+SONET,Petrol|Diesel,Petrol,0,approximate
+SELTOS,Petrol|Diesel,Petrol,0,approximate
+GRAND VITARA,Petrol|Hybrid|CNG,Petrol,0,approximate
+ALTO K10,Petrol|CNG,Petrol,0,approximate
+TIAGO,Petrol|CNG|EV,Petrol,0,approximate
+I 10 GRAND,Petrol|Diesel|CNG,Petrol,0,approximate
+XUV700,Diesel|Petrol,Diesel,0,approximate
+CARENS,Petrol|Diesel,Petrol,0,approximate
+I 20,Petrol|Diesel,Petrol,0,approximate
+HYRYDER,Petrol|Hybrid|CNG,Petrol,0,approximate
+AURA,Petrol|CNG,Petrol,0,approximate
+EXTER,Petrol|CNG,Petrol,0,approximate
+ALTROZ,Petrol|Diesel|CNG,Petrol,0,approximate
+JEEP,Petrol|Diesel,Diesel,0,approximate
+INNOVA,Diesel|Petrol,Diesel,0,approximate
+GLANZA,Petrol|CNG,Petrol,0,approximate
+XUV 3XO,Petrol|Diesel,Petrol,0,approximate
+CELERIO,Petrol|CNG,Petrol,0,approximate
+HYCROSS,Petrol|Hybrid,Hybrid,0,approximate
+AMAZE,Petrol|Diesel,Petrol,0,approximate
+XL6,Petrol|CNG,Petrol,0,approximate
+IGNIS,Petrol,Petrol,0,approximate
+XUV300,Petrol|Diesel,Petrol,0,approximate
+ALTO 800,Petrol|CNG,Petrol,0,approximate
+S-PRESSO,Petrol|CNG,Petrol,0,approximate
+FORTUNER,Diesel|Petrol,Diesel,0,approximate
+THAR ROXX,Diesel|Petrol,Diesel,0,approximate
+MAGNITE,Petrol,Petrol,0,approximate
+HARRIER,Diesel|EV,Diesel,0,approximate
+TIGOR,Petrol|CNG|EV,Petrol,0,approximate
+TRIBER,Petrol,Petrol,0,approximate
+VICTORIS,Petrol|Hybrid|CNG,Petrol,0,approximate
+HECTOR,Petrol|Diesel,Petrol,0,approximate
+SAFARI,Diesel,Diesel,0,approximate
+VERNA,Petrol|Diesel,Petrol,0,approximate
+VIRTUS,Petrol,Petrol,0,approximate
+CITY,Petrol|Diesel|Hybrid,Petrol,0,approximate
+KUSHAQ,Petrol,Petrol,0,approximate
+ALCAZAR,Petrol|Diesel,Petrol,0,approximate
+TAIGUN,Petrol,Petrol,0,approximate
+ELEVATE,Petrol,Petrol,0,approximate
+SLAVIA,Petrol,Petrol,0,approximate
+TAISOR,Petrol|CNG,Petrol,0,approximate
+WINDSOR,EV,EV,1,approximate
+KIGER,Petrol,Petrol,0,approximate
+KYLAQ,Petrol,Petrol,0,approximate
+KWID,Petrol,Petrol,0,approximate
+CURVV,Petrol|Diesel|EV,Petrol,0,approximate
+ACE MAGIC,Diesel|CNG,Diesel,0,approximate
+RUMION,Petrol|CNG,Petrol,0,approximate
+CIAZ,Petrol|Diesel,Petrol,0,approximate
+ASTOR,Petrol,Petrol,0,approximate
+XUV 7XO,Diesel|Petrol,Diesel,0,approximate
+XEV 9E,EV,EV,1,approximate
+JIMNY,Petrol,Petrol,0,approximate
+COMET,EV,EV,1,approximate
+SIERRA,Petrol|Diesel,Petrol,0,approximate
+BREZZA,Petrol|CNG,Petrol,0,approximate
+SYROS,Petrol|Diesel,Petrol,0,approximate
+C3,Petrol|EV,Petrol,0,approximate
+URBAN CRUISER,Petrol|EV,Petrol,0,approximate
+ZS EV,EV,EV,1,approximate
+BE 6,EV,EV,1,approximate
+COMPASS,Petrol|Diesel,Diesel,0,approximate
+ELITE I 20,Petrol|Diesel,Petrol,0,approximate
+S-CROSS,Petrol|Diesel,Petrol,0,approximate
+SANTRO,Petrol|CNG,Petrol,0,approximate
+WRV,Petrol|Diesel,Petrol,0,approximate
+INVICTO,Hybrid,Hybrid,0,approximate
+ECOSPORT,Petrol|Diesel,Petrol,0,approximate
+XEV 9S,EV,EV,1,approximate
+OMNI,Petrol|CNG,Petrol,0,approximate
+ALTO,Petrol|CNG,Petrol,0,approximate
+XCENT,Petrol|Diesel|CNG,Petrol,0,approximate
+MERIDIAN,Diesel,Diesel,0,approximate
+HILUX,Diesel,Diesel,0,approximate
+TRAX,Diesel,Diesel,0,approximate
+TUCSON,Petrol|Diesel,Petrol,0,approximate
+XUV400,EV,EV,1,approximate
+CAMRY,Hybrid,Hybrid,0,approximate
+KODIAQ,Petrol|Diesel,Petrol,0,approximate
+CARNIVAL,Diesel,Diesel,0,approximate
+BOLERO PLUS,Diesel,Diesel,0,approximate
+JAZZ,Petrol|Diesel,Petrol,0,approximate
+GLOSTER,Diesel,Diesel,0,approximate
+MARAZZO,Diesel,Diesel,0,approximate
+POLO,Petrol|Diesel,Petrol,0,approximate
+SUPRO,Diesel|CNG,Diesel,0,approximate
+DUSTER,Petrol|Diesel,Petrol,0,approximate
+E VITARA,EV,EV,1,approximate
+TIGUAN,Petrol,Petrol,0,approximate
+TUV300,Diesel,Diesel,0,approximate
+ASPIRE,Petrol|Diesel,Petrol,0,approximate
+VELLFIRE,Hybrid,Hybrid,0,approximate
+EON,Petrol,Petrol,0,approximate
+XUV500,Diesel,Diesel,0,approximate
+GRAVITE,Petrol,Petrol,0,approximate
+RAPID,Petrol|Diesel,Petrol,0,approximate
+ZEST,Petrol|Diesel,Petrol,0,approximate
+FREESTYLE,Petrol|Diesel,Petrol,0,approximate
+BASALT,Petrol,Petrol,0,approximate
+C3 AC,Petrol,Petrol,0,approximate
+ENDEAVOUR,Diesel,Diesel,0,approximate
+AMEO,Petrol|Diesel,Petrol,0,approximate
+SUPERB,Petrol,Petrol,0,approximate

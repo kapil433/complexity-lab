@@ -1,0 +1,108 @@
+---
+title: "007 — EV adoption as contagion on the state network"
+date: 2026-06-12
+---
+
+## Question
+
+Does EV adoption spread between **neighbouring states** like a contagion?
+If seeing EVs next door normalises them (demonstration effects, dealer spillover,
+charging corridors), adoption should be spatially clustered and the order in
+which states crossed the adoption threshold should be reproducible by a simple
+neighbourhood-pressure rule. (Background: see the *EV Contagion* card in the
+[experiment guide](guide.qmd).)
+
+## Setup
+
+```{python}
+import duckdb
+import numpy as np
+import pandas as pd
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.networks.contagion import (
+    fit_tau, load_adjacency, morans_i, observed_adoption_years, seed_influence,
+)
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+g = load_adjacency(con)
+panel = con.execute(
+    "SELECT state_code, year, ev_share FROM panel_state_year WHERE state_code <> 'ALL'"
+).df()
+latest_full = int(panel["year"].max()) - 1
+THRESHOLD = 0.02  # 2% EV share = 'adopted'
+print(f"adjacency: {g.number_of_nodes()} states, {g.number_of_edges()} borders; "
+      f"latest full year {latest_full}")
+```
+
+## 1 — Is EV adoption spatially clustered? (Moran's I)
+
+```{python}
+latest = panel[panel["year"] == latest_full].set_index("state_code")["ev_share"]
+moran = morans_i(latest, g)
+print(f"Moran's I = {moran['I']:.3f} (expected under randomness "
+      f"{moran['expected_I']:.3f}), permutation p = {moran['p_value']:.4f}")
+```
+
+```{python}
+dim = con.execute("SELECT state_code, geojson_name FROM dim_state").df()
+m = latest.reset_index().merge(dim, on="state_code")
+import json
+geo = json.loads(settings.geojson_path.read_text(encoding="utf-8"))
+px.choropleth(m, geojson=geo, locations="geojson_name",
+              featureidkey="properties.ST_NM", color="ev_share",
+              color_continuous_scale="Viridis", fitbounds="locations",
+              title=f"EV share by state, {latest_full}").update_geos(visible=False)
+```
+
+## 2 — The observed cascade
+
+```{python}
+observed = observed_adoption_years(panel, threshold=THRESHOLD)
+mo = observed.reset_index().merge(dim, on="state_code")
+px.choropleth(mo, geojson=geo, locations="geojson_name",
+              featureidkey="properties.ST_NM", color="adoption_year",
+              color_continuous_scale="Plasma_r", fitbounds="locations",
+              title=f"Year each state crossed {THRESHOLD:.0%} EV share").update_geos(visible=False)
+```
+
+## 3 — Can neighbourhood pressure reproduce the order? (τ-sweep)
+
+```{python}
+fits = fit_tau(g, observed)
+best_tau = float(fits["spearman_rho"].idxmax())
+fig = px.line(fits.reset_index(), x="tau", y="spearman_rho", markers=True,
+              title="Match between simulated and observed adoption order vs τ")
+fig.add_vline(x=best_tau, line_dash="dot",
+              annotation_text=f"best τ = {best_tau:.2f}, ρ = {fits['spearman_rho'].max():.2f}")
+fig
+```
+
+## 4 — Where would you seed a cascade?
+
+```{python}
+infl = seed_influence(g, best_tau).head(12).reset_index()
+px.bar(infl, x="cascade_size", y="seed", orientation="h",
+       hover_data=["mean_step"], title=f"Single-seed cascade size at τ = {best_tau:.2f}")
+```
+
+## Finding
+
+```{python}
+fastest = observed.dropna().sort_values().head(5)
+print("First movers:", ", ".join(f"{s} ({int(y)})" for s, y in fastest.items()))
+print(f"Moran's I {moran['I']:.2f} (p={moran['p_value']:.3f}); "
+      f"best tau {best_tau:.2f} with rho {fits['spearman_rho'].max():.2f}")
+```
+
+A significantly positive Moran's I says EV adoption is geographically clustered,
+and a low best-fit τ with high rank correlation says a simple neighbour-pressure
+rule reproduces much of the adoption order — both consistent with (not proof of)
+spatial contagion. States the model flips **early** but that haven't crossed the
+threshold in reality are the watch-list; states reality flipped earlier than the
+model are policy-driven jumps (Delhi's EV policy being the canonical case).
+The honest caveats: n≈33, common shocks (fuel prices, national subsidies) also
+cluster spatially, and adjacency ignores non-spatial channels (media, OEM launch
+waves). The publishable extension is the maximum-entropy network inference
+(blueprint Project A) — infer the latent influence network and test whether it
+beats geography at out-of-sample adoption forecasting.

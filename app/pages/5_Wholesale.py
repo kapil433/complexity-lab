@@ -23,8 +23,8 @@ st.caption(
     "2022-04; earlier rows are a ~50-city sample — views below use the full era."
 )
 
-tab_now, tab_models, tab_seg, tab_city = st.tabs(
-    ["Nowcast", "Models", "Segments", "Cities"]
+tab_now, tab_models, tab_seg, tab_ev, tab_city = st.tabs(
+    ["Nowcast", "Models", "Segments", "EV & fuel proxy", "Cities"]
 )
 
 with tab_now:
@@ -74,6 +74,41 @@ with tab_seg:
     st.plotly_chart(
         px.area(seg, x="date", y="units", color="segment5", groupnorm="percent",
                 title="Segment share of wholesale"),
+        use_container_width=True,
+    )
+
+with tab_ev:
+    st.caption(
+        "EV view counts only EV-only nameplates (exact, but undercounts — EV variants of "
+        "Nexon/Punch/Tiago hide inside multi-fuel nameplates). Fuel mix uses each nameplate's "
+        "primary fuel: approximate by construction."
+    )
+    ev = query(
+        "SELECT date, maker, SUM(wholesale) AS units FROM ws_ev_month "
+        "WHERE year >= 2022 GROUP BY date, maker ORDER BY date"
+    )
+    st.plotly_chart(
+        px.area(ev, x="date", y="units", color="maker",
+                title="EV-only nameplate dispatches by OEM"),
+        use_container_width=True,
+    )
+    fuel = query(
+        "SELECT date, fuel, SUM(wholesale) AS units FROM ws_fuel_month "
+        "WHERE year >= 2022 GROUP BY date, fuel ORDER BY date"
+    )
+    st.plotly_chart(
+        px.area(fuel, x="date", y="units", color="fuel", groupnorm="percent",
+                title="Approximate fuel mix of dispatches (primary-fuel allocation)"),
+        use_container_width=True,
+    )
+    ev_states = query(
+        "SELECT state_code, SUM(wholesale) AS units FROM ws_ev_month "
+        "WHERE state_code IS NOT NULL AND year >= 2024 GROUP BY state_code "
+        "ORDER BY units DESC LIMIT 15"
+    )
+    st.plotly_chart(
+        px.bar(ev_states, x="units", y="state_code", orientation="h",
+               title="EV-only dispatches by state, 2024+"),
         use_container_width=True,
     )
 

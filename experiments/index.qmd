@@ -14,6 +14,7 @@ then render). Numbering is chronological.
 | 004 | [Wholesale vs retail nowcast](004-wholesale-retail-nowcast.qmd) | Can dispatches nowcast registrations? What's the channel-inventory structure? *(needs local wholesale data)* |
 | 005 | [Phase transitions](005-phase-transitions.qmd) | Does the market change gradually or snap? Percolation of the OEM–state network + fuel-regime Markov dynamics. |
 | 006 | [EV tipping points](006-ev-threshold.qmd) | Is there a share level where EV adoption self-accelerates — or does growth bend down (saturation)? |
+| 007 | [EV contagion on the state network](007-ev-contagion.qmd) | Does EV adoption spread between neighbouring states? Moran's I + threshold-cascade fit. |
 
 Background, concepts and math for every experiment: **[Experiment Guide](guide.qmd)**.
 

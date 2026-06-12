@@ -400,6 +400,106 @@ _add(Card(
 ))
 
 
+_add(Card(
+    id="shock-lab",
+    name="Shock Lab — Demand & Supply Shocks in the Channel",
+    category="Simulation — System Dynamics",
+    tier="Tier 3 — Simulation",
+    data_used=["Synthetic channel calibrated to Indian PV magnitudes",
+               "Optionally compared against retail_wholesale_month signatures"],
+    question="When demand collapses (COVID) or supply is cut (chip shortage), how do retail, "
+             "dealer inventory and dispatches respond — and where do sales actually get lost?",
+    method="Monthly stock-and-flow simulation: latent demand → retail capped by availability; "
+           "production targets a stock cover with an adjustment lag; inventory buffers the two. "
+           "Shocks are multiplicative windows on demand or production.",
+    how_it_works=[
+        "Latent demand follows trend × seasonality × shock multiplier.",
+        "Retail equals demand unless dealer stock + this month's production can't cover it.",
+        "OEMs forecast demand from a trailing mean and produce forecast + inventory correction.",
+        "The correction is spread over an adjustment lag — the source of overshoot.",
+        "Inventory absorbs every mismatch; lost sales occur only when it hits zero.",
+    ],
+    plain_english={
+        "Stock cover": "Dealer inventory expressed in months of current demand (1.1 = ~5 weeks).",
+        "Bullwhip": "Production swings harder than retail because OEMs chase inventory targets — "
+                    "the supply chain amplifies demand noise.",
+        "Lost sales": "Buyers who walked in but no car was available — demand that never converts.",
+        "Pull-forward": "A pre-announced change (BS6, tax) shifts purchases earlier, then payback.",
+    },
+    math="**I_t = I_{t-1} + P_t − R_t** (inventory identity).\n\n"
+         "**P_t = clip(D̂ + (cover·D̂ − I_{t-1})/lag, 0, capacity)** — produce the forecast plus a "
+         "fraction of the inventory gap.\n\nToy: demand 100/mo, target cover 1.1, lag 3. If stock "
+         "falls to 80, production = 100 + (110−80)/3 = 110 — a 10% overshoot that decays as stock refills.",
+    look_for=[
+        "Pure demand collapse: inventory & ws/retail spike, zero lost sales — channel stress, not scarcity.",
+        "Pure supply cut: retail holds for ~stock-cover months, then lost sales begin — the buffer's value.",
+        "After any shock: production overshoots baseline during restock (bullwhip > 1).",
+        "Longer adjustment lag = slower but smoother response; shorter = nervier channel.",
+    ],
+    limitations=[
+        "One aggregated OEM and one inventory pool — no competition or substitution between brands.",
+        "No price response: real markets discount their way out of inventory gluts.",
+        "Parameters are illustrative; calibrate cover/lag against the Wholesale page before quoting numbers.",
+    ],
+    decisions=[
+        "OEM S&OP: size the stock-cover target against shock scenarios, not average months.",
+        "Dealer: read ws/retail > 1.2 as push-inventory risk; negotiate billing accordingly.",
+        "Analyst: distinguish demand-side from supply-side months in the real wedge series.",
+    ],
+    related=["wholesale-retail-nowcast", "phase-transitions"],
+))
+
+
+_add(Card(
+    id="ev-contagion",
+    name="EV Adoption as Contagion on the State Network",
+    category="Network Science — Diffusion",
+    tier="Tier 3 — Diffusion & Contagion",
+    data_used=["Vahan EV shares (state × year)", "State adjacency (shared land borders)",
+               "State similarity (income/urbanization)"],
+    question="Does EV adoption spread between neighbouring states like a contagion — and which "
+             "states are the critical seeds or holdouts of the national cascade?",
+    method="Threshold-contagion simulation on the state adjacency graph, seeded by actual early "
+           "adopters; compared against the observed adoption order (year each state crossed an "
+           "EV-share threshold). Moran's I tests spatial autocorrelation of adoption.",
+    how_it_works=[
+        "Build the state graph: nodes = states, edges = shared borders.",
+        "Mark when each state actually crossed the EV-share threshold (the observed cascade).",
+        "Moran's I: do high-EV states cluster geographically more than chance?",
+        "Simulate threshold contagion: a state adopts when ≥ τ of its neighbours have adopted; "
+        "sweep τ to find where the simulated cascade matches the observed order.",
+        "Rank states by cascade influence: how much earlier does the system tip if seeded there?",
+    ],
+    plain_english={
+        "Contagion": "Adoption spreading through exposure — seeing EVs next door normalises them.",
+        "Threshold τ": "How much neighbourhood pressure a state needs before it flips.",
+        "Moran's I": "A score for geographic clustering: positive = neighbours resemble each other.",
+        "Seed state": "Where the cascade starts; good seeds are connected AND influential.",
+    },
+    math="**Moran's I** = (n/W) · Σᵢⱼ wᵢⱼ(xᵢ−x̄)(xⱼ−x̄) / Σᵢ(xᵢ−x̄)². Ranges ≈ −1…+1; "
+         "0 = random geography. Toy: if all high-EV states border each other, numerator terms are "
+         "positive products → I > 0.\n\n**Threshold rule**: state i adopts at t+1 if "
+         "(adopted neighbours / total neighbours) ≥ τ.",
+    look_for=[
+        "Moran's I significantly > 0 = adoption is spatially clustered (contagion-consistent).",
+        "Low best-fit τ (~0.2) = adoption spreads easily; high τ = states move independently.",
+        "States the simulation flips late but reality flipped early = policy-driven jumps (Delhi).",
+        "States simulation flips early but reality hasn't = the next adopters to watch.",
+    ],
+    limitations=[
+        "Spatial correlation ≠ causal contagion — common income/policy shocks also cluster.",
+        "Adjacency is one channel; media and national OEM launches are non-spatial.",
+        "Small n (≈33 states) — treat p-values as indicative, not decisive.",
+    ],
+    decisions=[
+        "Policy: seed charging-infra subsidies in high-influence states for cascade leverage.",
+        "OEM: stage EV dealer rollouts along the predicted adoption frontier.",
+        "Researcher: the τ-sweep + Moran's I combo is the publishable core (NetSci/Physica A).",
+    ],
+    related=["ev-diffusion-states", "ev-threshold", "phase-transitions"],
+))
+
+
 def get_card(card_id: str) -> Card:
     return CARDS[card_id]
 

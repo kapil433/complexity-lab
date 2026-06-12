@@ -14,6 +14,8 @@
 | `oem_state_edges` | state × maker × year | Network edge list (view). |
 | `wholesale` | city × model × month | **Local only** (proprietary; never committed). FY2017-18→present. Built by `lab wholesale`. |
 | `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~6% of volume). |
+| `ws_ev_month` | view | EV dispatches from **EV-only nameplates** (exact but undercounts: multi-fuel nameplates' EV variants excluded). |
+| `ws_fuel_month` | view | Approximate fuel mix of dispatches via each nameplate's `primary_fuel` (see `model_fuel_map.csv`). |
 | `retail_wholesale_month` | month | National retail vs wholesale join, full-coverage era only — the nowcasting workhorse. |
 
 ## Known caveats (read before inferring)
@@ -52,6 +54,8 @@
 | `policy_events.csv` | 27 events 2013–2025 | official | MoHI/MoRTH/GST Council/state EV policies |
 | `dealer_counts.csv` | national only | placeholder | FADA commentary |
 | `financing.csv` | national, sparse | estimate | CRISIL/JATO/industry |
+| `state_adjacency.csv` | 68 land borders | — | Hand-compiled pair list (islands have none; DL enclosed by HR/UP) |
+| `model_fuel_map.csv` | 120 nameplates ≈99.8% of wholesale volume | approximate | OEM lineups; `ev_only` flag is the exact subset |
 
 ## Logged data TODOs
 
