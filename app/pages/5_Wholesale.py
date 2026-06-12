@@ -26,7 +26,7 @@ st.caption(
 )
 
 tab_now, tab_models, tab_seg, tab_ev, tab_city = st.tabs(
-    ["Nowcast", "Models", "Segments", "EV & fuel proxy", "Cities"]
+    ["Nowcast", "Models", "Segments", "Model metadata (no fuel cut)", "Cities"]
 )
 
 with tab_now:
@@ -81,10 +81,15 @@ with tab_seg:
     )
 
 with tab_ev:
+    st.warning(
+        "Wholesale has no fuel cut: the source has no fuel/powertrain field and "
+        "does not split a model's quantity by Petrol, Diesel, CNG, EV, or Hybrid."
+    )
     st.caption(
-        "EV view counts only EV-only nameplates (exact, but undercounts — EV variants of "
-        "Nexon/Punch/Tiago hide inside multi-fuel nameplates). Fuel mix uses each nameplate's "
-        "primary fuel: approximate by construction."
+        "The EV-only view is a model subset, not an EV fuel cut. EV variants of "
+        "Nexon/Punch/Tiago remain inseparable from other powertrains. The primary-fuel "
+        "chart below is legacy external model metadata and must not be read as observed "
+        "wholesale fuel mix, share, or volume."
     )
     ev = query(
         "SELECT date, maker, SUM(wholesale) AS units FROM ws_ev_month "
@@ -100,7 +105,7 @@ with tab_ev:
     )
     st.plotly_chart(
         px.area(fuel, x="date", y="units", color="fuel", groupnorm="percent",
-                title="Approximate fuel mix of dispatches (primary-fuel allocation)"),
+                title="Legacy primary-fuel model proxy — NOT a wholesale fuel cut"),
         use_container_width=True,
     )
     ev_states = query(

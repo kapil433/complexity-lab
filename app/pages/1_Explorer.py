@@ -24,8 +24,15 @@ METRICS = {
     "hhi_oem": ("OEM concentration (HHI, 0–10,000)", "raw"),
     "entropy_oem": ("OEM entropy (nats)", "raw"),
     "yoy_growth": ("YoY growth", "pct"),
-    "regs_per_1000_capita": ("Registrations per 1,000 people", "raw"),
-    "pc_income_inr": ("Per-capita income (₹)", "indian"),
+    "regs_per_1000_population_2024": (
+        "Registrations per 1,000 people (fixed 2024 population basis)",
+        "raw",
+    ),
+    "pc_income_inr": ("Per-capita income, current prices (₹)", "indian"),
+    "pc_income_constant_2011_12_inr": (
+        "Per-capita income, constant 2011-12 prices (₹)",
+        "indian",
+    ),
 }
 
 panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")

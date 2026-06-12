@@ -16,9 +16,31 @@ st.set_page_config(page_title="Hypothesis Tester", layout="wide")
 st.title("Hypothesis Tester")
 render_card("hypothesis-tester")
 st.caption(
-    "Quick interactive checks on the state×year panel. Covariates carry quality flags "
-    "(see docs/data-dictionary.md) — treat 'approximate'/'estimate' series accordingly."
+    "Quick interactive checks on the state×year panel. Reference variables are not "
+    "equally available: nominal and constant-price income are annual, urbanization "
+    "is Census 2011, chargers and CNG stations are sparse cross-sections, and fuel "
+    "prices may use proxy fallbacks."
 )
+
+with st.expander("Reference-data availability", expanded=False):
+    availability = query(
+        """SELECT dataset, status, geography, time_coverage, temporal_type,
+                  quality_summary, not_available
+           FROM reference_availability
+           WHERE dataset IN ('state_income', 'state_income_constant',
+                             'state_road_length', 'state_personal_loans',
+                             'urbanization', 'cng_stations',
+                             'ev_charging', 'fuel_prices', 'population',
+                             'road_tax', 'financing', 'dealer_counts')
+           ORDER BY CASE status
+                      WHEN 'usable' THEN 1 WHEN 'constrained' THEN 2 ELSE 3 END,
+                    dataset"""
+    )
+    st.dataframe(availability, use_container_width=True, hide_index=True)
+    st.caption(
+        "Unavailable datasets are excluded from modelling controls. Constrained "
+        "datasets require the period and quality shown above."
+    )
 
 panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
 
@@ -36,7 +58,8 @@ if HAS_WS:
 
 numeric_cols = [
     "total_regs", "ev_regs", "cng_regs", "ev_share", "cng_share", "yoy_growth",
-    "hhi_oem", "entropy_oem", "n_oems", "pc_income_inr", "urban_pct",
+    "hhi_oem", "entropy_oem", "n_oems", "pc_income_inr",
+    "pc_income_constant_2011_12_inr", "urban_pct",
     "cng_stations", "ev_chargers", "petrol_price_inr", "diesel_price_inr", "cng_price_inr",
     "regs_per_1000_capita",
 ]
@@ -53,7 +76,16 @@ st.caption(
 tab_corr, tab_reg, tab_cp = st.tabs(["Correlations", "Panel regression", "Changepoints"])
 
 with tab_corr:
-    cols = st.multiselect("Variables", numeric_cols, default=["ev_share", "pc_income_inr", "urban_pct", "ev_chargers"])
+    cols = st.multiselect(
+        "Variables",
+        numeric_cols,
+        default=[
+            "ev_share",
+            "pc_income_constant_2011_12_inr",
+            "urban_pct",
+            "ev_chargers",
+        ],
+    )
     method = st.radio("Method", ["spearman", "pearson"], horizontal=True)
     if len(cols) >= 2:
         corr = econometrics.correlation_matrix(panel, cols, method=method)
@@ -70,7 +102,11 @@ with tab_corr:
 
 with tab_reg:
     y = st.selectbox("Dependent variable", numeric_cols, index=numeric_cols.index("ev_share"))
-    x = st.multiselect("Regressors", [c for c in numeric_cols if c != y], default=["pc_income_inr"])
+    x = st.multiselect(
+        "Regressors",
+        [c for c in numeric_cols if c != y],
+        default=["pc_income_constant_2011_12_inr"],
+    )
     fe_entity = st.checkbox("State fixed effects", value=True)
     fe_time = st.checkbox("Year fixed effects", value=False)
     if x and st.button("Run regression"):

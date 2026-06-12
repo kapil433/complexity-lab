@@ -609,14 +609,15 @@ _add(Card(
     category="Policy Network Analysis",
     tier="Tier 5 — Lead Paper",
     data_used=["Vahan fuel shares (hybrid visible only from 2024 — classification break)",
-               "Wholesale fuel proxy (hybrid nameplates visible from 2017)",
+               "Wholesale hybrid-associated nameplate metadata (no wholesale fuel cut)",
                "Policy events database", "UP hybrid tax waiver (Jul 2024) as natural experiment"],
     question="Strong hybrids are the most fuel-efficient non-plug-in technology on sale, yet "
              "stay near 2% share. Is that consumer preference — or structural isolation from "
              "India's incentive architecture (no FAME, 43% effective GST, no policy node)?",
     method="Three pieces: (1) adoption trajectories SHEV vs EV vs CNG with the incentive map "
            "(which policies touch which technology); (2) cross-source visibility — wholesale "
-           "sees hybrid nameplates years before Vahan's fuel classification does; "
+           "has no fuel cut, but model metadata identifies hybrid-associated nameplates years "
+           "before Vahan's fuel classification does; "
            "(3) difference-in-differences on UP's July-2024 registration-tax waiver — the one "
            "place a SHEV incentive node briefly existed.",
     how_it_works=[

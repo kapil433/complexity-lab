@@ -9,13 +9,14 @@
 | `meta` | key/value | Bundle metadata incl. partial-year flags. |
 | `dim_state` | state | From `reference/states.csv`; includes GeoJSON name mapping. |
 | `ref_*` | varies | One table per reference CSV (below). |
+| `reference_availability` | reference dataset | Governing status, scope, time coverage, approved use, unavailable fields and observed file facts from `reference_catalog.csv`. |
 | `panel_state_month` | state × month | Fuel pivots, EV/CNG shares, OEM HHI/entropy. |
 | `panel_state_year` | state × year | Same + YoY growth + covariates joined. |
 | `oem_state_edges` | state × maker × year | Network edge list (view). |
 | `wholesale` | city × model × month | **Local only** (proprietary; never committed). FY2017-18→present. Built by `lab wholesale`. |
-| `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~6% of volume). |
-| `ws_ev_month` | view | EV dispatches from **EV-only nameplates** (exact but undercounts: multi-fuel nameplates' EV variants excluded). |
-| `ws_fuel_month` | view | Approximate fuel mix of dispatches via each nameplate's `primary_fuel` (see `model_fuel_map.csv`). |
+| `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~3.7% of volume overall after the current mapping). |
+| `ws_ev_month` | view | Dispatches of **EV-only nameplates**. This is a model subset, not a wholesale EV/fuel cut; mixed-fuel nameplates cannot be split. |
+| `ws_fuel_month` | view | **Legacy nameplate proxy, not a wholesale fuel cut.** It assigns every model to one externally inferred `primary_fuel`; do not report it as observed fuel mix/share/volume. |
 | `retail_wholesale_month` | month | National retail vs wholesale join, full-coverage era only — the nowcasting workhorse. |
 
 ## Known caveats (read before inferring)
@@ -39,31 +40,50 @@
    Citroen/Fiat→Stellantis) for cross-source joins.
 6. **Wholesale data is proprietary** — the raw XLSB and all derived caches are
    gitignored (`data/raw/wholesale*`); only the city→state mapping is committed.
-7. **Strong Hybrid is censored before 2024 in Vahan.** `hybrid_regs` is exactly
+7. **Wholesale has no fuel cut.** The source has no fuel/powertrain column and
+   supplies no fuel-wise quantity split. `model_fuel_map.csv`, `ws_ev_month`, and
+   `ws_fuel_month` add model-level metadata only. They cannot split mixed models
+   such as Nexon into Petrol/Diesel/EV dispatches. Do not call these outputs
+   wholesale fuel mix, fuel share, or fuel volume.
+8. **Strong Hybrid is censored before 2024 in Vahan.** `hybrid_regs` is exactly
    zero until 2023 and jumps in 2024 — a fuel-classification reporting break,
    not a sales fact (hybrids sold from ~2017 are classified as Petrol pre-2024).
-   For pre-2024 hybrid activity use the wholesale fuel proxy (`ws_fuel_month`,
-   nameplate-based). Never fit adoption curves to the Vahan hybrid series
-   across the 2024 boundary.
+   Wholesale can show dispatches of hybrid-only or hybrid-associated nameplates,
+   but cannot provide a fuel cut for mixed nameplates. Never fit adoption curves
+   to the Vahan hybrid series across the 2024 boundary.
 
 ## Reference CSVs (`data/reference/`)
 
+The streamlined availability contract is
+[`reference_catalog.csv`](../data/reference/reference_catalog.csv); the readable
+usage guide is [`docs/reference-data.md`](reference-data.md). Use
+`uv run lab references` to print the current status table.
+
 | File | Coverage | Quality | Source |
 |---|---|---|---|
+| `reference_catalog.csv` | all reference files | governing metadata | Local audited contract: usable / constrained / unavailable |
 | `states.csv` | 36 + ALL | — | Canonical dim (codes, zones, GeoJSON names) |
 | `state_income.csv` | 33 states, FY2011-12→2024-25 | official | RBI Handbook of Statistics on Indian States 2024-25, Table 19 |
+| `state_income_constant.csv` | 33 states, FY2011-12 to 2024-25 | official | RBI Handbook 2024-25, Table 20 |
+| `state_road_length.csv` | ALL + 35 states/UTs, 2005-2020 | official/official_derived | RBI Table 146; underlying source MoRTH |
+| `state_personal_loans.csv` | ALL + 36 states/UTs, 2004-2025 | official/official_derived | RBI Table 159; broad personal loans, not auto finance |
 | `urbanization.csv` | all states | official/derived | Census of India 2011 |
 | `cng_stations.csv` | all states, 2024 (+ national 2025) | official_derived | PNGRB RTI R-1855 (31.05.2024), GA→state allocation |
 | `ev_charging.csv` | all states 2025, partial 2024 | reported/approximate | Ministry of Power via ORF/PIB |
 | `fuel_prices.csv` | Delhi 2012–2026; 33 states 2017–2026 (GA/NE/AN/DN 2022–26 only); CNG 7 states (annual avg), ALL=Delhi proxy | approximate | Delhi: PPAC/IOCL/IGL compiled. States: Delhi series + capital-city differentials from era-anchored RSP snapshots 2019/2021/2025 (PPAC/OMC-sourced); see `scripts/compile_state_fuel_prices.py`. Caveat: HR/PB use shared capital Chandigarh (Punjab in-state pumps ~₹3/l higher) |
 | `road_tax.csv` | 25 states, as-of 2024 | approximate | State transport dept notifications, single-band simplification |
 | `policy_events.csv` | 27 events 2013–2025 | official | MoHI/MoRTH/GST Council/state EV policies |
-| `dealer_counts.csv` | national only | placeholder | FADA commentary |
-| `financing.csv` | national, sparse | estimate | CRISIL/JATO/industry |
+| `dealer_counts.csv` | national placeholder only | **unavailable for modelling** | FADA commentary |
+| `financing.csv` | five national anchors | **unavailable for state/OEM modelling** | CRISIL/JATO/industry |
 | `state_adjacency.csv` | 68 land borders | — | Hand-compiled pair list (islands have none; DL enclosed by HR/UP) |
 | `model_fuel_map.csv` | 120 nameplates ≈99.8% of wholesale volume | approximate | OEM lineups; `ev_only` flag is the exact subset |
 
 ## Logged data TODOs
+
+- **Promoted RBI upgrades:** constant-price per-capita NSDP (Table 20), state road
+  length (Table 146), and scheduled-bank personal loans (Table 159). The latter is
+  broad credit depth, not vehicle-finance penetration; see
+  [`reference-source-roadmap.md`](reference-source-roadmap.md).
 
 - **Gujarat CNG price series** (largest CNG market; no archived city anchors found —
   petrol/diesel covered, CNG falls back to the Delhi proxy).
@@ -73,5 +93,5 @@
 - **EV charger time series** (currently a 2025 cross-section + 2024 partial).
 - **State-wise dealer counts** (FADA or OEM dealer-locator scrape).
 - **AP+Telangana covariate reconciliation** (population-weighted combination).
-- **Wholesale city→state mapping tail** (~6% of volume unmapped; extend
-  `city_state.csv` beyond the top 250 cities).
+- **Wholesale city→state mapping tail** (~3.7% of volume unmapped overall; continue
+  extending `city_state.csv`, while leaving `OTHERS`/`NCR` unmapped).

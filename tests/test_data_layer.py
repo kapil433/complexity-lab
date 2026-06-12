@@ -1,9 +1,14 @@
 """Data-layer tests run against a temp DuckDB built from synthetic fixtures."""
 
 import duckdb
+import pandas as pd
 import pytest
 
-from complexity_lab.data.reference import load_reference_tables
+from complexity_lab.data.reference import (
+    build_reference_availability,
+    load_reference_tables,
+    validate_reference_catalog,
+)
 
 
 @pytest.fixture
@@ -42,6 +47,43 @@ def test_duplicate_state_code_rejected(tmp_path):
     con = duckdb.connect(":memory:")
     with pytest.raises(ValueError, match="duplicate state_code"):
         load_reference_tables(con, reference_dir=tmp_path)
+
+
+def test_reference_catalog_matches_files(ref_dir):
+    (ref_dir / "reference_catalog.csv").write_text(
+        "dataset,file,status,geography,time_coverage,temporal_type,quality_summary,"
+        "approved_use,not_available,app_behavior,source_url\n"
+        "states,states.csv,usable,test,current,dimension,canonical,use,none,show,\n"
+        "income,income.csv,constrained,test,2020,annual,unknown,use,missing years,warn,\n"
+    )
+    catalog = validate_reference_catalog(ref_dir)
+    assert catalog is not None
+    availability = build_reference_availability(ref_dir, catalog)
+    income = availability.loc[availability["dataset"] == "income"].iloc[0]
+    assert income["row_count"] == 2
+    assert income["state_codes_present"] == 2
+
+
+def test_reference_catalog_rejects_undeclared_file(ref_dir):
+    pd.DataFrame(
+        [
+            {
+                "dataset": "states",
+                "file": "states.csv",
+                "status": "usable",
+                "geography": "test",
+                "time_coverage": "current",
+                "temporal_type": "dimension",
+                "quality_summary": "canonical",
+                "approved_use": "use",
+                "not_available": "",
+                "app_behavior": "show",
+                "source_url": "",
+            }
+        ]
+    ).to_csv(ref_dir / "reference_catalog.csv", index=False)
+    with pytest.raises(ValueError, match="file mismatch"):
+        validate_reference_catalog(ref_dir)
 
 
 def test_real_database_grain_if_present():

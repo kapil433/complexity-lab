@@ -31,6 +31,15 @@ uv run lab run descriptive-baseline
 uv run lab app                 # interactive lab -> http://localhost:8501
 ```
 
+## Deployment
+
+The public research notebook is deployed to GitHub Pages by
+`.github/workflows/site.yml`. The interactive Streamlit app is defined by
+[`render.yaml`](render.yaml); it rebuilds DuckDB from committed Vahan and reference
+inputs when the service starts. Proprietary wholesale files are intentionally not
+deployed, and the Wholesale page reports that limitation instead of substituting
+modeled data.
+
 ## The interactive lab (9 pages)
 
 Macro Dashboard · Explorer · Networks · Diffusion Lab (user-controlled fit windows +
@@ -71,9 +80,10 @@ into the site. Conventions in [docs/lab-guide.md](docs/lab-guide.md).
 - Registration data: **Vahan Intelligence** ([vahanintelligence.in](https://www.vahanintelligence.in)),
   based on VAHAN/Parivahan public data (MoRTH, GoI) — research use with attribution.
 - Reference CSVs carry per-file provenance (`source`, `quality` columns); read
-  [docs/data-dictionary.md](docs/data-dictionary.md) **before inferring** — it documents
-  the seven caveats that bite (Telangana, partial years, the wholesale coverage break,
-  the 2024 hybrid classification break, …).
+  [DATA_TRUTH.md](DATA_TRUTH.md) **before inferring** — it is the verified governing
+  contract for coverage, joins, mapping, limitations and safe claims. The compact
+  table-level reference remains in [docs/data-dictionary.md](docs/data-dictionary.md);
+  `uv run lab references` prints what is usable, constrained, or unavailable.
 - The wholesale dataset is proprietary: raw and derived files are gitignored; only
   aggregate chart outputs appear in published experiments.
 - Code: MIT ([LICENSE](LICENSE)).

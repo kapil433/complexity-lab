@@ -1,16 +1,16 @@
-"""One-off: convert RBI Handbook Table 19 (per-capita NSDP, current prices) to reference CSV.
+"""Convert RBI per-capita NSDP tables to a reference CSV.
 
-Usage: uv run --with openpyxl python scripts/convert_rbi_nsdp.py <xlsx_path>
-The table is split across two sheets, T_19(i) and T_19(ii).
+Usage:
+  uv run --with openpyxl python scripts/convert_rbi_nsdp.py <xlsx_path>
+  uv run --with openpyxl python scripts/convert_rbi_nsdp.py <xlsx_path> --kind constant
+
+Table 19 contains current prices; Table 20 contains constant 2011-12 prices.
 """
 
-import sys
+import argparse
 from pathlib import Path
 
 import pandas as pd
-
-XLSX = Path(sys.argv[1])
-OUT = Path(__file__).resolve().parents[1] / "data" / "reference" / "state_income.csv"
 
 NAME_TO_CODE = {
     "andhra pradesh": "AP", "arunachal pradesh": "AR", "assam": "AS", "bihar": "BR",
@@ -27,7 +27,15 @@ NAME_TO_CODE = {
 }
 
 
-def parse_sheet(raw: pd.DataFrame) -> list[dict]:
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("xlsx", type=Path)
+    parser.add_argument("--kind", choices=("current", "constant"), default="current")
+    parser.add_argument("--output", type=Path)
+    return parser.parse_args()
+
+
+def parse_sheet(raw: pd.DataFrame, value_column: str) -> list[dict]:
     header_row = None
     for i in range(min(12, len(raw))):
         cells = [str(c) for c in raw.iloc[i].tolist()]
@@ -66,31 +74,53 @@ def parse_sheet(raw: pd.DataFrame) -> list[dict]:
                 {
                     "state_code": code,
                     "fy": f"{parts[0]}-{parts[1][:2]}",
-                    "pc_nsdp_current_inr": int(round(val)),
+                    value_column: int(round(val)),
                 }
             )
     return rows
 
 
-xl = pd.ExcelFile(XLSX)
-all_rows: list[dict] = []
-for sheet in xl.sheet_names:
-    rows = parse_sheet(xl.parse(sheet, header=None))
-    print(f"{sheet}: {len(rows)} values")
-    all_rows.extend(rows)
+def main() -> None:
+    args = parse_args()
+    root = Path(__file__).resolve().parents[1]
+    if args.kind == "constant":
+        value_column = "pc_nsdp_constant_2011_12_inr"
+        table = 20
+        price_basis = "constant 2011-12 prices"
+        default_output = root / "data" / "reference" / "state_income_constant.csv"
+    else:
+        value_column = "pc_nsdp_current_inr"
+        table = 19
+        price_basis = "current prices"
+        default_output = root / "data" / "reference" / "state_income.csv"
+    output = args.output or default_output
 
-df = pd.DataFrame(all_rows).drop_duplicates(subset=["state_code", "fy"], keep="last")
-df["source"] = "RBI Handbook of Statistics on Indian States 2024-25, Table 19"
-df["quality"] = "official"
-df = df.sort_values(["state_code", "fy"])
+    xl = pd.ExcelFile(args.xlsx)
+    all_rows: list[dict] = []
+    for sheet in xl.sheet_names:
+        rows = parse_sheet(xl.parse(sheet, header=None), value_column)
+        print(f"{sheet}: {len(rows)} values")
+        all_rows.extend(rows)
 
-header_comment = (
-    "# Per-capita Net State Domestic Product at current prices (INR).\n"
-    "# Source: RBI Handbook of Statistics on Indian States 2024-25, Table 19\n"
-    "# (published 11-Dec-2025; underlying data from MOSPI/NSO). FY = April-March.\n"
-)
-OUT.write_text(header_comment + df.to_csv(index=False), encoding="utf-8")
-print(
-    f"Wrote {len(df)} rows, {df['state_code'].nunique()} states, "
-    f"FY {df['fy'].min()}..{df['fy'].max()} -> {OUT}"
-)
+    df = pd.DataFrame(all_rows).drop_duplicates(subset=["state_code", "fy"], keep="last")
+    df["source"] = f"RBI Handbook of Statistics on Indian States 2024-25, Table {table}"
+    df["quality"] = "official"
+    df = df.sort_values(["state_code", "fy"])
+
+    header_comment = (
+        f"# Per-capita Net State Domestic Product at {price_basis} (INR).\n"
+        f"# Source: RBI Handbook of Statistics on Indian States 2024-25, Table {table}\n"
+        "# (published 11-Dec-2025; underlying data from MOSPI/NSO). FY = April-March.\n"
+    )
+    output.write_text(
+        header_comment + df.to_csv(index=False, lineterminator="\n"),
+        encoding="utf-8",
+    )
+    print(
+        f"Wrote {len(df)} rows, {df['state_code'].nunique()} states, "
+        f"FY {df['fy'].min()}..{df['fy'].max()} -> {output}"
+    )
+
+
+if __name__ == "__main__":
+    main()

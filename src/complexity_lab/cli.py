@@ -56,6 +56,27 @@ def cmd_wholesale(args) -> None:
     print(json.dumps(summary, indent=2))
 
 
+def cmd_references(_args) -> None:
+    from complexity_lab.data.reference import (
+        build_reference_availability,
+        validate_reference_catalog,
+    )
+
+    catalog = validate_reference_catalog(settings.reference_dir)
+    if catalog is None:
+        raise FileNotFoundError("data/reference/reference_catalog.csv not found")
+    report = build_reference_availability(settings.reference_dir, catalog)
+    cols = [
+        "dataset",
+        "status",
+        "geography",
+        "time_coverage",
+        "quality_summary",
+        "not_available",
+    ]
+    print(report[cols].to_string(index=False))
+
+
 def cmd_app(_args) -> None:
     app_path = settings.root / "app" / "Home.py"
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=False)
@@ -78,6 +99,10 @@ def main() -> None:
     ws_p.add_argument("--source", help="Path to the source XLSB/parquet (defaults to cache, then the configured source)")
     ws_p.add_argument("--refresh", action="store_true", help="Re-read the source instead of the parquet cache")
     ws_p.set_defaults(fn=cmd_wholesale)
+
+    sub.add_parser(
+        "references", help="Show reference-data availability, constraints and gaps"
+    ).set_defaults(fn=cmd_references)
 
     sub.add_parser("app", help="Launch the Streamlit lab").set_defaults(fn=cmd_app)
 

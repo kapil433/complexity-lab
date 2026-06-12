@@ -168,8 +168,9 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
     city_map = read_reference_csv(settings.reference_dir / "city_state.csv")
     df = df.merge(city_map.rename(columns={"city": "city"}), on="city", how="left")
 
-    # Fuel proxy: wholesale has no fuel column — join the nameplate->fuel map.
-    # ev_only=1 rows are exact; primary_fuel is an approximate allocation.
+    # Wholesale has no fuel cut: no source fuel column and no powertrain quantity
+    # split. These are external nameplate attributes only. ev_only=1 identifies
+    # EV-only models; primary_fuel must never be presented as observed fuel volume.
     fuel_map = read_reference_csv(settings.reference_dir / "model_fuel_map.csv")
     df = df.merge(
         fuel_map[["model", "fuel_variants", "primary_fuel", "ev_only"]], on="model", how="left"
@@ -202,15 +203,15 @@ CREATE OR REPLACE VIEW ws_segment_month AS
 SELECT segment5, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale GROUP BY segment5, year, month;
 
--- EV dispatches (exact: EV-only nameplates). Multi-fuel nameplates with an EV
--- variant (Nexon, Punch...) are NOT here — this view undercounts total EV
--- wholesale but never misattributes ICE volume as EV.
+-- Dispatches of EV-only nameplates. This is a model subset, NOT a wholesale EV
+-- or fuel cut. Multi-fuel nameplates (Nexon, Punch...) cannot be split by powertrain.
 CREATE OR REPLACE VIEW ws_ev_month AS
 SELECT state_code, maker, model, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale WHERE ev_only = 1
 GROUP BY state_code, maker, model, year, month;
 
--- Approximate fuel mix of dispatches via each nameplate's primary fuel.
+-- LEGACY NAMEPLATE PROXY, NOT A WHOLESALE FUEL CUT. The source has no fuel field
+-- or fuel-wise quantity split. Do not expose this as observed fuel mix/share/volume.
 CREATE OR REPLACE VIEW ws_fuel_month AS
 SELECT primary_fuel AS fuel, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale WHERE primary_fuel IS NOT NULL

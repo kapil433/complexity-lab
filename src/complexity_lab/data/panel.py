@@ -107,46 +107,89 @@ SELECT e.*,
        (e.petrol_share - LAG(e.petrol_share) OVER w) * 100  AS petrol_share_chg_pp,
        (e.diesel_share - LAG(e.diesel_share) OVER w) * 100  AS diesel_share_chg_pp,
        (e.hybrid_share - LAG(e.hybrid_share) OVER w) * 100  AS hybrid_share_chg_pp,
-       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0) AS regs_per_1000_capita,
-       inc.pc_nsdp_current_inr                              AS pc_income_inr,
+       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0)
+                                                               AS regs_per_1000_population_2024,
+       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0)
+                                                               AS regs_per_1000_capita,
+       2024                                                    AS population_basis_year,
+       pop.source                                              AS population_source,
+       pop.quality                                             AS population_quality,
+       inc.pc_nsdp_current_inr                                 AS pc_income_inr,
+       inc.fy                                                  AS income_fy,
+       inc.source                                              AS income_source,
+       inc.quality                                             AS income_quality,
+       inc_real.pc_nsdp_constant_2011_12_inr                   AS pc_income_constant_2011_12_inr,
+       inc_real.fy                                             AS income_constant_fy,
+       inc_real.source                                         AS income_constant_source,
+       inc_real.quality                                        AS income_constant_quality,
        urb.urban_pct,
-       cng.stations                                          AS cng_stations,
-       ev.public_chargers                                    AS ev_chargers,
-       fp_p.price_avg_inr                                    AS petrol_price_inr,
-       fp_d.price_avg_inr                                    AS diesel_price_inr,
-       fp_c.price_avg_inr                                    AS cng_price_inr
+       urb.census_year                                         AS urbanization_census_year,
+       urb.source                                              AS urbanization_source,
+       urb.quality                                             AS urbanization_quality,
+       cng.stations                                            AS cng_stations,
+       cng.source                                              AS cng_stations_source,
+       cng.quality                                             AS cng_stations_quality,
+       ev.public_chargers                                      AS ev_chargers,
+       ev.source                                               AS ev_chargers_source,
+       ev.quality                                              AS ev_chargers_quality,
+       COALESCE(fp_p_state.price_avg_inr, fp_p_all.price_avg_inr)
+                                                               AS petrol_price_inr,
+       COALESCE(fp_p_state.source, fp_p_all.source)             AS petrol_price_source,
+       COALESCE(fp_p_state.quality, fp_p_all.quality)           AS petrol_price_quality,
+       CASE WHEN fp_p_state.state_code IS NOT NULL THEN 'state'
+            WHEN fp_p_all.state_code IS NOT NULL THEN 'ALL/Delhi fallback'
+       END                                                     AS petrol_price_basis,
+       COALESCE(fp_d_state.price_avg_inr, fp_d_all.price_avg_inr)
+                                                               AS diesel_price_inr,
+       COALESCE(fp_d_state.source, fp_d_all.source)             AS diesel_price_source,
+       COALESCE(fp_d_state.quality, fp_d_all.quality)           AS diesel_price_quality,
+       CASE WHEN fp_d_state.state_code IS NOT NULL THEN 'state'
+            WHEN fp_d_all.state_code IS NOT NULL THEN 'ALL/Delhi fallback'
+       END                                                     AS diesel_price_basis,
+       COALESCE(fp_c_state.price_avg_inr, fp_c_all.price_avg_inr)
+                                                               AS cng_price_inr,
+       COALESCE(fp_c_state.source, fp_c_all.source)             AS cng_price_source,
+       COALESCE(fp_c_state.quality, fp_c_all.quality)           AS cng_price_quality,
+       CASE WHEN fp_c_state.state_code IS NOT NULL THEN 'state'
+            WHEN fp_c_all.state_code IS NOT NULL THEN 'ALL/Delhi fallback'
+       END                                                     AS cng_price_basis
 FROM enriched e
 LEFT JOIN ref_population pop
        ON pop.state_code = e.state_code
 LEFT JOIN ref_state_income inc
        ON inc.state_code = e.state_code AND inc.fy = e.fy_starting
+LEFT JOIN ref_state_income_constant inc_real
+       ON inc_real.state_code = e.state_code AND inc_real.fy = e.fy_starting
 LEFT JOIN ref_urbanization urb
        ON urb.state_code = e.state_code
 LEFT JOIN ref_cng_stations cng
        ON cng.state_code = e.state_code AND cng.year = e.year
 LEFT JOIN ref_ev_charging ev
        ON ev.state_code = e.state_code AND ev.year = e.year
-LEFT JOIN ref_fuel_prices fp_p
-       ON fp_p.fuel = 'Petrol'
-      AND fp_p.year = e.year
-      AND fp_p.state_code = COALESCE(
-            (SELECT f2.state_code FROM ref_fuel_prices f2
-             WHERE f2.fuel = 'Petrol' AND f2.year = e.year AND f2.state_code = e.state_code
-             LIMIT 1), 'ALL')
-LEFT JOIN ref_fuel_prices fp_d
-       ON fp_d.fuel = 'Diesel'
-      AND fp_d.year = e.year
-      AND fp_d.state_code = COALESCE(
-            (SELECT f2.state_code FROM ref_fuel_prices f2
-             WHERE f2.fuel = 'Diesel' AND f2.year = e.year AND f2.state_code = e.state_code
-             LIMIT 1), 'ALL')
-LEFT JOIN ref_fuel_prices fp_c
-       ON fp_c.fuel = 'CNG'
-      AND fp_c.year = e.year
-      AND fp_c.state_code = COALESCE(
-            (SELECT f2.state_code FROM ref_fuel_prices f2
-             WHERE f2.fuel = 'CNG' AND f2.year = e.year AND f2.state_code = e.state_code
-             LIMIT 1), 'ALL')
+LEFT JOIN ref_fuel_prices fp_p_state
+       ON fp_p_state.fuel = 'Petrol'
+      AND fp_p_state.year = e.year
+      AND fp_p_state.state_code = e.state_code
+LEFT JOIN ref_fuel_prices fp_p_all
+       ON fp_p_all.fuel = 'Petrol'
+      AND fp_p_all.year = e.year
+      AND fp_p_all.state_code = 'ALL'
+LEFT JOIN ref_fuel_prices fp_d_state
+       ON fp_d_state.fuel = 'Diesel'
+      AND fp_d_state.year = e.year
+      AND fp_d_state.state_code = e.state_code
+LEFT JOIN ref_fuel_prices fp_d_all
+       ON fp_d_all.fuel = 'Diesel'
+      AND fp_d_all.year = e.year
+      AND fp_d_all.state_code = 'ALL'
+LEFT JOIN ref_fuel_prices fp_c_state
+       ON fp_c_state.fuel = 'CNG'
+      AND fp_c_state.year = e.year
+      AND fp_c_state.state_code = e.state_code
+LEFT JOIN ref_fuel_prices fp_c_all
+       ON fp_c_all.fuel = 'CNG'
+      AND fp_c_all.year = e.year
+      AND fp_c_all.state_code = 'ALL'
 WINDOW w AS (PARTITION BY e.state_code ORDER BY e.year)
 ORDER BY e.state_code, e.year
 """

@@ -25,8 +25,9 @@ uv run python scripts/validate_numbers.py
 ```
 
 Check the summary it prints: `date_range` should now include the new months and
-`unmapped_state_volume_pct` should stay ≈ 5–6% (a jump means new city names —
-extend `data/reference/city_state.csv`). New model names → extend
+`unmapped_state_volume_pct` should stay below 4% (a jump means new city names —
+extend `data/reference/city_state.csv`, but do not guess non-geographic buckets).
+New model names → extend
 `data/reference/model_fuel_map.csv` (check coverage with
 `scripts/oneoff/check_fuel_map.py`).
 

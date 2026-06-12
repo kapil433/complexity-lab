@@ -1,5 +1,5 @@
 # City -> state mapping for city-grain sources (wholesale data). Keys are UPPERCASE
-# city names as they appear in the source; covers the top ~250 cities (~94% of
+# city names as they appear in the source; currently covers 282 labels (~96.3% of
 # wholesale volume). Non-geographic buckets (OTHERS, NCR) are intentionally absent —
 # unmapped cities get NULL state and are reported at ingest.
 # Ambiguous calls: NAGROTA -> HP (Nagrota Bagwan, Kangra auto hub), HAMIRPUR -> HP.
@@ -250,3 +250,39 @@ MIRZAPUR,UP
 DEWAS,MP
 ROOPNAGAR,PB
 BHAGALPUR,BR
+BERHAMPUR,OD
+NEEMUCH,MP
+KALYAN,MH
+SAHARANPUR,UP
+JAGDALPUR,CG
+TUTICORIN,TN
+SANGAMNER,MH
+UDHAMPUR,JK
+SANGRUR,PB
+HASSAN,KA
+MOGA,PB
+NAWANSHAHR,PB
+GUNA,MP
+NALGONDA,TS
+BARDOLI,GJ
+JALPAIGURI,WB
+ONGOLE,AP
+SOLAPUR,MH
+PATHANAMTHITTA,KL
+HOSPET,KA
+MALDA,WB
+SILVASSA,DN
+MANDI GOBINDGAR,PB
+SHAHDOL,MP
+PORT BLAIR,AN
+JIND,HR
+ANKLESHWAR,GJ
+BHIMAVARAM,AP
+KALYANI,WB
+TIRUR,KL
+VALSAD,GJ
+BALLABHGARH,HR
+FIROZABAD,UP
+BASTI,UP
+NAMAKKAL,TN
+RAIBAREILLY,UP

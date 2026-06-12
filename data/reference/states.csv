@@ -2,8 +2,9 @@
 # state_name matches the VAHAN bundle's `regions` exactly; geojson_name matches
 # properties.ST_NM in data/raw/india_states.geojson (blank = no geometry, e.g. All India).
 # zone follows Zonal Council groupings (island UTs assigned to their invitee council).
-# Telangana split from Andhra Pradesh on 2014-06-02 — both are present throughout the
-# data range; pre-split AP rows represent undivided AP (see events table).
+# Telangana split from Andhra Pradesh on 2014-06-02. TS is retained in this shared
+# dimension for wholesale/reference data, but the current VAHAN bundle has no separate
+# Telangana region; its AP series is continuous across the split (see DATA_TRUTH.md).
 state_code,state_name,geojson_name,zone,is_ut
 ALL,All India,,National,0
 AN,Andaman and Nicobar Islands,Andaman & Nicobar,South,1

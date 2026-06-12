@@ -58,8 +58,9 @@ fig
 
 ::: {.callout-warning}
 Vahan records `Strong Hybrid` only from 2024 — the zero before that is a
-**classification artifact**, not zero sales. The wholesale fuel proxy (below)
-sees hybrid nameplates from 2017.
+**classification artifact**, not zero sales. Wholesale has **no fuel cut**. The
+view below uses externally assigned model metadata to show hybrid-associated
+nameplates from 2017; it cannot split mixed-powertrain model quantities.
 :::
 
 ```{python}
@@ -68,7 +69,7 @@ if HAS_WS:
         "SELECT date, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' "
         "AND date >= '2022-04-01' ORDER BY date").df()
     px.area(wsf, x="date", y="wholesale",
-            title="Hybrid-nameplate dispatches (wholesale proxy, full-coverage era) — "
+            title="Hybrid-associated nameplate dispatches (not a fuel cut) — "
                   "Hycross/Invicto/Camry ramp from late 2022").show()
 ```
 
