@@ -259,6 +259,86 @@ def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
 
 @experiment(
+    "fuel-regimes",
+    description="Hidden-Markov energy regimes: K latent fuel-mix regimes shared across states, regime calendar, transition matrix, policy alignment.",
+)
+def fuel_regimes(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
+
+    panel = con.execute(
+        "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
+        "FROM panel_state_year WHERE year < (SELECT MAX(year) FROM panel_state_year) "
+        "ORDER BY state_code, year"
+    ).df()
+    res = fit_fuel_regimes(panel, k_range=tuple(params.get("k_range", (2, 3, 4))))
+
+    res["calendar"].to_parquet(out_dir / "regime_calendar.parquet")
+    res["regime_means"].to_parquet(out_dir / "regime_means.parquet")
+    res["transition_matrix"].to_parquet(out_dir / "transition_matrix.parquet")
+    res["selection"].to_parquet(out_dir / "model_selection.parquet")
+    trans = transition_years(res["calendar"])
+    trans.to_parquet(out_dir / "transition_years.parquet")
+
+    diag = res["transition_matrix"].to_numpy().diagonal()
+    return {
+        "best_k": int(res["selection"]["bic"].idxmin()),
+        "n_states_fit": res["n_states_fit"],
+        "regime_labels": list(res["regime_means"]["regime_label"]),
+        "stickiest_regime_persistence": round(float(diag.max()), 3),
+        "n_transitions_observed": len(trans),
+        "modal_transition_year": int(trans["year"].mode().iloc[0]) if not trans.empty else None,
+    }
+
+
+@experiment(
+    "adoption-network-horserace",
+    description="Which latent network best explains EV adoption timing — geography, economic similarity, or noise-filtered co-adoption?",
+)
+def adoption_network_horserace(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.networks.contagion import load_adjacency, observed_adoption_years
+    from complexity_lab.networks.inference import (
+        coadoption_graph,
+        economic_similarity_graph,
+        horserace,
+    )
+
+    threshold = params.get("threshold", 0.02)
+    panel = con.execute(
+        "SELECT state_code, year, ev_share, pc_income_inr, urban_pct, ev_chargers, cng_stations "
+        "FROM panel_state_year WHERE state_code <> 'ALL'"
+    ).df()
+
+    observed = observed_adoption_years(panel, threshold=threshold)
+
+    g_geo = load_adjacency(con)
+    latest_cov = (
+        panel.sort_values("year")
+        .groupby("state_code")[["pc_income_inr", "urban_pct", "ev_chargers", "cng_stations"]]
+        .last()
+    )
+    g_econ = economic_similarity_graph(latest_cov, k=params.get("k_nearest", 4))
+    shares = panel.pivot_table(index="year", columns="state_code", values="ev_share")
+    g_coad = coadoption_graph(shares, alpha=params.get("alpha", 0.05))
+
+    race = horserace(
+        {"geographic": g_geo, "economic_similarity": g_econ, "co_adoption": g_coad}, observed
+    )
+    race.to_parquet(out_dir / "horserace.parquet")
+    import networkx as nx
+
+    nx.write_gexf(g_coad, out_dir / "coadoption_network.gexf")
+
+    winner = race["mae_years"].idxmin()
+    return {
+        "threshold": threshold,
+        "winner": winner,
+        "mae_winner_years": round(float(race.loc[winner, "mae_years"]), 2),
+        "table": {k: round(float(v), 2) for k, v in race["mae_years"].dropna().items()},
+        "coadoption_edges": g_coad.number_of_edges(),
+    }
+
+
+@experiment(
     "oem-state-network",
     description="Bipartite OEM–state network: centrality, communities and temporal evolution across BS6/COVID/EV eras.",
 )

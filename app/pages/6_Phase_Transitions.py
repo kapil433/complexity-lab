@@ -18,8 +18,8 @@ from complexity_lab.complexity import transitions as tr
 st.set_page_config(page_title="Phase Transitions", layout="wide")
 st.title("Phase Transitions & Thresholds")
 
-tab_perc, tab_tip, tab_regime = st.tabs(
-    ["Percolation", "EV tipping / saturation", "Fuel regimes (Markov)"]
+tab_perc, tab_tip, tab_regime, tab_hmm = st.tabs(
+    ["Percolation", "EV tipping / saturation", "Fuel regimes (Markov)", "Fuel regimes (HMM)"]
 )
 
 edges = query("SELECT * FROM oem_state_edges")
@@ -143,3 +143,45 @@ with tab_regime:
             "not absorbing yet, states near the 5% EV line can still slip back — the "
             "transition has not ratcheted."
         )
+
+
+with tab_hmm:
+    render_card("fuel-regimes")
+    st.caption(
+        "Rule-free counterpart of the Markov tab: a hidden Markov model lets the data "
+        "choose the regimes (BIC selects K), then Viterbi-decodes each state's era path."
+    )
+
+    @st.cache_data(ttl=3600, show_spinner="Fitting HMMs (K = 2..4, EM with restarts)...")
+    def _fit_hmm():
+        from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
+
+        p = query(
+            "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, "
+            "hybrid_share FROM panel_state_year "
+            "WHERE year < (SELECT MAX(year) FROM panel_state_year) ORDER BY state_code, year"
+        )
+        res = fit_fuel_regimes(p)
+        return (res["selection"], res["regime_means"], res["transition_matrix"],
+                res["calendar"], transition_years(res["calendar"]))
+
+    selection, means, tmat, cal, trans = _fit_hmm()
+    best_k = int(selection["bic"].idxmin())
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Regimes chosen by BIC", best_k)
+    c2.metric("Stickiest persistence", f"{tmat.to_numpy().diagonal().max():.1%}")
+    c3.metric("Modal switch year",
+              int(trans["year"].mode().iloc[0]) if not trans.empty else "-")
+
+    st.dataframe(means.round(3), use_container_width=True)
+    pivot = cal.pivot(index="state_code", columns="year", values="regime")
+    order = pivot.mean(axis=1).sort_values().index
+    fig = px.imshow(pivot.loc[order], aspect="auto", color_continuous_scale="Viridis",
+                    title="HMM regime calendar (Viterbi paths)")
+    fig.update_layout(height=700, coloraxis_showscale=False)
+    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(
+        px.imshow(tmat.round(2), text_auto=True, color_continuous_scale="Blues",
+                  title="Fitted transition matrix"),
+        use_container_width=True,
+    )

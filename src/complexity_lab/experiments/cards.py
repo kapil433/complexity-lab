@@ -500,6 +500,109 @@ _add(Card(
 ))
 
 
+_add(Card(
+    id="fuel-regimes",
+    name="Hidden-Markov Fuel Regimes",
+    category="Dynamical Systems — Regime Detection",
+    tier="Tier 4 — Temporal Analysis",
+    data_used=["Vahan fuel shares (state × year, 5-dim vector)", "Policy events for alignment"],
+    question="Which states have genuinely switched energy regime (fossil → CNG/EV-mixed), "
+             "which are mid-transition, and which remain fossil-locked — judged by the data, "
+             "not by an analyst-chosen threshold?",
+    method="A Gaussian hidden Markov model fitted by EM over all states' yearly fuel-mix "
+           "vectors. BIC selects the number of latent regimes; Viterbi decoding yields each "
+           "state's regime calendar; the fitted matrix gives regime persistence.",
+    how_it_works=[
+        "Represent each state-year as [petrol, diesel, CNG, EV, hybrid] shares.",
+        "Fit one HMM across all states — regimes are market-wide definitions, not per-state.",
+        "Pick K (number of regimes) by BIC over K = 2…4.",
+        "Viterbi-decode each state's most likely regime path — the regime calendar.",
+        "Read the transition matrix: diagonal ≈ persistence; near-zero reverse flows = ratchet.",
+    ],
+    plain_english={
+        "Hidden Markov model": "The fuel mix we see each year is a noisy reflection of an "
+                               "underlying 'era' we can't see directly; the HMM infers the eras.",
+        "Regime": "A characteristic fuel mixture (e.g. diesel-heavy era vs EV-emerging era).",
+        "Viterbi path": "The single most plausible sequence of eras for a state.",
+        "Persistence": "Probability a state stays in its current era next year.",
+    },
+    math="Emission: x_t | regime k ~ N(μ_k, σ²_k) per fuel dimension. Transition: "
+         "P(regime_{t+1}=j | regime_t=i) = A_ij.\n\nToy: two regimes with μ_diesel = 0.30 vs "
+         "0.10 — a state at diesel share 0.28 is almost surely in regime 1; at 0.18 the HMM "
+         "weighs both and lets *neighbouring years* break the tie (that's the Markov part).",
+    look_for=[
+        "Diagonal of the transition matrix near 1 = sticky eras (structural, not noise).",
+        "Zero probability of returning to the fossil regime = the transition is a ratchet.",
+        "Cluster of regime-switch years around 2020–2022 = BS6/COVID/EV-policy era break.",
+        "States still in the fossil regime in the latest year = the genuine laggards.",
+    ],
+    limitations=[
+        "Yearly grain: ~14 observations per state — K above 4 would overfit (BIC guards this).",
+        "Gaussian emissions on shares are an approximation (shares are bounded).",
+        "Regime labels are derived from mean vectors — verify them against the means table.",
+    ],
+    decisions=[
+        "OEM: time EV dealer/service investment by a state's regime, not raw EV share.",
+        "Policy: states with low transition probability need push (incentives), not patience.",
+        "Researcher: the regime calendar + Cox survival on covariates is the publishable unit.",
+    ],
+    related=["phase-transitions", "ev-threshold", "ev-contagion"],
+))
+
+
+_add(Card(
+    id="adoption-network-horserace",
+    name="Adoption-Network Inference — the Horse Race",
+    category="Network Science — Inference",
+    tier="Tier 5 — Research Grade",
+    data_used=["Vahan EV shares (state × year)", "State adjacency", "Income/urbanization/infra covariates"],
+    question="What actually connects states in the EV transition — geography, economics, or "
+             "something else? We let three candidate networks compete at predicting each "
+             "state's adoption year from its neighbours.",
+    method="Build three networks (land borders; kNN cosine similarity on covariates; "
+           "co-adoption = correlated EV-share changes filtered against a circular-shift "
+           "permutation null). Leave-one-out: predict each state's threshold-crossing year "
+           "as the weighted mean of its neighbours'; score MAE and rank correlation.",
+    how_it_works=[
+        "Mark each state's EV adoption year (first year above the share threshold).",
+        "Candidate 1 — geography: states sharing a border are neighbours.",
+        "Candidate 2 — economics: states with similar income/urbanization/infra are neighbours.",
+        "Candidate 3 — co-adoption: states whose EV-share *changes* co-move beyond what "
+        "autocorrelation noise explains (circular-shift permutation test).",
+        "Hide each state, predict its year from neighbours, score each network honestly.",
+    ],
+    plain_english={
+        "Latent network": "The invisible web of influence we try to reconstruct from outcomes.",
+        "Circular-shift null": "Rotate one series in time and re-correlate — preserves each "
+                               "series' rhythm but destroys true synchrony; real links must beat this.",
+        "Leave-one-out": "Cover a state's answer and ask its neighbours to guess it.",
+        "MAE (years)": "Average miss of predicted adoption year — smaller is better.",
+    },
+    math="Edge test: p = P(|corr(Δa, shift(Δb))| ≥ |corr(Δa, Δb)|) under random shifts; keep "
+         "edge if p ≤ α and corr > 0.\n\nPrediction: ŷ_i = Σ_j w_ij y_j / Σ_j w_ij over "
+         "neighbours j.\n\nToy: state X borders A (2019) and B (2021) → geographic prediction "
+         "2020; if X actually adopted 2024, geography misses by 4 years for X.",
+    look_for=[
+        "Which network wins on MAE — that's the best single model of the influence structure.",
+        "Co-adoption beating geography = adoption synchrony is NOT mainly spatial spillover "
+        "(think national policy waves, OEM launch timing, income dynamics).",
+        "States where every network misses badly = idiosyncratic movers (policy jumps).",
+        "The co-adoption network's communities = states that move together — the real 'regions'.",
+    ],
+    limitations=[
+        "~14 yearly observations per state — the co-adoption test has limited power (α matters).",
+        "Co-adoption can't separate mutual influence from common shocks; it models synchrony.",
+        "The full maximum-entropy (BiCM) version with out-of-sample years is the paper upgrade.",
+    ],
+    decisions=[
+        "Policy: seed states central in the *winning* network, not the prettiest map.",
+        "Researcher: this horse-race framing + max-ent upgrade targets Physica A / EPJ Data Science.",
+        "Analyst: use the winner's neighbour-mean as a sanity forecast for late adopters.",
+    ],
+    related=["ev-contagion", "ev-diffusion-states"],
+))
+
+
 def get_card(card_id: str) -> Card:
     return CARDS[card_id]
 

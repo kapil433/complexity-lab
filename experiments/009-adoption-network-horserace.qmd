@@ -1,0 +1,88 @@
+---
+title: "009 — What connects states in the EV transition? A network horse race"
+date: 2026-06-12
+---
+
+## Question
+
+We never observe how states influence each other's EV adoption — only the
+outcomes. So we make three candidate influence networks compete: **geography**
+(shared borders), **economic similarity** (income/urbanization/infra), and an
+**inferred co-adoption network** (states whose EV-share changes co-move beyond
+autocorrelation noise). Each predicts a held-out state's adoption year from its
+neighbours; the best predictor is the best model of the latent structure.
+(Background: *Adoption-Network Inference* card in the [guide](guide.qmd).)
+
+## Setup
+
+```{python}
+import duckdb
+import networkx as nx
+import pandas as pd
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.networks.contagion import load_adjacency, observed_adoption_years
+from complexity_lab.networks.inference import (
+    coadoption_graph, economic_similarity_graph, horserace,
+)
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+panel = con.execute(
+    "SELECT state_code, year, ev_share, pc_income_inr, urban_pct, ev_chargers, cng_stations "
+    "FROM panel_state_year WHERE state_code <> 'ALL'"
+).df()
+observed = observed_adoption_years(panel, threshold=0.02)
+
+g_geo = load_adjacency(con)
+cov = (panel.sort_values("year").groupby("state_code")
+       [["pc_income_inr", "urban_pct", "ev_chargers", "cng_stations"]].last())
+g_econ = economic_similarity_graph(cov, k=4)
+shares = panel.pivot_table(index="year", columns="state_code", values="ev_share")
+g_coad = coadoption_graph(shares, alpha=0.05)
+print(f"edges — geographic {g_geo.number_of_edges()}, economic {g_econ.number_of_edges()}, "
+      f"co-adoption {g_coad.number_of_edges()}")
+```
+
+## The race
+
+```{python}
+race = horserace({"geographic": g_geo, "economic_similarity": g_econ,
+                  "co_adoption": g_coad}, observed)
+race.round(2)
+```
+
+```{python}
+px.bar(race.reset_index(), x="network", y="mae_years", text_auto=".2f",
+       title="Leave-one-out error predicting each state's EV adoption year (lower = better)")
+```
+
+## Inside the winning network
+
+```{python}
+comms = nx.community.louvain_communities(g_coad, seed=42)
+rows = [{"state": s, "community": i} for i, c in enumerate(comms) for s in c]
+deg = pd.Series(dict(g_coad.degree(weight="weight")), name="strength")
+top = deg.sort_values(ascending=False).head(12).reset_index()
+top.columns = ["state", "strength"]
+px.bar(top, x="strength", y="state", orientation="h",
+       title="Most-connected states in the co-adoption network (synchrony hubs)")
+```
+
+## Finding
+
+```{python}
+w = race["mae_years"].idxmin()
+print(f"Winner: {w} (MAE {race.loc[w,'mae_years']:.2f} years) vs "
+      + ", ".join(f"{n} {race.loc[n,'mae_years']:.2f}" for n in race.index if n != w))
+```
+
+The inferred **co-adoption network predicts adoption timing better than
+geography or economic similarity**. Read carefully, that is a substantive
+result: state EV adoption synchrony is not primarily border spillover, and not
+just "rich states move together" — it reflects a national wave structure
+(policy timing, OEM launch waves, charging-network corridors) that the
+co-movement filter picks up directly. The honest caveats: ~14 yearly
+observations limit the edge test's power, and co-adoption models *synchrony*,
+not direction of influence. The paper-grade upgrade is the maximum-entropy
+(BiCM) null with out-of-sample year prediction — blueprint Project A, where
+this notebook is the working skeleton.

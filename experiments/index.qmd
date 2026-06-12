@@ -15,6 +15,8 @@ then render). Numbering is chronological.
 | 005 | [Phase transitions](005-phase-transitions.qmd) | Does the market change gradually or snap? Percolation of the OEM–state network + fuel-regime Markov dynamics. |
 | 006 | [EV tipping points](006-ev-threshold.qmd) | Is there a share level where EV adoption self-accelerates — or does growth bend down (saturation)? |
 | 007 | [EV contagion on the state network](007-ev-contagion.qmd) | Does EV adoption spread between neighbouring states? Moran's I + threshold-cascade fit. |
+| 008 | [Hidden-Markov fuel regimes](008-fuel-regimes.qmd) | Do states occupy discrete energy eras with sticky, ratchet-like switches? HMM regime calendar. |
+| 009 | [Adoption-network horse race](009-adoption-network-horserace.qmd) | Geography vs economics vs inferred co-adoption — which network best predicts EV adoption timing? |
 
 Background, concepts and math for every experiment: **[Experiment Guide](guide.qmd)**.
 

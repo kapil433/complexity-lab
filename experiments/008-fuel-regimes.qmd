@@ -1,0 +1,85 @@
+---
+title: "008 — Hidden-Markov fuel regimes: the energy-era calendar"
+date: 2026-06-12
+---
+
+## Question
+
+Fuel shares drift, spike and reverse — but underneath, do states occupy a small
+number of discrete **energy regimes**, with rare, sticky switches between them?
+If yes, the regime calendar (which state was in which era, when) is a cleaner
+unit of analysis than raw shares, and the switch years should line up with
+policy shocks. (Background: *Hidden-Markov Fuel Regimes* card in the
+[guide](guide.qmd).)
+
+## Setup
+
+```{python}
+import duckdb
+import pandas as pd
+import plotly.express as px
+from complexity_lab.config import settings
+from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
+
+con = duckdb.connect(str(settings.db_path), read_only=True)
+panel = con.execute(
+    "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
+    "FROM panel_state_year WHERE year < (SELECT MAX(year) FROM panel_state_year) "
+    "ORDER BY state_code, year"
+).df()
+res = fit_fuel_regimes(panel)
+res["selection"].round(1)
+```
+
+## The regimes the data chose
+
+```{python}
+res["regime_means"].round(3)
+```
+
+```{python}
+tm = res["transition_matrix"].round(3)
+px.imshow(tm, text_auto=".2f", color_continuous_scale="Blues",
+          title="Yearly regime transition probabilities (rows → columns)",
+          labels={"x": "to", "y": "from"})
+```
+
+## The regime calendar
+
+```{python}
+cal = res["calendar"]
+order = (cal.groupby("state_code")["regime"].mean().sort_values().index.tolist())
+fig = px.imshow(
+    cal.pivot(index="state_code", columns="year", values="regime").loc[order],
+    aspect="auto", color_continuous_scale="Viridis",
+    title="Regime calendar — each state's decoded era by year",
+)
+fig.update_layout(height=700, coloraxis_showscale=False)
+fig
+```
+
+## When do states switch?
+
+```{python}
+trans = transition_years(cal)
+px.histogram(trans, x="year", color="to_regime",
+             title="Regime-switch years across states (align with BS6 2020, EV policies 2021-23)")
+```
+
+## Finding
+
+```{python}
+diag = res["transition_matrix"].to_numpy().diagonal()
+print(f"Regimes: {list(res['regime_means']['regime_label'])}")
+print(f"Persistence (diagonal): {[round(float(d),3) for d in diag]}")
+print(f"{len(trans)} switches across {res['n_states_fit']} states; "
+      f"modal switch year: {int(trans['year'].mode().iloc[0])}")
+```
+
+The BIC-selected model describes India's fuel transition as a small set of
+sticky eras rather than a continuum: persistence sits near 1, switches are
+rare, cluster in 2020–2022 (BS6 + COVID + the EV policy wave), and reverse
+flows back toward the fossil-heavy regime are essentially absent — the
+transition behaves like a **ratchet**. The publishable extension is a Cox
+survival model on time-to-switch with income, infrastructure and fuel-price
+covariates (blueprint Project B, step 5).

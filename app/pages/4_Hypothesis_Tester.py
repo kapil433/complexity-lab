@@ -8,7 +8,7 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query, render_card
+from common import get_connection, query, render_card, year_range_slider
 
 from complexity_lab.analysis import econometrics
 
@@ -21,11 +21,34 @@ st.caption(
 )
 
 panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
+
+# Wholesale covariates (local-only data): annual state dispatches + ws/retail ratio.
+_tables = {r[0] for r in get_connection().execute("SHOW TABLES").fetchall()}
+HAS_WS = "wholesale" in _tables
+if HAS_WS:
+    ws_year = query(
+        """SELECT state_code, year, SUM(wholesale) AS wholesale_units
+           FROM ws_state_month WHERE date >= '2022-04-01'
+           GROUP BY state_code, year"""
+    )
+    panel = panel.merge(ws_year, on=["state_code", "year"], how="left")
+    panel["ws_retail_ratio"] = panel["wholesale_units"] / panel["total_regs"]
+
 numeric_cols = [
     "total_regs", "ev_regs", "cng_regs", "ev_share", "cng_share", "yoy_growth",
     "hhi_oem", "entropy_oem", "n_oems", "pc_income_inr", "urban_pct",
     "cng_stations", "ev_chargers", "petrol_price_inr", "diesel_price_inr", "cng_price_inr",
+    "regs_per_1000_capita",
 ]
+if HAS_WS:
+    numeric_cols += ["wholesale_units", "ws_retail_ratio"]
+
+y0, y1 = year_range_slider(panel, key="ht_years")
+panel = panel[panel["year"].between(y0, y1)]
+st.caption(
+    f"Period: {y0}–{y1} · {len(panel)} state-year observations"
+    + (" · wholesale columns cover 2022+ (full-coverage era) only" if HAS_WS else "")
+)
 
 tab_corr, tab_reg, tab_cp = st.tabs(["Correlations", "Panel regression", "Changepoints"])
 
