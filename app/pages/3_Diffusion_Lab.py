@@ -23,9 +23,9 @@ st.set_page_config(page_title="Diffusion Lab", layout="wide")
 st.title("Diffusion Lab — Bass model")
 render_card("ev-diffusion-states")
 st.caption(
-    "Series are prepared before fitting: the last 2 months are dropped (VAHAN reporting "
-    "lag) and each series starts at adoption onset — fitting through years of zeros or a "
-    "partial tail silently distorts p, m and the implied peak."
+    "All post-onset data is used — the default trim only removes the pre-introduction "
+    "zero months at the start (they tell the Bass model nothing) and the partial trailing "
+    "months. Override everything below and run your own window experiments."
 )
 
 fuel = st.radio("Technology", ["EV", "CNG"], horizontal=True)
@@ -40,11 +40,35 @@ state = st.selectbox(
     index=sorted(panel["state_name"].unique()).index("All India"),
 )
 series = panel[panel["state_name"] == state].reset_index(drop=True)
-cum = prepare_adoption_series(series["adopt"], drop_last=2, onset_units=50)
-if cum.empty:
-    st.warning(f"{state} has not reached adoption onset for {fuel}.")
+data_min, data_max = int(series["year"].min()), int(series["year"].max())
+
+st.subheader("Fit window — you choose what the model sees")
+w1, w2, w3, w4 = st.columns([2, 1, 1, 1])
+fit_y0, fit_y1 = w1.slider("Years entering the fit", data_min, data_max,
+                           (data_min, data_max), key="fit_window")
+auto_onset = w2.toggle("Auto onset trim", value=True,
+                       help="Start the series at the first month with ≥ threshold cumulative "
+                            "units. Off = fit from the window start, zeros included.")
+onset_units = w3.slider("Onset threshold (units)", 0, 500, 50, 10,
+                        disabled=not auto_onset)
+drop_last = w4.slider("Drop trailing months", 0, 6, 2,
+                      help="VAHAN's most recent months are partial. Applied only when the "
+                           "window reaches the end of the data.")
+
+window = series[series["year"].between(fit_y0, fit_y1)].reset_index(drop=True)
+effective_drop = drop_last if fit_y1 >= data_max else 0
+cum = prepare_adoption_series(
+    window["adopt"], drop_last=effective_drop,
+    onset_units=onset_units if auto_onset else 0.0,
+)
+if cum.empty or len(cum) < 8:
+    st.warning(f"{state}: not enough {fuel} adoption inside this window to fit "
+               "(widen the window or lower the onset threshold).")
     st.stop()
-dates = series["date"].iloc[len(series) - 2 - len(cum): len(series) - 2].reset_index(drop=True)
+end_idx = len(window) - effective_drop
+dates = window["date"].iloc[end_idx - len(cum): end_idx].reset_index(drop=True)
+st.caption(f"Fitting on **{len(cum)} months**: {dates.iloc[0]:%b %Y} → {dates.iloc[-1]:%b %Y} "
+           f"({int(cum.iloc[-1]):,} cumulative units).")
 
 fit = fit_bass(cum)
 m_at_bound = bool(np.isfinite(fit.get("m", np.nan)) and fit["m"] >= 0.95 * cum.iloc[-1] * 50)
@@ -86,6 +110,55 @@ if pd.notna(fit["p"]):
     st.plotly_chart(fig, use_container_width=True)
 else:
     st.warning("Could not fit Bass model for this series (too small / degenerate).")
+
+st.subheader("Window sensitivity — how much do the parameters depend on your choice?")
+
+
+@st.cache_data(ttl=3600, show_spinner="Refitting across start years…")
+def _start_year_scan(state_name: str, value_col: str, drop: int, onset: float) -> pd.DataFrame:
+    p = query(
+        f"""SELECT year, month, date, {value_col} AS adopt FROM panel_state_month
+            WHERE state_name = '{state_name.replace("'", "''")}'
+            ORDER BY year, month"""
+    )
+    rows = []
+    for sy in range(int(p["year"].min()), int(p["year"].max()) - 1):
+        w = p[p["year"] >= sy].reset_index(drop=True)
+        c = prepare_adoption_series(w["adopt"], drop_last=drop, onset_units=onset)
+        if c.empty or len(c) < 8:
+            continue
+        f = fit_bass(c)
+        if not np.isfinite(f.get("p", np.nan)):
+            continue
+        rows.append({
+            "start_year": sy, "n_months": len(c), "p": f["p"], "q": f["q"], "m": f["m"],
+            "r2": f["r2"], "m_at_bound": bool(f["m"] >= 0.95 * c.iloc[-1] * 50),
+        })
+    return pd.DataFrame(rows)
+
+
+if st.toggle("Scan start years", value=False,
+             help="Refit the model once per possible start year — see which conclusions "
+                  "are robust to the window choice and which are artifacts of it."):
+    scan = _start_year_scan(state, col, drop_last, onset_units if auto_onset else 0.0)
+    if scan.empty:
+        st.info("No fittable windows for this selection.")
+    else:
+        long = scan.melt(id_vars=["start_year", "m_at_bound"],
+                         value_vars=["p", "q", "m"], var_name="param")
+        figs = px.line(long, x="start_year", y="value", facet_col="param", markers=True,
+                       facet_col_spacing=0.06,
+                       title=f"{state}: fitted Bass parameters vs fit start year")
+        figs.update_yaxes(matches=None, showticklabels=True)
+        figs.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+        st.plotly_chart(figs, use_container_width=True)
+        st.dataframe(scan.set_index("start_year").round(5), use_container_width=True)
+        st.caption(
+            "Reading: a flat stretch means the window barely matters there — the estimate is "
+            "structural. Parameters that jump as zeros enter (early start years) are exactly "
+            "the distortion the default onset trim removes. Hollow trust: any row with "
+            "m_at_bound = True."
+        )
 
 st.subheader(f"Cross-state Bass parameters ({fuel})")
 
