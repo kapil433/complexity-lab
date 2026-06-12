@@ -16,12 +16,20 @@ st.set_page_config(page_title="Forecast Studio", layout="wide")
 st.title("Forecast Studio — benchmarked short-horizon forecasts")
 render_card("forecast")
 
-c1, c2, c3, c4 = st.columns(4)
-states = query("SELECT DISTINCT state_code FROM panel_state_month ORDER BY state_code")
-state = c1.selectbox("State", states["state_code"], index=int((states["state_code"] == "ALL").idxmax()))
-series_name = c2.selectbox("Series", ["total_regs", "ev_regs", "cng_regs", "petrol_regs", "diesel_regs"])
-horizon = c3.slider("Horizon (months)", 1, 12, 6)
-n_origins = c4.slider("Backtest origins", 4, 16, 8)
+with st.form("forecast_controls"):
+    c1, c2, c3, c4 = st.columns(4)
+    states = query("SELECT DISTINCT state_code FROM panel_state_month ORDER BY state_code")
+    state = c1.selectbox("State", states["state_code"], index=int((states["state_code"] == "ALL").idxmax()))
+    series_name = c2.selectbox("Series", ["total_regs", "ev_regs", "cng_regs", "petrol_regs", "diesel_regs"])
+    horizon = c3.slider("Horizon (months)", 1, 12, 6)
+    n_origins = c4.slider("Backtest origins", 4, 16, 8)
+    submitted = st.form_submit_button("Run backtest & forecast", type="primary")
+
+if not submitted and "fs_last" not in st.session_state:
+    st.info("Choose a series and press **Run backtest & forecast** — results stay cached, "
+            "so repeat runs are instant.")
+    st.stop()
+st.session_state["fs_last"] = True
 
 df = query(
     f"""SELECT date, {series_name} AS y FROM panel_state_month
@@ -36,8 +44,18 @@ if series.dropna().shape[0] < 30:
     st.warning("Series too short for a meaningful backtest on this selection.")
     st.stop()
 
-with st.spinner("Backtesting all models (rolling origins)…"):
-    bench = benchmark(series, horizon=horizon, n_origins=n_origins)
+
+@st.cache_data(ttl=3600, show_spinner="Backtesting all models (rolling origins)…")
+def _bench(state_: str, series_name_: str, horizon_: int, n_origins_: int) -> pd.DataFrame:
+    d = query(
+        f"""SELECT date, {series_name_} AS y FROM panel_state_month
+            WHERE state_code = '{state_}' ORDER BY date"""
+    )
+    s = pd.Series(d["y"].to_numpy()[:-2], index=pd.DatetimeIndex(d["date"])[:-2]).asfreq("MS")
+    return benchmark(s, horizon=horizon_, n_origins=n_origins_)
+
+
+bench = _bench(state, series_name, horizon, n_origins)
 
 st.subheader("Which model earns the right to forecast this series?")
 cols = st.columns(len(bench))

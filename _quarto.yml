@@ -26,7 +26,9 @@ website:
 
 format:
   html:
-    theme: cosmo
+    theme:
+      light: cosmo
+      dark: darkly
     toc: true
     code-fold: true
     fig-width: 9

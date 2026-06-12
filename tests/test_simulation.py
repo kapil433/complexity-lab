@@ -4,7 +4,27 @@ import pytest
 
 from complexity_lab.complexity.entropy import complexity_indices, fuel_mix_entropy, rca_matrix
 from complexity_lab.simulation.abm import ABMConfig, adoption_summary, run_abm
-from complexity_lab.simulation.diffusion import bass_cumulative, fit_bass, project_bass
+from complexity_lab.simulation.diffusion import (
+    bass_cumulative,
+    fit_bass,
+    prepare_adoption_series,
+    project_bass,
+)
+
+
+def test_prepare_adoption_series_trims_zero_prefix_and_partial_tail():
+    counts = pd.Series([0] * 24 + [10, 30, 60, 100, 150, 200, 3, 1])  # last 2 partial
+    cum = prepare_adoption_series(counts, drop_last=2, onset_units=50)
+    # onset at cumulative >= 50 (month with 60: cumulative 10+30+60 = 100)
+    assert cum.iloc[0] == 100
+    assert cum.iloc[-1] == 100 + 100 + 150 + 200
+    assert len(cum) == 4
+
+
+def test_prepare_adoption_series_empty_when_never_started():
+    counts = pd.Series([0, 1, 2, 0, 1])
+    cum = prepare_adoption_series(counts, drop_last=2, onset_units=50)
+    assert cum.empty
 
 
 def test_bass_fit_recovers_known_parameters():

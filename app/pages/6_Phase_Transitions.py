@@ -59,10 +59,16 @@ with tab_perc:
             "presence* for participating in the national market structure."
         )
 
-    taus = {int(y): tr.critical_threshold(tr.percolation_curve(g))
-            for y, g in edges.groupby("year") if int(y) <= max_year}
+    @st.cache_data(ttl=3600, show_spinner="Computing τ_c for every year…")
+    def _tau_by_year(max_y: int) -> pd.Series:
+        e = query("SELECT * FROM oem_state_edges")
+        return pd.Series(
+            {int(y): tr.critical_threshold(tr.percolation_curve(g))
+             for y, g in e.groupby("year") if int(y) <= max_y}
+        ).sort_index()
+
     st.plotly_chart(
-        px.line(pd.Series(taus).sort_index(), markers=True,
+        px.line(_tau_by_year(max_year), markers=True,
                 title="τ_c by year — has the market's cohesion scale moved?",
                 labels={"index": "year", "value": "τ_c"}).update_layout(showlegend=False),
         use_container_width=True,

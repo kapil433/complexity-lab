@@ -66,19 +66,55 @@ def project_bass(
     return pd.DataFrame({"t": t.astype(int), "cumulative": cum, "incremental": inc})
 
 
+def prepare_adoption_series(
+    counts: pd.Series, drop_last: int = 2, onset_units: float = 50.0
+) -> pd.Series:
+    """Make a monthly count series Bass-fittable.
+
+    Two corrections that otherwise silently wreck the fit:
+    - drop the trailing ``drop_last`` months (VAHAN reporting lag → partial
+      data that flattens the curve and biases m downward),
+    - start the series at adoption onset (first month with ``onset_units``
+      cumulative): Bass describes diffusion *after* introduction; fitting
+      through a multi-year zero prefix distorts p and the implied peak time.
+
+    Returns the trimmed *cumulative* series (0-based integer index).
+    """
+    c = counts.fillna(0).astype(float)
+    if drop_last > 0 and len(c) > drop_last:
+        c = c.iloc[:-drop_last]
+    cum = c.cumsum()
+    started = cum[cum >= onset_units]
+    if started.empty:
+        return pd.Series(dtype=float)
+    cum = cum.loc[started.index[0]:]
+    return cum.reset_index(drop=True)
+
+
 def fit_bass_by_state(
     panel_month: pd.DataFrame,
     value_col: str = "ev_regs",
     state_col: str = "state_code",
     min_total: int = 500,
+    drop_last: int = 2,
+    onset_units: float = 50.0,
 ) -> pd.DataFrame:
-    """Fit Bass per state on cumulative monthly adoption; skip tiny markets."""
+    """Fit Bass per state on prepared cumulative adoption; skip tiny markets.
+
+    Adds ``m_at_bound`` — True when the fitted market potential sits at the
+    optimiser's upper bound, i.e. the S-curve hasn't bent yet and m (and any
+    projection from it) should not be trusted.
+    """
     rows = []
     for code, grp in panel_month.sort_values(["year", "month"]).groupby(state_col):
-        cum = grp[value_col].fillna(0).cumsum()
-        if cum.iloc[-1] < min_total:
+        cum = prepare_adoption_series(grp[value_col], drop_last=drop_last, onset_units=onset_units)
+        if cum.empty or cum.iloc[-1] < min_total:
             continue
-        res = fit_bass(cum.reset_index(drop=True))
+        res = fit_bass(cum)
+        res["n_months_fit"] = len(cum)
+        res["m_at_bound"] = bool(
+            np.isfinite(res["m"]) and res["m"] >= 0.95 * cum.iloc[-1] * 50.0
+        )
         res[state_col] = code
         rows.append(res)
     return pd.DataFrame(rows).set_index(state_col)

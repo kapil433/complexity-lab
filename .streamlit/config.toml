@@ -1,0 +1,21 @@
+# Lab theme. Toggle light/dark at runtime via the app menu (top-right ⋮ →
+# Settings → "Choose app theme"). Charts use transparent backgrounds, so they
+# adapt to whichever mode is active.
+
+[theme]
+base = "light"
+primaryColor = "#E4572E"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F4F2EF"
+textColor = "#1B1B1B"
+font = "sans serif"
+
+# Picked up by Streamlit versions with dual-theme support; harmlessly ignored otherwise.
+[theme.dark]
+primaryColor = "#FF7B4D"
+backgroundColor = "#0F1116"
+secondaryBackgroundColor = "#1A1D24"
+textColor = "#E8E6E3"
+
+[browser]
+gatherUsageStats = false

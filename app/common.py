@@ -9,6 +9,11 @@ import pandas as pd
 import streamlit as st
 
 from complexity_lab.config import settings
+from complexity_lab.viz import use_lab_theme
+
+# Every page imports common — make the theme-agnostic lab template the plotly
+# default everywhere (transparent backgrounds: adapts to light & dark mode).
+use_lab_theme()
 
 
 @st.cache_resource

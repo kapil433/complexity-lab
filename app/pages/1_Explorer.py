@@ -17,10 +17,14 @@ panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
 y0, y1 = year_range_slider(panel)
 metric = st.selectbox(
     "Metric",
-    ["total_regs", "ev_share", "cng_share", "hhi_oem", "entropy_oem", "yoy_growth", "pc_income_inr"],
+    ["total_regs", "ev_share", "cng_share", "diesel_share", "petrol_share", "hhi_oem",
+     "entropy_oem", "yoy_growth", "regs_per_1000_capita", "pc_income_inr"],
 )
 
-snap_year = st.slider("Choropleth year", y0, y1, y1)
+# Independent bounds: tying this slider to the range slider above resets it
+# whenever the range moves (a "stuck slider" in practice).
+data_lo, data_hi = int(panel["year"].min()), int(panel["year"].max())
+snap_year = st.slider("Choropleth year", data_lo, data_hi, min(data_hi - 1, y1))
 snap = panel[panel["year"] == snap_year].merge(
     query("SELECT state_code, geojson_name FROM dim_state"), on="state_code", how="left"
 )

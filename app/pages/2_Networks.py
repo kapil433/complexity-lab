@@ -67,8 +67,15 @@ fig.update_layout(height=620, showlegend=True, xaxis_visible=False, yaxis_visibl
 st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("Temporal evolution")
-graphs = nb.temporal_graphs(edges)
-evo = nm.temporal_metric_series(graphs).reset_index()
+
+
+@st.cache_data(ttl=3600, show_spinner="Computing networks for every year…")
+def _evolution() -> pd.DataFrame:
+    e = query("SELECT * FROM oem_state_edges")
+    return nm.temporal_metric_series(nb.temporal_graphs(e)).reset_index()
+
+
+evo = _evolution()
 metric = st.selectbox("Metric", ["modularity", "density", "n_communities", "n_edges"])
 st.line_chart(evo.set_index("period")[metric], height=280)
 

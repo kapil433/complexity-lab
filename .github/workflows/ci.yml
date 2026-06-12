@@ -23,5 +23,7 @@ jobs:
           uv run lab panel
       - name: Test
         run: uv run pytest
+      - name: Validate numbers (consistency + external anchors)
+        run: uv run python scripts/validate_numbers.py
       - name: Smoke-run an experiment
         run: uv run lab run descriptive-baseline

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -26,17 +27,25 @@ LAB_TEMPLATE = go.layout.Template(
         font={"family": "Segoe UI, system-ui, sans-serif", "size": 13},
         title={"x": 0.0, "xanchor": "left", "font": {"size": 17}},
         colorway=[ACCENT, *NEUTRALS],
-        plot_bgcolor="white",
-        paper_bgcolor="white",
+        # Transparent backgrounds: charts inherit the page colour, so the same
+        # figure works in the app's light AND dark themes.
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
         xaxis={"showgrid": False, "zeroline": False},
-        yaxis={"gridcolor": "#EEEEEE", "zeroline": False},
+        yaxis={"gridcolor": "rgba(128,128,128,0.25)", "zeroline": False},
         legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
         margin={"l": 40, "r": 20, "t": 60, "b": 40},
         hovermode="x unified",
+        hoverlabel={"namelength": 24},
     )
 )
 pio.templates["lab"] = LAB_TEMPLATE
 pio.templates.default = "plotly_white+lab"
+
+
+def use_lab_theme() -> None:
+    """Make the lab template the plotly default (idempotent; call from app entry)."""
+    pio.templates.default = "plotly_white+lab"
 
 EVENT_COLORS = {
     "policy": "#33658A",
@@ -58,14 +67,30 @@ def load_events(con, tiers: tuple[int, ...] = (1,)) -> pd.DataFrame:
 
 
 def add_event_markers(fig: go.Figure, events: pd.DataFrame, max_labels: int = 10) -> go.Figure:
-    """Overlay vertical dashed lines + hover labels for events on a time-series fig."""
-    shown = events.sort_values("event_date").head(max_labels)
-    for _, ev in shown.iterrows():
-        color = EVENT_COLORS.get(str(ev.get("type", "")), "#888888")
-        fig.add_vline(x=ev["event_date"], line_dash="dot", line_width=1, line_color=color)
+    """Overlay vertical dashed lines + labels for events on a time-series fig.
+
+    Events are clipped to the figure's plotted date range (so a 2021+ chart
+    doesn't get 2013 lines pushed off-canvas), then thinned evenly to
+    ``max_labels`` across the range.
+    """
+    ev = events.dropna(subset=["event_date"]).sort_values("event_date")
+    xs = []
+    for tr in fig.data:
+        x = getattr(tr, "x", None)
+        if x is not None and len(x):
+            xs.extend([pd.Timestamp(x[0]), pd.Timestamp(x[-1])])
+    if xs:
+        lo, hi = min(xs), max(xs)
+        ev = ev[(ev["event_date"] >= lo) & (ev["event_date"] <= hi)]
+    if len(ev) > max_labels:
+        idx = np.linspace(0, len(ev) - 1, max_labels).round().astype(int)
+        ev = ev.iloc[sorted(set(idx))]
+    for _, e in ev.iterrows():
+        color = EVENT_COLORS.get(str(e.get("type", "")), "#888888")
+        fig.add_vline(x=e["event_date"], line_dash="dot", line_width=1, line_color=color)
         fig.add_annotation(
-            x=ev["event_date"], yref="paper", y=1.0, yanchor="bottom",
-            text=str(ev.get("label", ""))[:28], showarrow=False,
+            x=e["event_date"], yref="paper", y=1.0, yanchor="bottom",
+            text=str(e.get("label", ""))[:28], showarrow=False,
             font={"size": 9, "color": color}, textangle=-30,
         )
     return fig
