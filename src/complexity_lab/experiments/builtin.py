@@ -339,6 +339,107 @@ def adoption_network_horserace(con: duckdb.DuckDBPyConnection, out_dir: Path, **
 
 
 @experiment(
+    "shev-isolation",
+    description="Strong hybrids as the structurally isolated technology: adoption vs EV/CNG, policy-incentive mapping, and the UP tax-waiver natural experiment.",
+)
+def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.analysis.econometrics import did
+
+    shares = con.execute(
+        "SELECT date, ev_share, cng_share, hybrid_share FROM panel_state_month "
+        "WHERE state_code = 'ALL' AND year >= 2021 ORDER BY date"
+    ).df()
+    shares.to_parquet(out_dir / "national_shares_monthly.parquet")
+
+    # Policy-incentive mapping: which technologies do policy events actually touch?
+    pol = con.execute("SELECT label, detail, category FROM ref_policy_events").df()
+    text = (pol["label"].fillna("") + " " + pol["detail"].fillna("")).str.lower()
+    counts = {
+        "EV": int(text.str.contains("ev|electric").sum()),
+        "CNG": int(text.str.contains("cng").sum()),
+        "Hybrid": int(text.str.contains("hybrid").sum()),
+    }
+
+    # UP strong-hybrid registration-tax waiver (July 2024) as natural experiment
+    mp = con.execute(
+        "SELECT state_code, date, hybrid_share FROM panel_state_month "
+        "WHERE year >= 2023 ORDER BY date"
+    ).df()
+    res_did = did(
+        mp,
+        treated="UP",
+        controls=params.get("controls", ["RJ", "MP", "BR", "WB"]),
+        event_date="2024-07-01",
+        value_col="hybrid_share",
+        pre_months=params.get("pre_months", 6),
+        post_months=params.get("post_months", 8),
+    )
+
+    ws_hybrid_start = None
+    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+    if "wholesale" in tables:
+        wsf = con.execute(
+            "SELECT date, fuel, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' ORDER BY date"
+        ).df()
+        if not wsf.empty:
+            wsf.to_parquet(out_dir / "wholesale_hybrid_monthly.parquet")
+            ws_hybrid_start = str(wsf["date"].min())[:7]
+
+    latest = shares.dropna().iloc[-2]
+    return {
+        "policy_mentions": counts,
+        "latest_shares_pct": {
+            "hybrid": round(100 * float(latest["hybrid_share"]), 2),
+            "ev": round(100 * float(latest["ev_share"]), 2),
+            "cng": round(100 * float(latest["cng_share"]), 2),
+        },
+        "up_did_att_pp": round(100 * res_did["att"], 3),
+        "up_did_placebo_rank_p": round(res_did["placebo_rank_p"], 3),
+        "wholesale_hybrid_visible_from": ws_hybrid_start,
+        "vahan_hybrid_visible_from": "2024-01 (fuel-classification break: zero before 2024)",
+    }
+
+
+@experiment(
+    "regime-survival",
+    description="Discrete-time hazard model of regime-switch timing: which covariates accelerate a state's energy transition?",
+)
+def regime_survival(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.complexity.regimes import fit_fuel_regimes
+    from complexity_lab.complexity.survival import (
+        build_risk_set,
+        discrete_hazard_model,
+        kaplan_meier,
+    )
+
+    panel = con.execute(
+        "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share, "
+        "pc_income_inr, urban_pct FROM panel_state_year "
+        "WHERE year < (SELECT MAX(year) FROM panel_state_year) ORDER BY state_code, year"
+    ).df()
+    regimes = fit_fuel_regimes(panel)
+    covs = params.get("covariates", ["pc_income_inr", "urban_pct"])
+    risk = build_risk_set(regimes["calendar"], panel, covs)
+    risk.to_parquet(out_dir / "risk_set.parquet")
+
+    model = discrete_hazard_model(risk, covs)
+    model["table"].to_parquet(out_dir / "hazard_table.parquet")
+    km = kaplan_meier(risk)
+    km.to_parquet(out_dir / "kaplan_meier.parquet")
+
+    tbl = model["table"]
+    return {
+        "covariates": covs,
+        "n_state_years_at_risk": model["n_obs"],
+        "n_switches": model["n_events"],
+        "odds_ratios_per_sd": {i: round(float(v), 2) for i, v in tbl["odds_ratio_per_sd"].items()},
+        "p_values": {i: round(float(v), 3) for i, v in tbl["p_value"].items()},
+        "pseudo_r2": round(model["pseudo_r2"], 3),
+        "survival_latest": round(float(km["survival"].iloc[-1]), 3),
+    }
+
+
+@experiment(
     "oem-state-network",
     description="Bipartite OEM–state network: centrality, communities and temporal evolution across BS6/COVID/EV eras.",
 )

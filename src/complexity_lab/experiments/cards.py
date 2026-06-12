@@ -603,6 +603,112 @@ _add(Card(
 ))
 
 
+_add(Card(
+    id="shev-isolation",
+    name="SHEV — The Structurally Isolated Technology",
+    category="Policy Network Analysis",
+    tier="Tier 5 — Lead Paper",
+    data_used=["Vahan fuel shares (hybrid visible only from 2024 — classification break)",
+               "Wholesale fuel proxy (hybrid nameplates visible from 2017)",
+               "Policy events database", "UP hybrid tax waiver (Jul 2024) as natural experiment"],
+    question="Strong hybrids are the most fuel-efficient non-plug-in technology on sale, yet "
+             "stay near 2% share. Is that consumer preference — or structural isolation from "
+             "India's incentive architecture (no FAME, 43% effective GST, no policy node)?",
+    method="Three pieces: (1) adoption trajectories SHEV vs EV vs CNG with the incentive map "
+           "(which policies touch which technology); (2) cross-source visibility — wholesale "
+           "sees hybrid nameplates years before Vahan's fuel classification does; "
+           "(3) difference-in-differences on UP's July-2024 registration-tax waiver — the one "
+           "place a SHEV incentive node briefly existed.",
+    how_it_works=[
+        "Count policy events touching each technology (keyword-classified) — the incentive graph.",
+        "Plot share trajectories on the same axis; note the Vahan 2024 classification break.",
+        "Use wholesale hybrid-nameplate dispatches for the pre-2024 trajectory Vahan can't see.",
+        "DiD: UP's hybrid share change after Jul-2024 minus the same change in control states.",
+        "Placebo check: re-run the DiD pretending each control state was treated.",
+    ],
+    plain_english={
+        "Structural isolation": "Not present in the incentive network at all — no subsidy, no "
+                                "tax break, no mandate references the technology.",
+        "Natural experiment": "A policy change that creates treated and untreated groups for us.",
+        "DiD (difference-in-differences)": "Compare the change in UP with the change elsewhere — "
+                                            "differencing away seasonality and national trends.",
+        "ATT": "Average treatment effect on the treated — the share lift attributable to the waiver.",
+    },
+    math="**ATT** = (UPᵖᵒˢᵗ − UPᵖʳᵉ) − (controlsᵖᵒˢᵗ − controlsᵖʳᵉ).\n\nToy: UP hybrid share "
+         "rises 1.0% → 3.4% (+2.4pp) while controls rise 1.0% → 1.2% (+0.2pp) → ATT ≈ +2.2pp.\n\n"
+         "Placebo rank p = share of control states whose pseudo-ATT is at least as extreme — "
+         "with 8 controls the smallest achievable p is 1/9 ≈ 0.11.",
+    look_for=[
+        "Policy-mention bar: EV ≫ CNG > Hybrid = 0 — the isolation, quantified.",
+        "SHEV trajectory flat vs EV's S-curve despite similar product availability windows.",
+        "Positive UP ATT that beats all placebos = price/tax, not preference, binds adoption.",
+        "Wholesale hybrid series rising pre-2024 = the Vahan zero is a measurement artifact.",
+    ],
+    limitations=[
+        "Vahan hybrid data exists only from 2024 — earlier 'zero' is a classification break, "
+        "never evidence of zero sales.",
+        "One treated state, short post-window; festive timing partially overlaps the waiver.",
+        "Wholesale hybrid proxy counts nameplates (Camry, Hycross, Invicto...), missing "
+        "hybrid variants inside multi-fuel nameplates.",
+    ],
+    decisions=[
+        "Policy: the quantified counterfactual for GST-rationalisation debates on SHEVs.",
+        "OEM (Toyota/Honda/Maruti): which states' tax structures make SHEV pushes viable.",
+        "Researcher: this is the lead-paper skeleton — add Bass counterfactual simulation "
+        "(GST 43% → 5%) for the full draft.",
+    ],
+    related=["ev-threshold", "fuel-regimes", "wholesale-retail-nowcast"],
+))
+
+
+_add(Card(
+    id="regime-survival",
+    name="Regime-Switch Survival — What Accelerates the Transition?",
+    category="Survival Analysis — Discrete-Time Hazard",
+    tier="Tier 4 — Temporal Analysis",
+    data_used=["HMM regime calendar (experiment 008)", "Income & urbanization covariates"],
+    question="Which states switch energy regime sooner, and is the timing explained by state "
+             "resources (income, urbanization) — or by a common national wave?",
+    method="Build a risk set (one row per state-year until first regime switch) from the HMM "
+           "calendar; fit a discrete-time logit hazard with standardized covariates plus a "
+           "calendar-time trend; read odds ratios per standard deviation.",
+    how_it_works=[
+        "From the regime calendar, track each state until its first switch (then censor).",
+        "Each state-year is a Bernoulli trial: switch or not, given covariates that year.",
+        "Logit on the switch indicator = discrete-time survival model (handles ties cleanly).",
+        "Kaplan–Meier curve shows the unconditional share of states still un-switched by year.",
+        "Compare covariate odds ratios against the calendar-time trend.",
+    ],
+    plain_english={
+        "Risk set": "Only states that haven't switched yet can switch this year — the model "
+                    "compares switchers with those still at risk, year by year.",
+        "Hazard": "The probability of switching this year given you haven't yet.",
+        "Odds ratio per SD": "How much one standard deviation of a covariate multiplies the "
+                             "odds of switching (>1 accelerates, <1 delays).",
+        "Censoring": "States that never switch still inform the model — they survived.",
+    },
+    math="P(switch_it = 1 | at risk) = logistic(α + β·zᵢₜ + γ·t). OR = e^β.\n\nToy: β = 0.5 for "
+         "income → OR ≈ 1.65: a state 1 SD richer has 65% higher odds of switching this year.",
+    look_for=[
+        "Significant covariate ORs = resource-driven transition (rich/urban states first).",
+        "Only the time trend significant = a national wave hits states almost regardless of "
+        "local conditions — consistent with the network horse race (exp 009).",
+        "KM curve cliff = the wave year; gentle slope = staggered, idiosyncratic switching.",
+    ],
+    limitations=[
+        "Few events (~15 switches) — wide confidence intervals; treat ORs as directional.",
+        "Covariates partly trend with time; the time term absorbs shared growth.",
+        "First-switch only; repeat transitions (rare here) are ignored.",
+    ],
+    decisions=[
+        "Policy: if the wave dominates, national instruments beat state-targeted nudges.",
+        "OEM: switch-timing forecasts should track policy calendars, not state demographics.",
+        "Researcher: with more events (district grain), upgrade to Cox PH with shared frailty.",
+    ],
+    related=["fuel-regimes", "adoption-network-horserace"],
+))
+
+
 def get_card(card_id: str) -> Card:
     return CARDS[card_id]
 

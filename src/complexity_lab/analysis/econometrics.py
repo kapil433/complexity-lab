@@ -53,6 +53,59 @@ def granger(
     return pd.DataFrame(rows).set_index("lag")
 
 
+def did(
+    df: pd.DataFrame,
+    treated: str | list[str],
+    controls: list[str],
+    event_date: str,
+    value_col: str,
+    entity_col: str = "state_code",
+    date_col: str = "date",
+    pre_months: int = 6,
+    post_months: int = 6,
+) -> dict:
+    """Difference-in-differences on a monthly panel around an event date.
+
+    ATT = (treated_post − treated_pre) − (control_post − control_pre).
+    Also returns a per-control 'placebo' distribution (each control treated as
+    if it were the treated unit) so the ATT can be judged against in-sample noise.
+    """
+    treated = [treated] if isinstance(treated, str) else list(treated)
+    d = df[[entity_col, date_col, value_col]].dropna().copy()
+    d[date_col] = pd.to_datetime(d[date_col])
+    event = pd.Timestamp(event_date)
+    lo = event - pd.DateOffset(months=pre_months)
+    hi = event + pd.DateOffset(months=post_months)
+    d = d[(d[date_col] >= lo) & (d[date_col] < hi)]
+    d["post"] = d[date_col] >= event
+
+    def _gap(entities: list[str]) -> float:
+        sub = d[d[entity_col].isin(entities)]
+        means = sub.groupby("post")[value_col].mean()
+        if len(means) < 2:
+            return np.nan
+        return float(means[True] - means[False])
+
+    att = _gap(treated) - _gap(controls)
+    placebos = {c: _gap([c]) - _gap([x for x in controls if x != c]) for c in controls}
+    placebo_vals = np.array([v for v in placebos.values() if np.isfinite(v)])
+    rank_p = (
+        float((np.sum(np.abs(placebo_vals) >= abs(att)) + 1) / (placebo_vals.size + 1))
+        if placebo_vals.size
+        else np.nan
+    )
+    return {
+        "att": att,
+        "treated_change": _gap(treated),
+        "control_change": _gap(controls),
+        "placebos": placebos,
+        "placebo_rank_p": rank_p,
+        "n_treated": len(treated),
+        "n_controls": len(controls),
+        "window": (str(lo.date()), str(hi.date())),
+    }
+
+
 def changepoints(
     series: pd.Series, n_bkps: int | None = None, penalty: float | None = None, model: str = "rbf"
 ) -> list[int]:

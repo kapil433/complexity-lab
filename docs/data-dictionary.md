@@ -39,6 +39,12 @@
    Citroen/Fiat→Stellantis) for cross-source joins.
 6. **Wholesale data is proprietary** — the raw XLSB and all derived caches are
    gitignored (`data/raw/wholesale*`); only the city→state mapping is committed.
+7. **Strong Hybrid is censored before 2024 in Vahan.** `hybrid_regs` is exactly
+   zero until 2023 and jumps in 2024 — a fuel-classification reporting break,
+   not a sales fact (hybrids sold from ~2017 are classified as Petrol pre-2024).
+   For pre-2024 hybrid activity use the wholesale fuel proxy (`ws_fuel_month`,
+   nameplate-based). Never fit adoption curves to the Vahan hybrid series
+   across the 2024 boundary.
 
 ## Reference CSVs (`data/reference/`)
 
