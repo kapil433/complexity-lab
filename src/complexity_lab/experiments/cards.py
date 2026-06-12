@@ -709,6 +709,113 @@ _add(Card(
 ))
 
 
+_add(Card(
+    id="suv-transition",
+    name="The Hatchback→SUV Shift as a Complex Transition",
+    category="Segment Dynamics — Complexity Science",
+    tier="Tier 3 — Structural Analysis",
+    data_used=["Wholesale segment5 taxonomy (native — no mapping needed)",
+               "Panel cities: ~40 cities reported continuously since 2017",
+               "State grain in the full-coverage era (2022-04+)"],
+    question="India flipped from hatchback-dominant to SUV-dominant in under a decade. Was it "
+             "a smooth drift or a tipping process — and is there a share level beyond which "
+             "the shift self-accelerates?",
+    method="SUV share series per city (9-year panel) and per state (full era); hinge "
+           "(threshold) regression finds τ* where share growth changes regime; k-means on "
+           "segment-share vectors yields state archetypes; OEMs classified by the year their "
+           "own portfolio crossed 50% SUV.",
+    how_it_works=[
+        "Compute monthly SUV share of dispatches per entity (city/state).",
+        "Fit Δshare ~ share + hinge(share − τ): positive hinge = self-acceleration past τ*.",
+        "Use the ~40 always-reported cities for a coverage-break-proof 2017–2026 window.",
+        "Cluster states on full segment vectors → Entry / Transitioning / Aspiration / Premium.",
+        "Classify OEMs by when their own SUV share crossed 50% (early/follower/locked).",
+    ],
+    plain_english={
+        "Tipping point τ*": "The SUV share past which adoption feeds on itself (visibility, "
+                            "resale confidence, dealer push).",
+        "Panel cities": "The same ~40 cities tracked the whole time — immune to the 2022 "
+                        "coverage break that contaminates naive long series.",
+        "Archetype": "A cluster of states with a similar segment mix — a market 'personality'.",
+        "Segment-locked": "An OEM whose portfolio stayed hatchback/sedan-heavy through the shift.",
+    },
+    math="Hinge model: Δs_t = a + b·s_{t-1} + c·max(0, s_{t-1} − τ). c > 0 ⇒ growth speeds up "
+         "past τ. τ* picked by SSE; sse_gain = fit improvement over the linear model.\n\nToy: "
+         "below 30% SUV share a city gains 0.2pp/month; past 30% it gains 0.5pp/month → c ≈ 0.3pp.",
+    look_for=[
+        "Median city τ* ≈ 0.30 — the blueprint's hypothesised 30% threshold, now measured.",
+        "Cities/states above their τ* = past the point of no return for hatchback share.",
+        "Early movers (Tata, Kia, Hyundai) vs segment-locked (Maruti, Honda, Renault) — the "
+        "fitness-landscape story of who navigated the transition.",
+        "Archetype map: where Entry markets remain = the last hatchback strongholds.",
+    ],
+    limitations=[
+        "State grain has only the 2022+ window (~48 months) — city panel is the long lens.",
+        "Wholesale segments measure what OEMs *ship*, demand is inferred.",
+        "k-means archetypes depend on k; treat names as descriptive, not ontological.",
+    ],
+    decisions=[
+        "OEM: prioritise compact-SUV launches in 'Transitioning' archetype states near τ*.",
+        "Dealer: hatchback-heavy portfolios in past-τ* cities face structural decline.",
+        "Researcher: τ* heterogeneity vs income/roads is the SEG-K01 paper core.",
+    ],
+    related=["ev-threshold", "phase-transitions", "wholesale-retail-nowcast"],
+))
+
+
+_add(Card(
+    id="shev-counterfactual",
+    name="SHEV Counterfactual — Adoption at EV-Equivalent Taxation",
+    category="Simulation — Policy Scenario",
+    tier="Tier 5 — Lead Paper (companion)",
+    data_used=["Wholesale hybrid-nameplate dispatches 2022-04+ (full era)",
+               "Bass fit from the diffusion module", "GST schedule (documented assumption)"],
+    question="If strong hybrids were taxed like EVs (5% instead of ~43%), what does the fitted "
+             "diffusion model imply adoption would have looked like?",
+    method="Fit Bass (p, q, m) to actual cumulative hybrid dispatches; re-project with the "
+           "market potential m scaled by a price-elasticity band (e ∈ {−1, −1.5, −2} on a "
+           "−26.6% price change) and a 1.2× imitation uplift for parity visibility. "
+           "Explicitly a scenario, not a forecast.",
+    how_it_works=[
+        "Fit the Bass curve to the real (wholesale-proxy) hybrid trajectory — R² ≈ 0.99.",
+        "Note the fitted q ≈ 0.11: weak imitation, consistent with an un-incentivised niche.",
+        "Tax parity (43%→5%) ≈ −26.6% consumer price; scale m by (1 + 0.266·|e|).",
+        "Project 60 months under each elasticity; compare with the no-change projection.",
+        "Report the uplift band, with every assumption stated next to the number.",
+    ],
+    plain_english={
+        "Market potential m": "How many buyers the technology can eventually reach — taxes "
+                              "shrink it by pricing people out.",
+        "Elasticity e": "How strongly demand responds to price: e = −1.5 means a 10% price cut "
+                        "grows demand ~15%.",
+        "Counterfactual": "A disciplined what-if: same model, one assumption changed.",
+        "Scenario band": "We show a range because the elasticity is assumed, not estimated.",
+    },
+    math="m' = m·(1 + 0.266·|e|), q' = 1.2·q. Cumulative Bass: F(t) = m'(1−e^{−(p+q')t})/"
+         "(1+(q'/p)e^{−(p+q')t}).\n\nToy: m = 260k, e = −1.5 → m' ≈ 364k; with q uplift the "
+         "5-year cumulative rises ~1.5×.",
+    look_for=[
+        "The gap between baseline and scenario curves = the policy-attributable shortfall.",
+        "Even e = −1 (conservative) implies ~⅓ more hybrids on the road in 5 years.",
+        "Pair with experiment 010's UP DiD: the observed +2.3pp waiver lift is the empirical "
+        "anchor that the elasticity band is not fantasy.",
+    ],
+    limitations=[
+        "m-scaling via elasticity is an assumption — the honest core of any counterfactual.",
+        "Supply response (OEM model launches under better tax) not modelled — likely makes "
+        "these numbers conservative.",
+        "Wholesale proxy misses hybrid variants inside multi-fuel nameplates.",
+    ],
+    decisions=[
+        "Policy: the quantified cost of the GST wedge in units foregone.",
+        "OEM (Toyota/Maruti/Honda): the size of the prize from GST rationalisation advocacy.",
+        "Researcher: completes the SHEV paper triad — isolation (010) + causal anchor (UP DiD) "
+        "+ counterfactual magnitude (this).",
+    ],
+    related=["shev-isolation", "ev-diffusion-states"],
+))
+
+
 def get_card(card_id: str) -> Card:
     return CARDS[card_id]
 

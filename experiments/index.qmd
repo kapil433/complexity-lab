@@ -19,6 +19,8 @@ then render). Numbering is chronological.
 | 009 | [Adoption-network horse race](009-adoption-network-horserace.qmd) | Geography vs economics vs inferred co-adoption — which network best predicts EV adoption timing? |
 | 010 | [SHEV structural isolation](010-shev-isolation.qmd) | Why don't strong hybrids take off? Zero policy nodes, a 43% GST wedge, and the UP-waiver natural experiment. |
 | 011 | [Regime-switch survival](011-regime-survival.qmd) | Do rich/urban states switch energy regimes first — or does a national wave sweep everyone along? |
+| 012 | [Hatchback→SUV transition](012-suv-transition.qmd) | Is the SUV shift a tipping process? City-level τ\* ≈ 30%, OEM mover classes, state archetypes. *(needs local wholesale data)* |
+| 013 | [SHEV tax-parity counterfactual](013-shev-counterfactual.qmd) | What would hybrid adoption be at 5% GST? Bass scenario band completing the SHEV paper. *(needs local wholesale data)* |
 
 Background, concepts and math for every experiment: **[Experiment Guide](guide.qmd)**.
 

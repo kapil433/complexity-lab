@@ -108,6 +108,94 @@ def predict_adoption_years(g: nx.Graph, observed: pd.Series) -> pd.Series:
     return pd.Series(preds, name="predicted_year")
 
 
+def temporal_holdout_horserace(
+    networks: dict[str, nx.Graph], observed: pd.Series, split_year: int
+) -> pd.DataFrame:
+    """Out-of-sample version: predict states that crossed AFTER ``split_year``
+    using only neighbours that crossed ON OR BEFORE it.
+
+    For co-adoption networks, build the graph from pre-split data before
+    calling this — the function only controls the label split.
+    """
+    train = observed[observed <= split_year]
+    test = observed[observed > split_year]
+    rows = []
+    for name, g in networks.items():
+        preds = {}
+        for node in test.index:
+            if node not in g:
+                continue
+            vals, wts = [], []
+            for nb in g.neighbors(node):
+                y = train.get(nb, np.nan)
+                if pd.notna(y):
+                    vals.append(float(y))
+                    wts.append(float(g[node][nb].get("weight", 1.0)))
+            if vals:
+                preds[node] = float(np.average(vals, weights=wts))
+        pred = pd.Series(preds)
+        common = pred.index.intersection(test.index)
+        if len(common) < 3:
+            rows.append({"network": name, "n_test": len(common), "mae_years": np.nan})
+            continue
+        err = (pred.loc[common] - test.loc[common]).abs()
+        rows.append(
+            {
+                "network": name,
+                "n_test": int(len(common)),
+                "n_train_adopters": int(train.notna().sum()),
+                "mae_years": float(err.mean()),
+            }
+        )
+    return pd.DataFrame(rows).set_index("network").sort_values("mae_years")
+
+
+def rewiring_null_test(
+    g: nx.Graph, observed: pd.Series, n_rewires: int = 200, seed: int = 42
+) -> dict:
+    """Does the network's predictive skill survive degree-preserving rewiring?
+
+    Maslov–Sneppen double-edge swaps keep every node's degree but destroy the
+    specific wiring; if the real graph's leave-one-out MAE beats most rewired
+    versions, the *particular* edges (not just the degree sequence) carry the
+    signal. Weights are ignored for a fair comparison.
+    """
+    g0 = nx.Graph()
+    g0.add_nodes_from(g.nodes)
+    g0.add_edges_from(g.edges)  # strip weights
+
+    def _mae(graph: nx.Graph) -> float:
+        pred = predict_adoption_years(graph, observed)
+        common = pred.index.intersection(observed.dropna().index)
+        if len(common) < 5:
+            return np.nan
+        return float((pred.loc[common] - observed.loc[common]).abs().mean())
+
+    obs_mae = _mae(g0)
+    rng = np.random.default_rng(seed)
+    null_maes = []
+    n_swaps = max(g0.number_of_edges() * 4, 10)
+    for _ in range(n_rewires):
+        gr = g0.copy()
+        try:
+            nx.double_edge_swap(gr, nswap=n_swaps, max_tries=n_swaps * 30,
+                                seed=int(rng.integers(0, 2**31 - 1)))
+        except nx.NetworkXError:
+            continue  # too few edges to keep swapping — skip this draw
+        m = _mae(gr)
+        if np.isfinite(m):
+            null_maes.append(m)
+    null = np.array(null_maes)
+    p = float((np.sum(null <= obs_mae) + 1) / (null.size + 1)) if null.size else np.nan
+    return {
+        "observed_mae": obs_mae,
+        "null_mean_mae": float(null.mean()) if null.size else np.nan,
+        "null_p5_mae": float(np.percentile(null, 5)) if null.size else np.nan,
+        "p_value": p,
+        "n_null": int(null.size),
+    }
+
+
 def horserace(networks: dict[str, nx.Graph], observed: pd.Series) -> pd.DataFrame:
     """Score each candidate network on leave-one-out adoption-year prediction."""
     rows = []

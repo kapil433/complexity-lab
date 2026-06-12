@@ -68,6 +68,36 @@ px.bar(top, x="strength", y="state", orientation="h",
        title="Most-connected states in the co-adoption network (synchrony hubs)")
 ```
 
+## Out-of-sample: does the edge survive a temporal split?
+
+The in-sample race could flatter the co-adoption network (it saw the whole
+history). Rebuild it from **pre-2022 data only**, then predict the states that
+crossed the threshold *after* 2022 from neighbours that crossed before:
+
+```{python}
+from complexity_lab.networks.inference import (
+    rewiring_null_test, temporal_holdout_horserace,
+)
+g_coad_pre = coadoption_graph(shares.loc[shares.index <= 2022], alpha=0.05)
+oos = temporal_holdout_horserace(
+    {"geographic": g_geo, "economic_similarity": g_econ, "co_adoption_pre": g_coad_pre},
+    observed, split_year=2022)
+oos.round(2)
+```
+
+## Is it the wiring, or just the degrees? (rewiring null)
+
+```{python}
+null = rewiring_null_test(g_coad, observed, n_rewires=200)
+print(f"real-network LOO MAE = {null['observed_mae']:.2f} years vs "
+      f"degree-preserving rewired mean = {null['null_mean_mae']:.2f} "
+      f"(5th pct {null['null_p5_mae']:.2f}); p = {null['p_value']:.3f} "
+      f"over {null['n_null']} rewires")
+```
+
+A small p says the *specific edges* — not merely how connected each state is —
+carry the predictive signal.
+
 ## Finding
 
 ```{python}

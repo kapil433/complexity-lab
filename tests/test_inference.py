@@ -7,6 +7,8 @@ from complexity_lab.networks.inference import (
     economic_similarity_graph,
     horserace,
     predict_adoption_years,
+    rewiring_null_test,
+    temporal_holdout_horserace,
 )
 
 
@@ -32,6 +34,34 @@ def test_coadoption_graph_recovers_planted_pair():
     shares = pd.DataFrame({"A": a, "B": b, **others}, index=range(2012, 2012 + t))
     g = coadoption_graph(shares, alpha=0.05, n_permutations=300)
     assert g.has_edge("A", "B")
+
+
+def test_temporal_holdout_scores_true_network():
+    # Adoption sweeps diagonally across a 4x4 grid: year = 2014 + 2(i+j).
+    # After split 2021, frontier nodes (i+j = 4) border trained adopters.
+    rng = np.random.default_rng(11)
+    grid = nx.grid_2d_graph(4, 4)
+    g_true = nx.relabel_nodes(grid, {n: f"S{n[0]}{n[1]}" for n in grid.nodes})
+    observed = pd.Series(
+        {f"S{i}{j}": 2014 + 2 * (i + j) + rng.normal(0, 0.2)
+         for i in range(4) for j in range(4)}
+    )
+    g_random = nx.relabel_nodes(
+        nx.gnm_random_graph(16, 24, seed=5),
+        dict(enumerate([f"S{i}{j}" for i in range(4) for j in range(4)])),
+    )
+    res = temporal_holdout_horserace({"true": g_true, "rand": g_random}, observed, split_year=2021)
+    assert res.loc["true", "n_test"] >= 3
+    assert res.loc["true", "mae_years"] < res.loc["rand", "mae_years"]
+
+
+def test_rewiring_null_detects_real_wiring():
+    rng = np.random.default_rng(13)
+    g_true = nx.relabel_nodes(nx.path_graph(16), {i: f"S{i}" for i in range(16)})
+    observed = pd.Series({f"S{i}": 2012 + i + rng.normal(0, 0.2) for i in range(16)})
+    res = rewiring_null_test(g_true, observed, n_rewires=60, seed=1)
+    assert res["observed_mae"] < res["null_mean_mae"]
+    assert res["p_value"] < 0.1
 
 
 def test_horserace_ranks_true_network_first():

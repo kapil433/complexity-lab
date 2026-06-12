@@ -328,6 +328,20 @@ def adoption_network_horserace(con: duckdb.DuckDBPyConnection, out_dir: Path, **
 
     nx.write_gexf(g_coad, out_dir / "coadoption_network.gexf")
 
+    # Out-of-sample: networks built from pre-split data predict post-split adopters
+    from complexity_lab.networks.inference import rewiring_null_test, temporal_holdout_horserace
+
+    split = params.get("split_year", 2022)
+    g_coad_pre = coadoption_graph(shares.loc[shares.index <= split], alpha=params.get("alpha", 0.05))
+    oos = temporal_holdout_horserace(
+        {"geographic": g_geo, "economic_similarity": g_econ, "co_adoption_pre": g_coad_pre},
+        observed,
+        split_year=split,
+    )
+    oos.to_parquet(out_dir / "oos_horserace.parquet")
+
+    null = rewiring_null_test(g_coad, observed, n_rewires=params.get("n_rewires", 200))
+
     winner = race["mae_years"].idxmin()
     return {
         "threshold": threshold,
@@ -335,6 +349,10 @@ def adoption_network_horserace(con: duckdb.DuckDBPyConnection, out_dir: Path, **
         "mae_winner_years": round(float(race.loc[winner, "mae_years"]), 2),
         "table": {k: round(float(v), 2) for k, v in race["mae_years"].dropna().items()},
         "coadoption_edges": g_coad.number_of_edges(),
+        "oos_split_year": split,
+        "oos_table": {k: round(float(v), 2) for k, v in oos["mae_years"].dropna().items()},
+        "rewiring_null_p": round(null["p_value"], 3),
+        "rewiring_null_mean_mae": round(null["null_mean_mae"], 2),
     }
 
 
@@ -436,6 +454,108 @@ def regime_survival(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> 
         "p_values": {i: round(float(v), 3) for i, v in tbl["p_value"].items()},
         "pseudo_r2": round(model["pseudo_r2"], 3),
         "survival_latest": round(float(km["survival"].iloc[-1]), 3),
+    }
+
+
+@experiment(
+    "suv-transition",
+    description="The hatchback→SUV structural shift as a complex transition: tipping points per state/city, OEM mover classes, state archetypes (SEG-K01).",
+)
+def suv_transition(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.analysis import segments as seg
+    from complexity_lab.complexity.transitions import tipping_summary
+
+    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+    if "wholesale" not in tables:
+        raise RuntimeError("wholesale table missing — run `uv run lab wholesale` first")
+
+    mix = seg.segment_mix(con)
+    mix.to_parquet(out_dir / "segment_mix_year.parquet")
+
+    # State-grain tipping (full era) + city-grain tipping (9-year panel cities)
+    st_series = seg.suv_share_series(con, grain="state")
+    st_tips = tipping_summary(
+        st_series.rename(columns={"entity": "state_code"}), "suv_share",
+        min_share_reached=0.10,
+    )
+    st_tips.to_parquet(out_dir / "state_tipping.parquet")
+
+    cities = seg.panel_cities(con)
+    city_series = seg.suv_share_series(con, grain="city", cities=cities)
+    city_tips = tipping_summary(
+        city_series.rename(columns={"entity": "state_code"}), "suv_share",
+        min_share_reached=0.10,
+    )
+    city_tips.to_parquet(out_dir / "panel_city_tipping.parquet")
+
+    traj = seg.oem_suv_trajectories(con)
+    traj.to_parquet(out_dir / "oem_suv_trajectories.parquet")
+    movers = seg.classify_movers(traj)
+    movers.to_parquet(out_dir / "oem_mover_classes.parquet")
+
+    latest_full = int(st_series["year"].max()) - 1
+    arch = seg.state_archetypes(con, year=latest_full, k=params.get("k", 4))
+    arch.to_parquet(out_dir / "state_archetypes.parquet")
+
+    tipping_city = city_tips[city_tips["hinge_coef"] > 0]
+    return {
+        "panel_cities": len(cities),
+        "latest_full_year": latest_full,
+        "n_states_tipping_up": int((st_tips["hinge_coef"] > 0).sum()),
+        "n_cities_tipping_up": int(len(tipping_city)),
+        "median_city_tau": round(float(tipping_city["tau"].median()), 3) if len(tipping_city) else None,
+        "early_movers": movers[movers["class"] == "early mover"].index.tolist(),
+        "segment_locked": movers[movers["class"] == "segment-locked"].index.tolist(),
+        "archetype_counts": arch["archetype"].value_counts().to_dict(),
+    }
+
+
+@experiment(
+    "shev-counterfactual",
+    description="Bass counterfactual: what would SHEV adoption look like at EV-equivalent taxation (GST 43%→5%)? Scenario band, assumption-labelled.",
+)
+def shev_counterfactual(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    import numpy as np
+
+    from complexity_lab.simulation.diffusion import bass_cumulative, fit_bass, project_bass
+
+    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
+    if "wholesale" not in tables:
+        raise RuntimeError("wholesale table missing — run `uv run lab wholesale` first")
+
+    ws = con.execute(
+        "SELECT date, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' "
+        "AND date >= '2022-04-01' ORDER BY date"
+    ).df()
+    cum = ws["wholesale"].fillna(0).cumsum()
+    fit = fit_bass(cum.reset_index(drop=True))
+    if not np.isfinite(fit.get("m", float("nan"))):
+        raise RuntimeError("Bass fit failed on hybrid series")
+
+    # Price scenario: effective tax 43% -> 5% lowers consumer price ~26.6%;
+    # with demand elasticity assumptions e ∈ {-1, -1.5, -2} the accessible
+    # market scales by (1 + 0.266·|e|). q uplift 1.2 = parity visibility.
+    horizon = params.get("horizon", 60)
+    scenarios = {}
+    for e in params.get("elasticities", (1.0, 1.5, 2.0)):
+        m_mult = 1 + 0.266 * e
+        proj = project_bass(fit, horizon=horizon, m_mult=m_mult, q_mult=1.2)
+        scenarios[f"elasticity_{e:g}"] = proj
+        proj.to_parquet(out_dir / f"scenario_e{e:g}.parquet")
+
+    base_proj = project_bass(fit, horizon=horizon)
+    base_proj.to_parquet(out_dir / "scenario_baseline.parquet")
+    ws.to_parquet(out_dir / "hybrid_actual_monthly.parquet")
+
+    y5 = {k: float(v["cumulative"].iloc[-1]) for k, v in scenarios.items()}
+    base5 = float(base_proj["cumulative"].iloc[-1])
+    _ = bass_cumulative  # re-exported for the notebook
+    return {
+        "fit": {k: round(float(fit[k]), 5) for k in ("p", "q", "m", "r2") if k in fit},
+        "baseline_cum_5y": round(base5),
+        "scenario_cum_5y": {k: round(v) for k, v in y5.items()},
+        "uplift_x_at_e1_5": round(y5.get("elasticity_1.5", float("nan")) / base5, 2),
+        "assumptions": "GST 43%→5% ⇒ −26.6% price; m·(1+0.266·|e|), q·1.2; NOT a forecast",
     }
 
 
