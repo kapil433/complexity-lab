@@ -77,10 +77,7 @@ def run_shock_sim(cfg: ShockConfig) -> pd.DataFrame:
 
         # OEM's demand forecast: trailing mean of realised demand (what it can see
         # through bookings/retail), falling back to current demand at t=0.
-        if demand_hist:
-            forecast = float(np.mean(demand_hist[-cfg.forecast_window:]))
-        else:
-            forecast = demand
+        forecast = float(np.mean(demand_hist[-cfg.forecast_window:])) if demand_hist else demand
 
         target_inventory = cfg.target_cover * forecast
         correction = (target_inventory - inventory) / cfg.adjustment_lag
