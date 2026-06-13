@@ -1,5 +1,17 @@
 # Personal Complexity Lab Rebuild Plan
 
+Implementation status updated: **2026-06-13**
+
+The reference-data foundation described in Wave 0 is now implemented: the
+machine-readable availability catalog covers 22 datasets; official RBI
+constant-price income, GSDP, road length, and personal loans are preserved with
+converters; annual population denominators are explicitly estimated for 2012-2026;
+infrastructure snapshots carry dates and reconciliation coverage; tax and policy
+tables are normalized; unavailable dealer and vehicle-finance panels are blocked
+from modelling; and the app includes a visual Reference Lab. Remaining work in
+later waves is product and experiment workflow work, not permission to weaken these
+truth boundaries.
+
 ## 1. Product Goal
 
 Turn the current collection of analytical demonstrations into a personal research
@@ -25,8 +37,8 @@ saved research notes.
 
 Repository health:
 
-- 9 Streamlit pages and 13 published Quarto experiments.
-- 73 tests pass; Ruff reports no issues.
+- 10 Streamlit pages and 13 published Quarto experiments.
+- 81 tests pass; Ruff reports no issues.
 - DuckDB contains 205,779 registration fact rows and 727,040 wholesale fact rows.
 - Existing modules already cover descriptive analysis, econometrics, forecasting,
   network analysis, diffusion, regimes, tipping points, and shock simulation.
@@ -57,12 +69,11 @@ Important audit findings:
   joined at state level without a reconciliation dataset.
 - Several Wholesale page queries use `year >= 2022`, which includes the
   January-March 2022 sample period despite calling the result the full era.
-- Reference quality flags are loaded into `ref_*` tables but disappear from
-  `panel_state_year`, so the app cannot expose or filter official versus
-  approximate/proxy values.
-- Historical `regs_per_1000_capita` currently divides every year by the same 2024
-  projected population. Infrastructure variables are mostly single-year
-  cross-sections, not historical annual series.
+- Reference quality, source, snapshot, and coverage fields now survive into
+  `panel_state_year` for joined covariates.
+- `regs_per_1000_capita` now uses an explicitly estimated annual population
+  denominator. The fixed-2024 version remains separately named for sensitivity.
+  Infrastructure variables remain sparse dated snapshots, not historical panels.
 - The Home page still contains a cache-warming placeholder and describes only
   four of the nine pages.
 - Most pages are method-first. They expose an analysis technique but do not retain
@@ -640,7 +651,8 @@ flowchart TD
   keep current-price income for nominal context.
 - Keep promoted RBI road length and personal loans as explicitly constrained
   contextual series. Personal loans are credit depth, not auto-finance penetration.
-- Acquire official annual state population before historical per-capita analysis.
+- Replace the current estimated annual state population with an archived official
+  state-year projection series when a reproducible source file is acquired.
 - Build dated official EV-charger and CNG-station snapshots before treating either
   as a dynamic panel.
 - Implement calculated period completeness and freshness.
@@ -648,7 +660,8 @@ flowchart TD
 - Block AP/TS state-level cross-source joins.
 - Add city-map and model-fuel-map coverage reports.
 - Preserve reference source/quality metadata.
-- Correct or relabel the fixed-2024 population metric.
+- Preserve both the annual-estimate metric and explicitly named fixed-2024
+  sensitivity metric.
 - Add regression tests for every audited issue.
 
 Terminal condition: one automated truth command passes and produces a machine-readable

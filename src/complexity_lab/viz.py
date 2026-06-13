@@ -59,7 +59,9 @@ EVENT_COLORS = {
 
 def load_events(con, tiers: tuple[int, ...] = (1,)) -> pd.DataFrame:
     """Policy/structural events from the DB, ready for chart annotation."""
-    df = con.execute("SELECT * FROM events").df()
+    tables = {row[0] for row in con.execute("SHOW TABLES").fetchall()}
+    table = "ref_policy_events_canonical" if "ref_policy_events_canonical" in tables else "events"
+    df = con.execute(f"SELECT * FROM {table}").df()
     if "tier" in df.columns and tiers:
         df = df[df["tier"].isin(tiers)]
     df["event_date"] = pd.to_datetime(df["date"], format="%Y-%m", errors="coerce")

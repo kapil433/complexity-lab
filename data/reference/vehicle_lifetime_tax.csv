@@ -1,0 +1,128 @@
+# Normalized current lifetime-tax benchmark by fuel for a roughly INR 10 lakh car.
+# Non-EV fuel rows repeat the same ICE benchmark unless the source distinguished fuel.
+state_code,fuel,vehicle_price_basis_inr,lifetime_tax_rate_pct,as_of,method,source,quality
+AP,CNG,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,AP Transport Dept / AP EV policy,approximate
+AP,Diesel,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,AP Transport Dept / AP EV policy,approximate
+AP,EV,1000000,0.0,2024,EV-specific rate from source cross-section,AP Transport Dept / AP EV policy,approximate
+AP,Petrol,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,AP Transport Dept / AP EV policy,approximate
+AP,Strong Hybrid,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,AP Transport Dept / AP EV policy,approximate
+AS,CNG,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Assam Transport Dept,approximate
+AS,Diesel,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Assam Transport Dept,approximate
+AS,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Assam Transport Dept,approximate
+AS,Petrol,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Assam Transport Dept,approximate
+AS,Strong Hybrid,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Assam Transport Dept,approximate
+BR,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Bihar Transport Dept / Bihar EV policy 2023,approximate
+BR,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Bihar Transport Dept / Bihar EV policy 2023,approximate
+BR,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Bihar Transport Dept / Bihar EV policy 2023,approximate
+BR,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Bihar Transport Dept / Bihar EV policy 2023,approximate
+BR,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Bihar Transport Dept / Bihar EV policy 2023,approximate
+CG,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,CG Transport Dept,approximate
+CG,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,CG Transport Dept,approximate
+CG,EV,1000000,0.0,2024,EV-specific rate from source cross-section,CG Transport Dept,approximate
+CG,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,CG Transport Dept,approximate
+CG,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,CG Transport Dept,approximate
+CH,CNG,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Chandigarh admin / EV policy 2022,approximate
+CH,Diesel,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Chandigarh admin / EV policy 2022,approximate
+CH,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Chandigarh admin / EV policy 2022,approximate
+CH,Petrol,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Chandigarh admin / EV policy 2022,approximate
+CH,Strong Hybrid,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Chandigarh admin / EV policy 2022,approximate
+DL,CNG,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Delhi Transport Dept / Delhi EV policy 2020,approximate
+DL,Diesel,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Delhi Transport Dept / Delhi EV policy 2020,approximate
+DL,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Delhi Transport Dept / Delhi EV policy 2020,approximate
+DL,Petrol,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Delhi Transport Dept / Delhi EV policy 2020,approximate
+DL,Strong Hybrid,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Delhi Transport Dept / Delhi EV policy 2020,approximate
+GA,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Goa Transport Dept / Goa EV policy 2021,approximate
+GA,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Goa Transport Dept / Goa EV policy 2021,approximate
+GA,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Goa Transport Dept / Goa EV policy 2021,approximate
+GA,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Goa Transport Dept / Goa EV policy 2021,approximate
+GA,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Goa Transport Dept / Goa EV policy 2021,approximate
+GJ,CNG,1000000,6.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+GJ,Diesel,1000000,6.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+GJ,EV,1000000,6.0,2024,EV-specific rate from source cross-section,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+GJ,Petrol,1000000,6.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+GJ,Strong Hybrid,1000000,6.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Gujarat Transport Dept (lump-sum 6%; EVs pay reduced/flat),approximate
+HP,CNG,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,HP Transport Dept,approximate
+HP,Diesel,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,HP Transport Dept,approximate
+HP,EV,1000000,0.0,2024,EV-specific rate from source cross-section,HP Transport Dept,approximate
+HP,Petrol,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,HP Transport Dept,approximate
+HP,Strong Hybrid,1000000,7.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,HP Transport Dept,approximate
+HR,CNG,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Haryana Transport Dept / EV policy 2022,approximate
+HR,Diesel,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Haryana Transport Dept / EV policy 2022,approximate
+HR,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Haryana Transport Dept / EV policy 2022,approximate
+HR,Petrol,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Haryana Transport Dept / EV policy 2022,approximate
+HR,Strong Hybrid,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Haryana Transport Dept / EV policy 2022,approximate
+JH,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Jharkhand Transport Dept,approximate
+JH,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Jharkhand Transport Dept,approximate
+JH,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Jharkhand Transport Dept,approximate
+JH,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Jharkhand Transport Dept,approximate
+JH,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Jharkhand Transport Dept,approximate
+JK,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,JK Transport Dept,approximate
+JK,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,JK Transport Dept,approximate
+JK,EV,1000000,0.0,2024,EV-specific rate from source cross-section,JK Transport Dept,approximate
+JK,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,JK Transport Dept,approximate
+JK,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,JK Transport Dept,approximate
+KA,CNG,1000000,17.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Karnataka Transport Dept / EV exemption since 2016,approximate
+KA,Diesel,1000000,17.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Karnataka Transport Dept / EV exemption since 2016,approximate
+KA,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Karnataka Transport Dept / EV exemption since 2016,approximate
+KA,Petrol,1000000,17.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Karnataka Transport Dept / EV exemption since 2016,approximate
+KA,Strong Hybrid,1000000,17.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Karnataka Transport Dept / EV exemption since 2016,approximate
+KL,CNG,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Kerala Transport Dept (EVs 5% reduced),approximate
+KL,Diesel,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Kerala Transport Dept (EVs 5% reduced),approximate
+KL,EV,1000000,5.0,2024,EV-specific rate from source cross-section,Kerala Transport Dept (EVs 5% reduced),approximate
+KL,Petrol,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Kerala Transport Dept (EVs 5% reduced),approximate
+KL,Strong Hybrid,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Kerala Transport Dept (EVs 5% reduced),approximate
+MH,CNG,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Maharashtra Transport Dept / MH EV policy 2021,approximate
+MH,Diesel,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Maharashtra Transport Dept / MH EV policy 2021,approximate
+MH,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Maharashtra Transport Dept / MH EV policy 2021,approximate
+MH,Petrol,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Maharashtra Transport Dept / MH EV policy 2021,approximate
+MH,Strong Hybrid,1000000,11.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Maharashtra Transport Dept / MH EV policy 2021,approximate
+MP,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,MP Transport Dept / MP EV policy 2019,approximate
+MP,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,MP Transport Dept / MP EV policy 2019,approximate
+MP,EV,1000000,1.0,2024,EV-specific rate from source cross-section,MP Transport Dept / MP EV policy 2019,approximate
+MP,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,MP Transport Dept / MP EV policy 2019,approximate
+MP,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,MP Transport Dept / MP EV policy 2019,approximate
+OD,CNG,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Odisha Transport Dept / Odisha EV policy 2021,approximate
+OD,Diesel,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Odisha Transport Dept / Odisha EV policy 2021,approximate
+OD,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Odisha Transport Dept / Odisha EV policy 2021,approximate
+OD,Petrol,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Odisha Transport Dept / Odisha EV policy 2021,approximate
+OD,Strong Hybrid,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Odisha Transport Dept / Odisha EV policy 2021,approximate
+PB,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Punjab Transport Dept / Punjab EV policy 2022,approximate
+PB,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Punjab Transport Dept / Punjab EV policy 2022,approximate
+PB,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Punjab Transport Dept / Punjab EV policy 2022,approximate
+PB,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Punjab Transport Dept / Punjab EV policy 2022,approximate
+PB,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Punjab Transport Dept / Punjab EV policy 2022,approximate
+PY,CNG,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Puducherry Transport Dept,approximate
+PY,Diesel,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Puducherry Transport Dept,approximate
+PY,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Puducherry Transport Dept,approximate
+PY,Petrol,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Puducherry Transport Dept,approximate
+PY,Strong Hybrid,1000000,8.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Puducherry Transport Dept,approximate
+RJ,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+RJ,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+RJ,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+RJ,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+RJ,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Rajasthan Transport Dept / RJ EV policy 2022,approximate
+TN,CNG,1000000,13.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TN,Diesel,1000000,13.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TN,EV,1000000,0.0,2024,EV-specific rate from source cross-section,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TN,Petrol,1000000,13.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TN,Strong Hybrid,1000000,13.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,TN Transport Dept (2022 revision) / TN EV policy,approximate
+TS,CNG,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Telangana Transport Dept / TS EV policy 2020,approximate
+TS,Diesel,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Telangana Transport Dept / TS EV policy 2020,approximate
+TS,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Telangana Transport Dept / TS EV policy 2020,approximate
+TS,Petrol,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Telangana Transport Dept / TS EV policy 2020,approximate
+TS,Strong Hybrid,1000000,14.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Telangana Transport Dept / TS EV policy 2020,approximate
+UK,CNG,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Uttarakhand Transport Dept,approximate
+UK,Diesel,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Uttarakhand Transport Dept,approximate
+UK,EV,1000000,0.0,2024,EV-specific rate from source cross-section,Uttarakhand Transport Dept,approximate
+UK,Petrol,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Uttarakhand Transport Dept,approximate
+UK,Strong Hybrid,1000000,9.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,Uttarakhand Transport Dept,approximate
+UP,CNG,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,UP Transport Dept / UP EV policy 2022,approximate
+UP,Diesel,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,UP Transport Dept / UP EV policy 2022,approximate
+UP,EV,1000000,0.0,2024,EV-specific rate from source cross-section,UP Transport Dept / UP EV policy 2022,approximate
+UP,Petrol,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,UP Transport Dept / UP EV policy 2022,approximate
+UP,Strong Hybrid,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,UP Transport Dept / UP EV policy 2022,approximate
+WB,CNG,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,WB Transport Dept,approximate
+WB,Diesel,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,WB Transport Dept,approximate
+WB,EV,1000000,2.0,2024,EV-specific rate from source cross-section,WB Transport Dept,approximate
+WB,Petrol,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,WB Transport Dept,approximate
+WB,Strong Hybrid,1000000,10.0,2024,ICE benchmark rate reused; source does not distinguish this fuel,WB Transport Dept,approximate

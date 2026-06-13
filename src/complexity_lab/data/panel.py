@@ -107,13 +107,18 @@ SELECT e.*,
        (e.petrol_share - LAG(e.petrol_share) OVER w) * 100  AS petrol_share_chg_pp,
        (e.diesel_share - LAG(e.diesel_share) OVER w) * 100  AS diesel_share_chg_pp,
        (e.hybrid_share - LAG(e.hybrid_share) OVER w) * 100  AS hybrid_share_chg_pp,
+       e.total_regs::DOUBLE / NULLIF(pop_annual.population_mn * 1000, 0)
+                                                               AS regs_per_1000_population,
        e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0)
                                                                AS regs_per_1000_population_2024,
-       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0)
+       e.total_regs::DOUBLE / NULLIF(pop_annual.population_mn * 1000, 0)
                                                                AS regs_per_1000_capita,
-       2024                                                    AS population_basis_year,
-       pop.source                                              AS population_source,
-       pop.quality                                             AS population_quality,
+       pop_annual.population_mn,
+       pop_annual.urban_population_mn,
+       pop_annual.rural_population_mn,
+       pop_annual.method                                       AS population_method,
+       pop_annual.source                                       AS population_source,
+       pop_annual.quality                                      AS population_quality,
        inc.pc_nsdp_current_inr                                 AS pc_income_inr,
        inc.fy                                                  AS income_fy,
        inc.source                                              AS income_source,
@@ -122,6 +127,15 @@ SELECT e.*,
        inc_real.fy                                             AS income_constant_fy,
        inc_real.source                                         AS income_constant_source,
        inc_real.quality                                        AS income_constant_quality,
+       gsdp.gsdp_constant_2011_12_lakh,
+       gsdp.gsdp_real_growth_pct,
+       gsdp.source                                              AS gsdp_source,
+       gsdp.quality                                             AS gsdp_quality,
+       credit.personal_loans_outstanding_crore,
+       credit.personal_loans_per_capita_inr,
+       credit.personal_loans_yoy_growth_pct,
+       credit.source                                            AS credit_depth_source,
+       credit.quality                                           AS credit_depth_quality,
        urb.urban_pct,
        urb.census_year                                         AS urbanization_census_year,
        urb.source                                              AS urbanization_source,
@@ -129,9 +143,15 @@ SELECT e.*,
        cng.stations                                            AS cng_stations,
        cng.source                                              AS cng_stations_source,
        cng.quality                                             AS cng_stations_quality,
+       cng.snapshot_date                                       AS cng_snapshot_date,
+       cng.coverage_scope                                      AS cng_coverage_scope,
+       cng.state_allocation_coverage_pct                       AS cng_state_allocation_coverage_pct,
        ev.public_chargers                                      AS ev_chargers,
        ev.source                                               AS ev_chargers_source,
        ev.quality                                              AS ev_chargers_quality,
+       ev.snapshot_date                                        AS ev_snapshot_date,
+       ev.coverage_scope                                       AS ev_coverage_scope,
+       ev.state_allocation_coverage_pct                        AS ev_state_allocation_coverage_pct,
        COALESCE(fp_p_state.price_avg_inr, fp_p_all.price_avg_inr)
                                                                AS petrol_price_inr,
        COALESCE(fp_p_state.source, fp_p_all.source)             AS petrol_price_source,
@@ -156,10 +176,16 @@ SELECT e.*,
 FROM enriched e
 LEFT JOIN ref_population pop
        ON pop.state_code = e.state_code
+LEFT JOIN ref_state_population_annual pop_annual
+       ON pop_annual.state_code = e.state_code AND pop_annual.year = e.year
 LEFT JOIN ref_state_income inc
        ON inc.state_code = e.state_code AND inc.fy = e.fy_starting
 LEFT JOIN ref_state_income_constant inc_real
        ON inc_real.state_code = e.state_code AND inc_real.fy = e.fy_starting
+LEFT JOIN ref_state_gsdp gsdp
+       ON gsdp.state_code = e.state_code AND gsdp.fy = e.fy_starting
+LEFT JOIN ref_state_credit_depth credit
+       ON credit.state_code = e.state_code AND credit.year = e.year
 LEFT JOIN ref_urbanization urb
        ON urb.state_code = e.state_code
 LEFT JOIN ref_cng_stations cng

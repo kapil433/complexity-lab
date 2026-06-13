@@ -1,46 +1,41 @@
-# CNG stations by state.
-# 2024 cross-section: PNGRB RTI reply R-1855 (GA-wise CNG stations as on 31.05.2024,
-# total 6,890) aggregated to states; GAs spanning multiple states are assigned to the
-# first-listed (primary) state, so border-GA counts are approximate at state level.
-# 2025 national total: PPAC/news reports (~8,067 as of March 2025).
-# quality: official_derived = official GA table, state allocation derived;
-#          reported = secondary report of an official figure.
-state_code,year,stations,source,quality
-ALL,2024,6890,PNGRB RTI R-1855 (as on 31.05.2024),official
-ALL,2025,8067,PPAC via press reports (as of March 2025),reported
-AP,2024,236,PNGRB RTI R-1855,official_derived
-AS,2024,22,PNGRB RTI R-1855,official_derived
-BR,2024,174,PNGRB RTI R-1855,official_derived
-CH,2024,28,PNGRB RTI R-1855,official_derived
-CG,2024,18,PNGRB RTI R-1855,official_derived
-DN,2024,11,PNGRB RTI R-1855,official_derived
-DL,2024,491,PNGRB RTI R-1855,official_derived
-GA,2024,12,PNGRB RTI R-1855,official_derived
-GJ,2024,975,PNGRB RTI R-1855,official_derived
-HR,2024,452,PNGRB RTI R-1855,official_derived
-HP,2024,13,PNGRB RTI R-1855,official_derived
-JK,2024,1,PNGRB RTI R-1855,official_derived
-JH,2024,102,PNGRB RTI R-1855,official_derived
-KA,2024,382,PNGRB RTI R-1855,official_derived
-KL,2024,150,PNGRB RTI R-1855,official_derived
-MP,2024,369,PNGRB RTI R-1855,official_derived
-MH,2024,994,PNGRB RTI R-1855,official_derived
-OD,2024,108,PNGRB RTI R-1855,official_derived
-PY,2024,10,PNGRB RTI R-1855,official_derived
-PB,2024,236,PNGRB RTI R-1855,official_derived
-RJ,2024,322,PNGRB RTI R-1855,official_derived
-TN,2024,318,PNGRB RTI R-1855,official_derived
-TS,2024,192,PNGRB RTI R-1855,official_derived
-TR,2024,18,PNGRB RTI R-1855,official_derived
-UP,2024,1089,PNGRB RTI R-1855,official_derived
-UK,2024,36,PNGRB RTI R-1855,official_derived
-WB,2024,131,PNGRB RTI R-1855,official_derived
-AR,2024,0,PNGRB RTI R-1855,official_derived
-ML,2024,0,PNGRB RTI R-1855,official_derived
-MN,2024,0,PNGRB RTI R-1855,official_derived
-MZ,2024,0,PNGRB RTI R-1855,official_derived
-NL,2024,0,PNGRB RTI R-1855,official_derived
-SK,2024,0,PNGRB RTI R-1855,official_derived
-LA,2024,0,PNGRB RTI R-1855,official_derived
-AN,2024,0,No CGD network authorized,official_derived
-LD,2024,0,No CGD network authorized,official_derived
+# Dated CNG station snapshots; no interpolation or invented history.
+# 2024 state rows reconcile to the national total; 2025 is national only.
+state_code,year,stations,source,quality,snapshot_date,coverage_scope,state_allocation_coverage_pct,reconciliation_note
+ALL,2024,6890,PNGRB RTI R-1855 (as on 31.05.2024),official,2024-05-31,national_total,100.0,"State rows reconcile exactly to the 6,890 national total."
+ALL,2025,8067,PPAC via press reports (as of March 2025),reported,2025-03-31,national_total,,Only the national total is available; no state allocation is stored.
+AP,2024,236,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+AS,2024,22,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+BR,2024,174,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+CH,2024,28,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+CG,2024,18,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+DN,2024,11,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+DL,2024,491,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+GA,2024,12,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+GJ,2024,975,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+HR,2024,452,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+HP,2024,13,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+JK,2024,1,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+JH,2024,102,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+KA,2024,382,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+KL,2024,150,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+MP,2024,369,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+MH,2024,994,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+OD,2024,108,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+PY,2024,10,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+PB,2024,236,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+RJ,2024,322,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+TN,2024,318,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+TS,2024,192,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+TR,2024,18,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+UP,2024,1089,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+UK,2024,36,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+WB,2024,131,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+AR,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+ML,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+MN,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+MZ,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+NL,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+SK,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+LA,2024,0,PNGRB RTI R-1855,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+AN,2024,0,No CGD network authorized,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."
+LD,2024,0,No CGD network authorized,official_derived,2024-05-31,complete_state_allocation,100.0,"State rows reconcile exactly to the 6,890 national total."

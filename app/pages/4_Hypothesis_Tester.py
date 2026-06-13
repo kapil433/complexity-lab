@@ -28,6 +28,9 @@ with st.expander("Reference-data availability", expanded=False):
                   quality_summary, not_available
            FROM reference_availability
            WHERE dataset IN ('state_income', 'state_income_constant',
+                             'state_gsdp', 'state_population_annual',
+                             'state_credit_depth', 'vehicle_lifetime_tax',
+                             'policy_events_canonical',
                              'state_road_length', 'state_personal_loans',
                              'urbanization', 'cng_stations',
                              'ev_charging', 'fuel_prices', 'population',
@@ -60,8 +63,12 @@ numeric_cols = [
     "total_regs", "ev_regs", "cng_regs", "ev_share", "cng_share", "yoy_growth",
     "hhi_oem", "entropy_oem", "n_oems", "pc_income_inr",
     "pc_income_constant_2011_12_inr", "urban_pct",
+    "gsdp_constant_2011_12_lakh", "gsdp_real_growth_pct",
+    "population_mn", "urban_population_mn", "rural_population_mn",
+    "personal_loans_outstanding_crore", "personal_loans_per_capita_inr",
+    "personal_loans_yoy_growth_pct",
     "cng_stations", "ev_chargers", "petrol_price_inr", "diesel_price_inr", "cng_price_inr",
-    "regs_per_1000_capita",
+    "regs_per_1000_population", "regs_per_1000_capita",
 ]
 if HAS_WS:
     numeric_cols += ["wholesale_units", "ws_retail_ratio"]

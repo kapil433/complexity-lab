@@ -28,11 +28,16 @@ METRICS = {
         "Registrations per 1,000 people (fixed 2024 population basis)",
         "raw",
     ),
+    "regs_per_1000_population": (
+        "Registrations per 1,000 people (estimated annual population)",
+        "raw",
+    ),
     "pc_income_inr": ("Per-capita income, current prices (₹)", "indian"),
     "pc_income_constant_2011_12_inr": (
         "Per-capita income, constant 2011-12 prices (₹)",
         "indian",
     ),
+    "gsdp_real_growth_pct": ("Real GSDP growth", "pct"),
 }
 
 panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
