@@ -20,13 +20,15 @@ from complexity_lab.simulation.diffusion import fit_bass_by_state
     description="Market size, growth, fuel mix, seasonality and OEM concentration — the baseline every other experiment builds on.",
 )
 def descriptive_baseline(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
-    year_panel = con.execute("SELECT * FROM panel_state_year").df()
+    year_panel = con.execute("SELECT * FROM experiment_state_year").df()
     month_panel = con.execute(
         "SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY year, month"
     ).df()
 
-    summary = descriptive.summary_table(year_panel[year_panel["state_code"] != "ALL"])
+    summary = descriptive.summary_table(year_panel)
     summary.to_parquet(out_dir / "state_summary.parquet")
+    context = con.execute("SELECT * FROM experiment_state_context").df()
+    context.to_parquet(out_dir / "state_reference_context.parquet")
 
     seasonality = descriptive.seasonality_profile(
         month_panel[month_panel["year"].between(2013, 2025)]
@@ -37,7 +39,7 @@ def descriptive_baseline(con: duckdb.DuckDBPyConnection, out_dir: Path, **params
     conc = descriptive.concentration_series(edges, "year", "maker")
     conc.to_parquet(out_dir / "oem_concentration_by_year.parquet")
 
-    latest = year_panel[(year_panel["state_code"] != "ALL")]
+    latest = year_panel
     latest_year = int(latest["year"].max()) - 1
     sizes = latest[latest["year"] == latest_year].set_index("state_code")["total_regs"]
     zipf = distributions.zipf_exponent(sizes)
@@ -63,22 +65,21 @@ def ev_diffusion_states(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
     fits = fit_bass_by_state(month_panel, value_col="ev_regs", min_total=params.get("min_total", 1000))
     fits.to_parquet(out_dir / "bass_fits_by_state.parquet")
 
-    year_panel = con.execute(
-        "SELECT state_code, year, pc_income_inr, ev_chargers, urban_pct "
-        "FROM panel_state_year WHERE state_code <> 'ALL'"
-    ).df()
-    latest_cov = (
-        year_panel.dropna(subset=["pc_income_inr"])
-        .sort_values("year")
-        .groupby("state_code")
-        .tail(1)
-        .set_index("state_code")
-    )
+    latest_cov = con.execute(
+        """SELECT state_code, real_pc_income_inr, urban_pct,
+                  ev_chargers_2025, broad_credit_per_capita_inr,
+                  latest_real_gsdp_growth_pct
+           FROM experiment_state_context"""
+    ).df().set_index("state_code")
     joined = fits.join(latest_cov, how="left")
     joined.to_parquet(out_dir / "bass_fits_with_covariates.parquet")
 
-    ok = joined.dropna(subset=["q", "pc_income_inr"])
-    corr_q_income = float(ok["q"].corr(ok["pc_income_inr"], method="spearman")) if len(ok) > 4 else None
+    ok = joined.dropna(subset=["q", "real_pc_income_inr"])
+    corr_q_income = (
+        float(ok["q"].corr(ok["real_pc_income_inr"], method="spearman"))
+        if len(ok) > 4
+        else None
+    )
     return {
         "n_states_fit": int(fits["q"].notna().sum()),
         "median_p": round(float(fits["p"].median()), 5),
@@ -112,7 +113,7 @@ def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
     )
 
     panel_year = con.execute(
-        "SELECT * FROM panel_state_year WHERE state_code <> 'ALL'"
+        "SELECT * FROM experiment_state_year"
     ).df()
     regimes = tr.classify_regimes(panel_year[panel_year["year"] <= latest_year])
     regimes.to_parquet(out_dir / "fuel_regimes.parquet")
@@ -152,8 +153,9 @@ def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
     tips_policy.to_parquet(out_dir / "ev_tipping_policy_era.parquet")
 
     cov = con.execute(
-        "SELECT state_code, MAX(pc_income_inr) pc_income_inr, MAX(ev_chargers) ev_chargers "
-        "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code"
+        """SELECT state_code, real_pc_income_inr, ev_chargers_2025,
+                  broad_credit_per_capita_inr, latest_real_gsdp_growth_pct
+           FROM experiment_state_context"""
     ).df().set_index("state_code")
     joined = tips.join(cov, how="left")
     joined.to_parquet(out_dir / "ev_tipping_with_covariates.parquet")
@@ -229,7 +231,7 @@ def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
     threshold = params.get("threshold", 0.02)
     g = load_adjacency(con)
     panel = con.execute(
-        "SELECT state_code, year, ev_share FROM panel_state_year WHERE state_code <> 'ALL'"
+        "SELECT state_code, year, ev_share FROM experiment_state_year"
     ).df()
     latest_full = int(panel["year"].max()) - 1
 
@@ -267,7 +269,7 @@ def fuel_regimes(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
     panel = con.execute(
         "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
-        "FROM panel_state_year WHERE year < (SELECT MAX(year) FROM panel_state_year) "
+        "FROM experiment_state_year WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
         "ORDER BY state_code, year"
     ).df()
     res = fit_fuel_regimes(panel, k_range=tuple(params.get("k_range", (2, 3, 4))))
@@ -304,18 +306,18 @@ def adoption_network_horserace(con: duckdb.DuckDBPyConnection, out_dir: Path, **
 
     threshold = params.get("threshold", 0.02)
     panel = con.execute(
-        "SELECT state_code, year, ev_share, pc_income_inr, urban_pct, ev_chargers, cng_stations "
-        "FROM panel_state_year WHERE state_code <> 'ALL'"
+        "SELECT state_code, year, ev_share FROM experiment_state_year"
     ).df()
 
     observed = observed_adoption_years(panel, threshold=threshold)
 
     g_geo = load_adjacency(con)
-    latest_cov = (
-        panel.sort_values("year")
-        .groupby("state_code")[["pc_income_inr", "urban_pct", "ev_chargers", "cng_stations"]]
-        .last()
-    )
+    latest_cov = con.execute(
+        """SELECT state_code, real_pc_income_inr, real_gsdp_lakh,
+                  broad_credit_per_capita_inr, urban_pct,
+                  ev_chargers_2025, cng_stations_2024
+           FROM experiment_state_context"""
+    ).df().set_index("state_code")
     g_econ = economic_similarity_graph(latest_cov, k=params.get("k_nearest", 4))
     shares = panel.pivot_table(index="year", columns="state_code", values="ev_share")
     g_coad = coadoption_graph(shares, alpha=params.get("alpha", 0.05))
@@ -370,13 +372,22 @@ def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
     shares.to_parquet(out_dir / "national_shares_monthly.parquet")
 
     # Policy-incentive mapping: which technologies do policy events actually touch?
-    pol = con.execute("SELECT label, detail, category FROM ref_policy_events").df()
+    pol = con.execute(
+        "SELECT label, detail, category FROM ref_policy_events_canonical"
+    ).df()
     text = (pol["label"].fillna("") + " " + pol["detail"].fillna("")).str.lower()
     counts = {
         "EV": int(text.str.contains("ev|electric").sum()),
         "CNG": int(text.str.contains("cng").sum()),
         "Hybrid": int(text.str.contains("hybrid").sum()),
     }
+    tax_context = con.execute(
+        """SELECT state_code, ev_tax_rate_pct, hybrid_tax_rate_pct,
+                  ice_tax_rate_pct, tax_as_of
+           FROM experiment_state_context
+           WHERE hybrid_tax_rate_pct IS NOT NULL"""
+    ).df()
+    tax_context.to_parquet(out_dir / "state_tax_context.parquet")
 
     # UP strong-hybrid registration-tax waiver (July 2024) as natural experiment
     mp = con.execute(
@@ -432,11 +443,20 @@ def regime_survival(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> 
 
     panel = con.execute(
         "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share, "
-        "pc_income_inr, urban_pct FROM panel_state_year "
-        "WHERE year < (SELECT MAX(year) FROM panel_state_year) ORDER BY state_code, year"
+        "real_pc_income_inr, real_gsdp_growth_pct, broad_credit_per_capita_inr "
+        "FROM experiment_state_year "
+        "WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
+        "ORDER BY state_code, year"
     ).df()
     regimes = fit_fuel_regimes(panel)
-    covs = params.get("covariates", ["pc_income_inr", "urban_pct"])
+    covs = params.get(
+        "covariates",
+        [
+            "real_pc_income_inr",
+            "real_gsdp_growth_pct",
+            "broad_credit_per_capita_inr",
+        ],
+    )
     risk = build_risk_set(regimes["calendar"], panel, covs)
     risk.to_parquet(out_dir / "risk_set.parquet")
 

@@ -26,10 +26,12 @@ from complexity_lab.complexity.survival import (
 con = duckdb.connect(str(settings.db_path), read_only=True)
 panel = con.execute(
     "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share, "
-    "pc_income_inr, urban_pct FROM panel_state_year "
-    "WHERE year < (SELECT MAX(year) FROM panel_state_year) ORDER BY state_code, year").df()
+    "real_pc_income_inr, real_gsdp_growth_pct, broad_credit_per_capita_inr "
+    "FROM experiment_state_year "
+    "WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
+    "ORDER BY state_code, year").df()
 regimes = fit_fuel_regimes(panel)
-COVS = ["pc_income_inr", "urban_pct"]
+COVS = ["real_pc_income_inr", "real_gsdp_growth_pct", "broad_credit_per_capita_inr"]
 risk = build_risk_set(regimes["calendar"], panel, COVS)
 print(f"{risk['state_code'].nunique()} states at risk, "
       f"{int(risk['switched'].sum())} first switches observed")
@@ -67,8 +69,10 @@ print(f"events = {model['n_events']}, state-years at risk = {model['n_obs']}, "
       f"pseudo-R² = {model['pseudo_r2']:.2f}")
 ```
 
-With ~15 first switches, neither income nor urbanization is statistically
-distinguishable from zero — but the **calendar-time trend is overwhelming**
+With 15 first switches, real income, real GSDP growth, and broad personal-credit
+depth are not statistically distinguishable from zero. Credit depth has the
+largest positive point estimate, but uncertainty remains wide. The
+**calendar-time trend is overwhelming**
 (odds rising ~1.8× per period-SD, p < 0.001): switches concentrate in the
 2021–2022 window across rich and poor states alike. Combined with experiment
 009 (the co-adoption network beating geography and economics at predicting

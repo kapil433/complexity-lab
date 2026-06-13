@@ -12,6 +12,8 @@
 | `reference_availability` | reference dataset | Governing status, scope, time coverage, approved use, unavailable fields and observed file facts from `reference_catalog.csv`. |
 | `panel_state_month` | state × month | Fuel pivots, EV/CNG shares, OEM HHI/entropy. |
 | `panel_state_year` | state × year | Same + YoY growth + covariates joined. |
+| `experiment_state_year` | state × year | Canonical experiment view with real macro, credit, population, and price fields; excludes ALL. |
+| `experiment_state_context` | state | Latest real macro context, dated infrastructure snapshots, and current normalized tax. |
 | `oem_state_edges` | state × maker × year | Network edge list (view). |
 | `wholesale` | city × model × month | **Local only** (proprietary; never committed). FY2017-18→present. Built by `lab wholesale`. |
 | `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~3.7% of volume overall after the current mapping). |
@@ -63,25 +65,22 @@ usage guide is [`docs/reference-data.md`](reference-data.md). Use
 |---|---|---|---|
 | `reference_catalog.csv` | all reference files | governing metadata | Local audited contract: usable / constrained / unavailable |
 | `states.csv` | 36 + ALL | — | Canonical dim (codes, zones, GeoJSON names) |
-| `state_income.csv` | 33 states, FY2011-12→2024-25 | official | RBI Handbook of Statistics on Indian States 2024-25, Table 19 |
 | `state_income_constant.csv` | 33 states, FY2011-12 to 2024-25 | official | RBI Handbook 2024-25, Table 20 |
 | `state_gsdp.csv` | 33 states, FY2011-12 to 2024-25 | official/derived | RBI Handbook 2024-25, Table 22; growth derived from constant-price levels |
 | `state_road_length.csv` | ALL + 35 states/UTs, 2005-2020 | official/official_derived | RBI Table 146; underlying source MoRTH |
-| `state_personal_loans.csv` | ALL + 36 states/UTs, 2004-2025 | official/official_derived | RBI Table 159; broad personal loans, not auto finance |
 | `state_credit_depth.csv` | ALL + 36 states/UTs, 2012-2025 | estimate | RBI personal-loan stock per estimated population; not vehicle finance |
 | `state_population_annual.csv` | ALL + 36 states/UTs, 2012-2026 | estimate | Interpolation/extrapolation from 2011/2024 anchors; 2011 urban shares fixed |
-| `urbanization.csv` | all states | official/derived | Census of India 2011 |
 | `cng_stations.csv` | all states, 2024 (+ national 2025) | official_derived | PNGRB RTI R-1855 (31.05.2024), GA→state allocation |
 | `ev_charging.csv` | incomplete state allocation 2025, selected states 2024 | reported/approximate | Ministry of Power via ORF/PIB; stored 2025 states cover 77.65% of national total |
 | `fuel_prices.csv` | Delhi 2012–2026; 33 states 2017–2026 (GA/NE/AN/DN 2022–26 only); CNG 7 states (annual avg), ALL=Delhi proxy | approximate | Delhi: PPAC/IOCL/IGL compiled. States: Delhi series + capital-city differentials from era-anchored RSP snapshots 2019/2021/2025 (PPAC/OMC-sourced); see `scripts/compile_state_fuel_prices.py`. Caveat: HR/PB use shared capital Chandigarh (Punjab in-state pumps ~₹3/l higher) |
-| `road_tax.csv` | 25 states, as-of 2024 | approximate | State transport dept notifications, single-band simplification |
 | `vehicle_lifetime_tax.csv` | 25 states x 5 fuel labels, as-of 2024 | approximate | Normalized INR 10 lakh benchmark; non-EV fuels repeat ICE rate where not distinguished |
-| `policy_events.csv` | 27 events 2013–2025 | official | MoHI/MoRTH/GST Council/state EV policies |
 | `policy_events_canonical.csv` | 74 bundle + curated records, 2008-2025 | reported/official | Unified origins, tiers, scopes, and overlap flags |
-| `dealer_counts.csv` | zero-row acquisition schema | **unavailable for modelling** | No defensible state x OEM x year panel acquired |
-| `financing.csv` | five national anchors | **unavailable for state/OEM modelling** | CRISIL/JATO/industry |
+| `known_data_gaps.csv` | two missing capabilities | unavailable | Vehicle-finance penetration and dated state x OEM dealer history; not observations |
 | `state_adjacency.csv` | 68 land borders | — | Hand-compiled pair list (islands have none; DL enclosed by HR/UP) |
 | `model_fuel_map.csv` | 120 nameplates ≈99.8% of wholesale volume | approximate | OEM lineups; `ev_only` flag is the exact subset |
+
+Generator-only inputs live under `data/raw/reference_inputs/` and are not loaded
+as `ref_*` tables.
 
 ## Logged data TODOs
 

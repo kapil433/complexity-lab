@@ -11,7 +11,7 @@ stated assumptions**, not a forecast.
 
 ## Question
 
-Experiment 010 established the isolation (zero policy nodes, ~43% effective
+Experiment 010 established the isolation (one state waiver versus dozens of EV policy nodes, ~43% effective
 GST) and the causal anchor (UP's waiver ⇒ +2.3pp). The remaining paper piece:
 **how large is the foregone adoption?** We fit a Bass model to the actual
 hybrid trajectory and re-project it under EV-equivalent taxation.

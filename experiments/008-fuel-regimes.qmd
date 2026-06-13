@@ -24,7 +24,7 @@ from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
 con = duckdb.connect(str(settings.db_path), read_only=True)
 panel = con.execute(
     "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
-    "FROM panel_state_year WHERE year < (SELECT MAX(year) FROM panel_state_year) "
+    "FROM experiment_state_year WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
     "ORDER BY state_code, year"
 ).df()
 res = fit_fuel_regimes(panel)

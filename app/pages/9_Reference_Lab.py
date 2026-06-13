@@ -221,18 +221,17 @@ with tab_policy:
     )
 
 with tab_gaps:
-    gaps = availability[availability["status"] == "unavailable"]
+    gaps = query("SELECT * FROM ref_known_data_gaps ORDER BY gap_id")
     st.dataframe(
-        gaps[
-            ["dataset", "geography", "time_coverage", "not_available", "row_count"]
-        ],
+        gaps,
         width="stretch",
         hide_index=True,
     )
     st.error(
         "State x OEM dealer history and state vehicle-finance penetration remain "
-        "unavailable. Dealer counts now contain an empty schema instead of a fake "
-        "national analytical row. Broad personal-loan depth is kept under its own name."
+        "unavailable. Placeholder observations have been deleted; the gap registry "
+        "states exactly what evidence would qualify. Broad personal-loan depth remains "
+        "under its own name."
     )
     st.markdown(
         "**Wholesale boundary:** wholesale dispatch data has no fuel cut. Model "

@@ -78,7 +78,7 @@ dominant positions; a falling one, that mid-size OEMs are knitting the market.
 ## Fuel regime calendar
 
 ```{python}
-panel_year = con.execute("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'").df()
+panel_year = con.execute("SELECT * FROM experiment_state_year").df()
 regimes = tr.classify_regimes(panel_year[panel_year["year"] <= latest])
 
 order = (regimes[regimes["year"] == latest].sort_values("regime")["state_code"]).tolist()

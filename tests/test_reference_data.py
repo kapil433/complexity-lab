@@ -54,12 +54,13 @@ def test_ev_snapshot_discloses_incomplete_allocation():
     assert set(ev.loc[ev["year"] == 2025, "state_allocation_coverage_pct"]) == {77.65}
 
 
-def test_unavailable_dealer_file_has_no_placeholder_rows():
-    dealers = read("dealer_counts.csv")
-    assert dealers.empty
-    assert {"state_code", "year", "oem", "outlet_id", "snapshot_date"} <= set(
-        dealers.columns
-    )
+def test_unavailable_capabilities_are_gaps_not_placeholder_observations():
+    gaps = read("known_data_gaps.csv")
+    assert set(gaps["gap_id"]) == {
+        "vehicle_finance_penetration",
+        "oem_dealer_network",
+    }
+    assert set(gaps["status"]) == {"unavailable"}
 
 
 def test_canonical_events_and_tax_keys():

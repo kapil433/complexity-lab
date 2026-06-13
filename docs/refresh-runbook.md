@@ -52,17 +52,17 @@ data — it publishes whatever execution results you rendered locally. So:
 
 | Series | Source | Helper |
 |---|---|---|
-| Per-capita NSDP | RBI Handbook (December release), Table 19 XLSX | `uv run --with openpyxl python scripts/convert_rbi_nsdp.py <xlsx>` |
+| Real per-capita NSDP | RBI Handbook (December release), Table 20 XLSX | `uv run --with openpyxl python scripts/convert_rbi_nsdp.py <xlsx> --kind constant` |
 | Constant-price GSDP | RBI Handbook, Table 22 XLSX | `uv run --with openpyxl python scripts/convert_rbi_gsdp.py <xlsx>` |
 | Annual population estimate | Audited 2011/2024 anchors | `uv run python scripts/generate_annual_population.py` |
 | State fuel prices | PPAC/OMC RSP snapshots | `scripts/compile_state_fuel_prices.py` |
 | CNG stations | PNGRB GA-wise table | manual → `data/reference/cng_stations.csv` |
 | EV chargers | Ministry of Power / BEE releases | manual → `data/reference/ev_charging.csv` |
-| Policy events | budget/GST/state EV announcements | manual → `data/reference/policy_events.csv` |
+| Policy event source | budget/GST/state EV announcements | update `data/raw/reference_inputs/policy_events_curated.csv` |
 
 After updating infrastructure snapshots, run
 `uv run python scripts/normalize_sparse_references.py`. After changing personal
-loans, population, road tax, or policy events, run
+loans, population, road tax, or policy-event source inputs, run
 `uv run python scripts/generate_derived_references.py`.
 
 After any reference edit: `uv run lab ingest && uv run lab panel` (the loader

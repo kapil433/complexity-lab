@@ -640,7 +640,7 @@ _add(Card(
          "Placebo rank p = share of control states whose pseudo-ATT is at least as extreme — "
          "with 8 controls the smallest achievable p is 1/9 ≈ 0.11.",
     look_for=[
-        "Policy-mention bar: EV ≫ CNG > Hybrid = 0 — the isolation, quantified.",
+        "Policy mentions: EV far exceeds CNG and Hybrid; the UP waiver is the lone hybrid node.",
         "SHEV trajectory flat vs EV's S-curve despite similar product availability windows.",
         "Positive UP ATT that beats all placebos = price/tax, not preference, binds adoption.",
         "Wholesale hybrid series rising pre-2024 = the Vahan zero is a measurement artifact.",

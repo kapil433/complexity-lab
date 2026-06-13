@@ -28,14 +28,16 @@ from complexity_lab.networks.inference import (
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
 panel = con.execute(
-    "SELECT state_code, year, ev_share, pc_income_inr, urban_pct, ev_chargers, cng_stations "
-    "FROM panel_state_year WHERE state_code <> 'ALL'"
+    "SELECT state_code, year, ev_share FROM experiment_state_year"
 ).df()
 observed = observed_adoption_years(panel, threshold=0.02)
 
 g_geo = load_adjacency(con)
-cov = (panel.sort_values("year").groupby("state_code")
-       [["pc_income_inr", "urban_pct", "ev_chargers", "cng_stations"]].last())
+cov = con.execute(
+    "SELECT state_code, real_pc_income_inr, real_gsdp_lakh, "
+    "broad_credit_per_capita_inr, urban_pct, ev_chargers_2025, "
+    "cng_stations_2024 FROM experiment_state_context"
+).df().set_index("state_code")
 g_econ = economic_similarity_graph(cov, k=4)
 shares = panel.pivot_table(index="year", columns="state_code", values="ev_share")
 g_coad = coadoption_graph(shares, alpha=0.05)

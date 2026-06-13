@@ -16,6 +16,7 @@ import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / "data" / "reference"
+INPUTS = ROOT / "data" / "raw" / "reference_inputs"
 
 
 def write_csv(path: Path, comment: str, df: pd.DataFrame) -> None:
@@ -26,7 +27,7 @@ def write_csv(path: Path, comment: str, df: pd.DataFrame) -> None:
 
 
 def build_credit_depth() -> pd.DataFrame:
-    loans = pd.read_csv(REFERENCE / "state_personal_loans.csv", comment="#")
+    loans = pd.read_csv(INPUTS / "state_personal_loans_rbi.csv", comment="#")
     population = pd.read_csv(REFERENCE / "state_population_annual.csv", comment="#")[
         ["state_code", "year", "population_mn", "quality"]
     ].rename(columns={"quality": "population_quality"})
@@ -59,7 +60,7 @@ def build_credit_depth() -> pd.DataFrame:
 
 
 def build_lifetime_tax() -> pd.DataFrame:
-    base = pd.read_csv(REFERENCE / "road_tax.csv", comment="#")
+    base = pd.read_csv(INPUTS / "road_tax_2024_source.csv", comment="#")
     rows: list[dict] = []
     for row in base.itertuples(index=False):
         for fuel in ["Petrol", "Diesel", "CNG", "Strong Hybrid", "EV"]:
@@ -84,7 +85,7 @@ def build_lifetime_tax() -> pd.DataFrame:
 
 
 def build_policy_events() -> pd.DataFrame:
-    curated = pd.read_csv(REFERENCE / "policy_events.csv", comment="#").fillna("")
+    curated = pd.read_csv(INPUTS / "policy_events_curated.csv", comment="#").fillna("")
     curated_rows = []
     for row in curated.to_dict("records"):
         curated_rows.append(

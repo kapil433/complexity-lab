@@ -3,7 +3,7 @@
 Implementation status updated: **2026-06-13**
 
 The reference-data foundation described in Wave 0 is now implemented: the
-machine-readable availability catalog covers 22 datasets; official RBI
+machine-readable availability catalog covers 15 canonical datasets; official RBI
 constant-price income, GSDP, road length, and personal loans are preserved with
 converters; annual population denominators are explicitly estimated for 2012-2026;
 infrastructure snapshots carry dates and reconciliation coverage; tax and policy
@@ -38,7 +38,7 @@ saved research notes.
 Repository health:
 
 - 10 Streamlit pages and 13 published Quarto experiments.
-- 81 tests pass; Ruff reports no issues.
+- 84 tests pass; Ruff reports no issues.
 - DuckDB contains 205,779 registration fact rows and 727,040 wholesale fact rows.
 - Existing modules already cover descriptive analysis, econometrics, forecasting,
   network analysis, diffusion, regimes, tipping points, and shock simulation.

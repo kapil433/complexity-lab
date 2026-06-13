@@ -1,0 +1,4 @@
+# Required datasets that remain unavailable; this is a gap registry, not observations.
+gap_id,required_grain,status,reason,qualifying_source
+vehicle_finance_penetration,state x year x lender type,unavailable,"No defensible public panel covers banks, NBFCs, and captive OEM finance with a vehicle-purpose denominator","Regulatory or industry microdata with state, period, vehicle-loan purpose, lender coverage, and denominator"
+oem_dealer_network,state x OEM x outlet x dated snapshot,unavailable,"No historical deduplicated outlet panel with openings and closures is available","Dated OEM/FADA outlet records with stable outlet identity, location, brand, and active dates"

@@ -1,9 +1,0 @@
-# Share of new PV purchases that are financed (national). State-level splits are not
-# public; industry reports (CRISIL, JATO, lender disclosures) give national estimates.
-# Treat as a slow covariate / context series; quality = estimate throughout.
-state_code,year,financing_pct,source,quality
-ALL,2015,72,Industry estimates (CRISIL/lender reports),estimate
-ALL,2018,75,Industry estimates,estimate
-ALL,2020,78,Industry estimates,estimate
-ALL,2022,80,Industry estimates,estimate
-ALL,2024,84,Industry estimates (JATO/FADA commentary),estimate

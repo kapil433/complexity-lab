@@ -1,8 +1,7 @@
 """Normalize sparse infrastructure and unavailable-market reference tables.
 
 This script does not create historical observations. It adds dated snapshot and
-reconciliation metadata to the available EV/CNG files, and replaces the dealer
-placeholder with an explicit empty schema.
+reconciliation metadata to the available EV/CNG files.
 """
 
 from __future__ import annotations
@@ -68,23 +67,6 @@ def normalize_ev() -> pd.DataFrame:
     return df
 
 
-def empty_dealer_schema() -> pd.DataFrame:
-    return pd.DataFrame(
-        columns=[
-            "state_code",
-            "year",
-            "oem",
-            "outlet_id",
-            "outlet_name",
-            "city",
-            "outlet_type",
-            "source",
-            "quality",
-            "snapshot_date",
-        ]
-    )
-
-
 def main() -> None:
     write_csv(
         REFERENCE / "cng_stations.csv",
@@ -102,15 +84,7 @@ def main() -> None:
         ],
         normalize_ev(),
     )
-    write_csv(
-        REFERENCE / "dealer_counts.csv",
-        [
-            "Empty schema: no defensible state x OEM x year dealer panel is available.",
-            "Populate only from dated, deduplicated OEM/FADA outlet snapshots.",
-        ],
-        empty_dealer_schema(),
-    )
-    print("Normalized CNG and EV snapshots; dealer_counts.csv now has zero data rows")
+    print("Normalized CNG and EV snapshots")
 
 
 if __name__ == "__main__":

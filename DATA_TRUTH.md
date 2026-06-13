@@ -264,15 +264,13 @@ Verified:
 
 Files:
 
-- [`data/reference/state_income.csv`](data/reference/state_income.csv): current-price
-  per-capita NSDP.
 - [`data/reference/state_income_constant.csv`](data/reference/state_income_constant.csv):
   constant-2011-12-price per-capita NSDP.
 - [`data/reference/state_gsdp.csv`](data/reference/state_gsdp.csv):
   constant-2011-12-price GSDP and derived real growth.
 
 Source: [RBI Handbook of Statistics on Indian States 2024-25](https://www.rbi.org.in/Scripts/AnnualPublications.aspx?head=Handbook%20of%20Statistics%20on%20Indian%20States),
-Tables 19, 20, and 22.
+Tables 20 and 22.
 
 - Each file has 453 rows, 33 state/UT codes, FY2011-12 to FY2024-25.
 - Level values are official. `gsdp_real_growth_pct` is derived from adjacent official
@@ -280,8 +278,8 @@ Tables 19, 20, and 22.
 - Missing from the file: DN, LA, LD.
 - The annual panel joins fiscal year starting in the calendar year. This is an
   approximation when used against calendar-year registrations.
-- Current-price NSDP mixes real growth and inflation. Use constant-price data for
-  real-income questions.
+- The former current-price income table was deleted from the analytical reference
+  directory. Experiments use constant-price income only.
 - Latest fiscal years are missing for some states. Growth is null when either
   adjacent level is unavailable.
 - Pre-reorganisation Jammu & Kashmir includes Ladakh. AP/TS source-history caveats
@@ -291,16 +289,17 @@ Tables 19, 20, and 22.
 
 Files:
 
-- [`data/reference/population.csv`](data/reference/population.csv): 2011 and rounded
-  2024 anchors.
+- [`data/raw/reference_inputs/population_anchors.csv`](data/raw/reference_inputs/population_anchors.csv):
+  preserved 2011 and rounded 2024 generator anchors.
 - [`data/reference/state_population_annual.csv`](data/reference/state_population_annual.csv):
   annual estimated denominator.
-- [`data/reference/urbanization.csv`](data/reference/urbanization.csv): Census-2011
-  urban/rural shares.
+- [`data/raw/reference_inputs/urbanization_2011.csv`](data/raw/reference_inputs/urbanization_2011.csv):
+  preserved Census-2011 urban/rural generator input.
 
 Official anchor: [Census of India tables](https://censusindia.gov.in/census.website/data/census-tables).
 
-- `population.csv` and `urbanization.csv` each have 37 geographies including ALL.
+- The two source-input files each have 37 geographies including ALL and are not
+  loaded as analytical reference tables.
 - `state_population_annual.csv` has 555 rows: 37 geographies x 2012-2026.
 - Annual totals use geometric interpolation between 2011 and 2024 anchors, then the
   same implied growth rate for 2025-2026 extrapolation.
@@ -377,8 +376,8 @@ Official anchor: [PPAC petroleum prices](https://ppac.gov.in/content/245_1_Price
 
 Files:
 
-- [`data/reference/road_tax.csv`](data/reference/road_tax.csv): source
-  cross-section.
+- [`data/raw/reference_inputs/road_tax_2024_source.csv`](data/raw/reference_inputs/road_tax_2024_source.csv):
+  preserved source cross-section.
 - [`data/reference/vehicle_lifetime_tax.csv`](data/reference/vehicle_lifetime_tax.csv):
   normalized state x fuel comparison.
 
@@ -398,7 +397,7 @@ Files:
 
 Files:
 
-- Curated reference events: [`data/reference/policy_events.csv`](data/reference/policy_events.csv)
+- Curated source input: [`data/raw/reference_inputs/policy_events_curated.csv`](data/raw/reference_inputs/policy_events_curated.csv)
 - Embedded bundle events: inside [`data/raw/vahan_master.json.gz`](data/raw/vahan_master.json.gz)
 - Unified file: [`data/reference/policy_events_canonical.csv`](data/reference/policy_events_canonical.csv)
 
@@ -414,10 +413,9 @@ Files:
 
 Files:
 
-- [`data/reference/state_personal_loans.csv`](data/reference/state_personal_loans.csv)
+- [`data/raw/reference_inputs/state_personal_loans_rbi.csv`](data/raw/reference_inputs/state_personal_loans_rbi.csv)
 - [`data/reference/state_credit_depth.csv`](data/reference/state_credit_depth.csv)
-- [`data/reference/financing.csv`](data/reference/financing.csv)
-- [`data/reference/dealer_counts.csv`](data/reference/dealer_counts.csv)
+- [`data/reference/known_data_gaps.csv`](data/reference/known_data_gaps.csv)
 
 - Official RBI personal-loan stock has 787 rows across 37 geographies, 2004-2025.
 - Derived credit depth has 507 rows for 2012-2025, joining the official loan stock
@@ -425,10 +423,9 @@ Files:
 - Personal loans include broad scheduled-commercial-bank household credit. They are
   not vehicle loans, finance approval rates, NBFC credit, captive OEM finance, or
   finance penetration.
-- `financing.csv` retains five national industry estimates only for narrative
-  context and remains status `unavailable` for modelling.
-- `dealer_counts.csv` now has a documented zero-row schema. The previous national
-  placeholder was removed because it could be mistaken for analytical data.
+- The old national financing estimates and dealer placeholder files were deleted.
+  Missing capabilities now live in a two-row gap registry, not observation-shaped
+  CSVs.
 - A usable dealer panel requires dated, deduplicated state x OEM outlet records
   with outlet identity and opening/closure treatment.
 
@@ -445,7 +442,9 @@ File: [`data/reference/state_road_length.csv`](data/reference/state_road_length.
 
 File: [`data/reference/reference_catalog.csv`](data/reference/reference_catalog.csv)
 
-The 22-row catalog is the machine-readable contract for every reference file. It
+The 15-row catalog is the machine-readable contract for every analytical reference
+file. Generator-only source inputs live under `data/raw/reference_inputs/` and are
+not loaded into DuckDB. The catalog
 classifies each dataset as `usable`, `constrained`, or `unavailable`, records
 approved use and missing capability, and controls whether the app should show,
 warn, or hide it. Ingest validates that every reference CSV is declared exactly
@@ -460,7 +459,8 @@ Official source workbooks:
 
 These files were downloaded from the RBI Handbook of Statistics on Indian States
 2024-25 and their sheets, headers, units, periods, and source notes were inspected.
-Their generated CSVs are declared in `reference_catalog.csv`.
+Canonical generated outputs are declared in `reference_catalog.csv`; generator-only
+intermediates remain under `data/raw/reference_inputs/`.
 
 - Table 20: per-capita NSDP at constant 2011-12 prices, FY2011-12 to FY2024-25.
 - Table 22: GSDP at constant 2011-12 prices, FY2011-12 to FY2024-25.
@@ -483,6 +483,8 @@ Verified row counts:
 | `registrations` | 205,779 | Decoded Vahan facts. |
 | `panel_state_month` | 6,139 | Sparse state-month panel; absent months are not necessarily zero. |
 | `panel_state_year` | 540 | Annual aggregates plus joins. |
+| `experiment_state_year` | 525 | Canonical state-year experiment view; excludes ALL and nominal/stale fields. |
+| `experiment_state_context` | 36 | One dated context row per state for real macro, sparse infrastructure, and current tax. |
 | `maker_state_share` | 10,701 | Derived shares and rank changes. |
 | `oem_state_edges` | 19,181 | Derived Vahan network edge list. |
 | `wholesale` | 727,040 | Cleaned proprietary source rows. |
@@ -490,7 +492,7 @@ Verified row counts:
 
 Important panel limitations:
 
-- Population, income, urbanization, CNG, charging, and fuel-price fields retain
+- Population, real income, urbanization basis, CNG, charging, and fuel-price fields retain
   source and quality columns in `panel_state_year`. Fuel prices also retain whether
   the value is state-specific or an ALL/Delhi fallback.
 - Constant-price income covers 407 of 540 panel rows because ALL, DN, LA, LD and
@@ -502,20 +504,29 @@ Important panel limitations:
 - Annual population normalization uses estimates; the fixed-2024 metric remains as
   a sensitivity field.
 - Real GSDP and broad credit-depth fields are joined when available.
-- Road tax, financing, dealer counts, and policy events are not in the canonical
-  annual panel.
+- Sparse infrastructure and current tax are exposed through
+  `experiment_state_context`, not repeated across years.
+- Canonical policy events remain an event table rather than annual controls.
 
 ## 7. Experiment Output Truth
 
 Run artifacts live under [`outputs/`](outputs/). Current runs produce:
 
-- `manifest.json` with experiment, parameters, elapsed time, metrics, and artifacts.
+- `manifest.json` with experiment, parameters, elapsed time, metrics, artifacts,
+  declared data dependencies, canonical interfaces, and the reference-catalog hash.
 - Parquet/JSON/GEXF result data.
 - No standard chart images, interactive figures, narrative result page, or social
   preview per run.
 
 Published notebooks live under [`experiments/`](experiments/) and their executed
 results are frozen under [`_freeze/`](_freeze/).
+
+All 13 registered experiments were executed successfully on 2026-06-13 after the
+canonical-reference migration. Experiments use `experiment_state_year`,
+`experiment_state_context`, or `ref_policy_events_canonical` when reference
+context is relevant. Pure Vahan-network, wholesale, segment, or simulation
+experiments declare those factual dependencies instead of adding irrelevant
+covariates.
 
 Current experiment outputs are reproducible data artifacts, but not yet a strong
 sharing product. The revised plan requires every successful run to emit:
@@ -537,7 +548,7 @@ must be updated.
 
 | File | Bytes | SHA-256 prefix |
 |---|---:|---|
-| [`data/lab.duckdb`](data/lab.duckdb) | 31,469,568 | `b16c65b422ede836` |
+| [`data/lab.duckdb`](data/lab.duckdb) | 31,207,424 | `618afdf0fc7ca969` |
 | [`data/raw/vahan_master.json.gz`](data/raw/vahan_master.json.gz) | 875,542 | `70c56d9641fdabed` |
 | [`data/raw/wholesale_raw.parquet`](data/raw/wholesale_raw.parquet) | 2,580,264 | `0464b223281913b2` |
 | [`data/raw/wholesale_clean.parquet`](data/raw/wholesale_clean.parquet) | 3,138,330 | `655dee76f6b67556` |
@@ -571,28 +582,33 @@ These are the preserved official source inputs for the promoted reference CSVs.
 | File | Rows | SHA-256 prefix |
 |---|---:|---|
 | [`data/reference/states.csv`](data/reference/states.csv) | 37 | `5db58555bfcbe7b6` |
-| [`data/reference/reference_catalog.csv`](data/reference/reference_catalog.csv) | 22 | `e5fd6220a21d609b` |
+| [`data/reference/reference_catalog.csv`](data/reference/reference_catalog.csv) | 15 | `6bcb8049ffa4c6ec` |
 | [`data/reference/city_state.csv`](data/reference/city_state.csv) | 282 | `2652fbe4aad8fdad` |
 | [`data/reference/model_fuel_map.csv`](data/reference/model_fuel_map.csv) | 120 | `365e92bbfe5ed355` |
 | [`data/reference/state_adjacency.csv`](data/reference/state_adjacency.csv) | 68 | `d140b44f69c0dba7` |
-| [`data/reference/state_income.csv`](data/reference/state_income.csv) | 453 | `1decfd024b743276` |
 | [`data/reference/state_income_constant.csv`](data/reference/state_income_constant.csv) | 453 | `007e37e398254fcc` |
 | [`data/reference/state_gsdp.csv`](data/reference/state_gsdp.csv) | 453 | `0ef1b7b4b548aa9d` |
 | [`data/reference/state_road_length.csv`](data/reference/state_road_length.csv) | 567 | `7941fd00d2db45ee` |
-| [`data/reference/state_personal_loans.csv`](data/reference/state_personal_loans.csv) | 787 | `1aa84dafd760911b` |
 | [`data/reference/state_credit_depth.csv`](data/reference/state_credit_depth.csv) | 507 | `cfeba4db67628a2f` |
-| [`data/reference/urbanization.csv`](data/reference/urbanization.csv) | 37 | `3648f8523c7f79d1` |
-| [`data/reference/population.csv`](data/reference/population.csv) | 37 | `1a29577f3b2aa7e4` |
-| [`data/reference/state_population_annual.csv`](data/reference/state_population_annual.csv) | 555 | `db14dd4c533040ed` |
+| [`data/reference/state_population_annual.csv`](data/reference/state_population_annual.csv) | 555 | `c95902b054aa1657` |
 | [`data/reference/cng_stations.csv`](data/reference/cng_stations.csv) | 38 | `96698b71bd101e8e` |
 | [`data/reference/ev_charging.csv`](data/reference/ev_charging.csv) | 40 | `4d8b73823cbe4d96` |
 | [`data/reference/fuel_prices.csv`](data/reference/fuel_prices.csv) | 701 | `de86361b87d6398b` |
-| [`data/reference/road_tax.csv`](data/reference/road_tax.csv) | 25 | `3c0f3d96f22c7d3d` |
 | [`data/reference/vehicle_lifetime_tax.csv`](data/reference/vehicle_lifetime_tax.csv) | 125 | `de40fe1f8c83403e` |
-| [`data/reference/policy_events.csv`](data/reference/policy_events.csv) | 27 | `d16c389f4cedc6f4` |
 | [`data/reference/policy_events_canonical.csv`](data/reference/policy_events_canonical.csv) | 74 | `da314ada05722850` |
-| [`data/reference/financing.csv`](data/reference/financing.csv) | 5 | `cec3566a751f7ff1` |
-| [`data/reference/dealer_counts.csv`](data/reference/dealer_counts.csv) | 0 | `292deb925ac98dba` |
+| [`data/reference/known_data_gaps.csv`](data/reference/known_data_gaps.csv) | 2 | `f34ff9f7c780daab` |
+
+### Preserved reference-generator inputs
+
+These are source inputs, not loaded analytical tables.
+
+| File | Rows | SHA-256 prefix |
+|---|---:|---|
+| [`data/raw/reference_inputs/population_anchors.csv`](data/raw/reference_inputs/population_anchors.csv) | 37 | `1a29577f3b2aa7e4` |
+| [`data/raw/reference_inputs/urbanization_2011.csv`](data/raw/reference_inputs/urbanization_2011.csv) | 37 | `3648f8523c7f79d1` |
+| [`data/raw/reference_inputs/state_personal_loans_rbi.csv`](data/raw/reference_inputs/state_personal_loans_rbi.csv) | 787 | `1aa84dafd760911b` |
+| [`data/raw/reference_inputs/road_tax_2024_source.csv`](data/raw/reference_inputs/road_tax_2024_source.csv) | 25 | `3c0f3d96f22c7d3d` |
+| [`data/raw/reference_inputs/policy_events_curated.csv`](data/raw/reference_inputs/policy_events_curated.csv) | 27 | `d16c389f4cedc6f4` |
 
 ## 9. Claims the Lab May and May Not Make
 

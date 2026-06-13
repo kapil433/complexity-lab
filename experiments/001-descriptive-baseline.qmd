@@ -18,15 +18,16 @@ from complexity_lab.config import settings
 from complexity_lab.analysis import descriptive, distributions
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
-year_panel = con.execute("SELECT * FROM panel_state_year").df()
-states = year_panel[year_panel.state_code != "ALL"]
+states = con.execute("SELECT * FROM experiment_state_year").df()
 LATEST_FULL = int(states.year.max()) - 1  # last year is partial
 ```
 
 ## Market size and growth
 
 ```{python}
-all_india = year_panel[year_panel.state_code == "ALL"].set_index("year")
+all_india = con.execute(
+    "SELECT * FROM panel_state_year WHERE state_code = 'ALL' ORDER BY year"
+).df().set_index("year")
 px.bar(all_india.reset_index(), x="year", y="total_regs",
        title="All-India PV registrations by calendar year")
 ```
@@ -53,6 +54,27 @@ fig.show()
 A slope much steeper than −1 means registrations concentrate in top states
 faster than Zipf's law would imply — consistent with car markets tracking
 income and urbanization, not just population.
+
+```{python}
+context = con.execute("SELECT * FROM experiment_state_context").df()
+latest = states[states.year == LATEST_FULL][
+    ["state_code", "regs_per_1000_population", "real_pc_income_inr",
+     "real_gsdp_growth_pct", "broad_credit_per_capita_inr"]
+].merge(
+    context[["state_code", "ev_chargers_2025", "cng_stations_2024"]],
+    on="state_code",
+    how="left",
+)
+px.scatter(
+    latest,
+    x="real_pc_income_inr",
+    y="regs_per_1000_population",
+    color="real_gsdp_growth_pct",
+    size="broad_credit_per_capita_inr",
+    hover_name="state_code",
+    title="Market intensity vs audited real-income and credit context",
+)
+```
 
 ## Seasonality
 

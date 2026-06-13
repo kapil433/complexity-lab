@@ -92,7 +92,13 @@ def main() -> None:
         value_column = "pc_nsdp_current_inr"
         table = 19
         price_basis = "current prices"
-        default_output = root / "data" / "reference" / "state_income.csv"
+        default_output = (
+            root
+            / "data"
+            / "raw"
+            / "reference_inputs"
+            / "state_income_current_source.csv"
+        )
     output = args.output or default_output
 
     xl = pd.ExcelFile(args.xlsx)

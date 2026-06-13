@@ -27,14 +27,12 @@ with st.expander("Reference-data availability", expanded=False):
         """SELECT dataset, status, geography, time_coverage, temporal_type,
                   quality_summary, not_available
            FROM reference_availability
-           WHERE dataset IN ('state_income', 'state_income_constant',
+           WHERE dataset IN ('state_income_constant',
                              'state_gsdp', 'state_population_annual',
                              'state_credit_depth', 'vehicle_lifetime_tax',
                              'policy_events_canonical',
-                             'state_road_length', 'state_personal_loans',
-                             'urbanization', 'cng_stations',
-                             'ev_charging', 'fuel_prices', 'population',
-                             'road_tax', 'financing', 'dealer_counts')
+                             'state_road_length', 'cng_stations',
+                             'ev_charging', 'fuel_prices', 'known_data_gaps')
            ORDER BY CASE status
                       WHEN 'usable' THEN 1 WHEN 'constrained' THEN 2 ELSE 3 END,
                     dataset"""
@@ -45,7 +43,7 @@ with st.expander("Reference-data availability", expanded=False):
         "datasets require the period and quality shown above."
     )
 
-panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
+panel = query("SELECT * FROM experiment_state_year")
 
 # Wholesale covariates (local-only data): annual state dispatches + ws/retail ratio.
 _tables = {r[0] for r in get_connection().execute("SHOW TABLES").fetchall()}
@@ -61,14 +59,12 @@ if HAS_WS:
 
 numeric_cols = [
     "total_regs", "ev_regs", "cng_regs", "ev_share", "cng_share", "yoy_growth",
-    "hhi_oem", "entropy_oem", "n_oems", "pc_income_inr",
-    "pc_income_constant_2011_12_inr", "urban_pct",
-    "gsdp_constant_2011_12_lakh", "gsdp_real_growth_pct",
+    "hhi_oem", "entropy_oem", "n_oems", "real_pc_income_inr", "urban_pct",
+    "real_gsdp_lakh", "real_gsdp_growth_pct",
     "population_mn", "urban_population_mn", "rural_population_mn",
-    "personal_loans_outstanding_crore", "personal_loans_per_capita_inr",
-    "personal_loans_yoy_growth_pct",
-    "cng_stations", "ev_chargers", "petrol_price_inr", "diesel_price_inr", "cng_price_inr",
-    "regs_per_1000_population", "regs_per_1000_capita",
+    "broad_credit_per_capita_inr", "broad_credit_growth_pct",
+    "petrol_price_inr", "diesel_price_inr", "cng_price_inr",
+    "regs_per_1000_population",
 ]
 if HAS_WS:
     numeric_cols += ["wholesale_units", "ws_retail_ratio"]
@@ -88,9 +84,9 @@ with tab_corr:
         numeric_cols,
         default=[
             "ev_share",
-            "pc_income_constant_2011_12_inr",
+            "real_pc_income_inr",
             "urban_pct",
-            "ev_chargers",
+            "broad_credit_per_capita_inr",
         ],
     )
     method = st.radio("Method", ["spearman", "pearson"], horizontal=True)
@@ -112,7 +108,7 @@ with tab_reg:
     x = st.multiselect(
         "Regressors",
         [c for c in numeric_cols if c != y],
-        default=["pc_income_constant_2011_12_inr"],
+        default=["real_pc_income_inr"],
     )
     fe_entity = st.checkbox("State fixed effects", value=True)
     fe_time = st.checkbox("Year fixed effects", value=False)

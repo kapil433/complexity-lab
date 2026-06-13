@@ -67,7 +67,7 @@ CONFIG = {
         "table": 159,
         "title": "State-wise personal loans by scheduled commercial banks",
         "unit": "INR crore outstanding",
-        "default_file": "state_personal_loans.csv",
+        "default_file": "state_personal_loans_rbi.csv",
     },
 }
 
@@ -182,7 +182,12 @@ def main() -> None:
     args = parse_args()
     config = CONFIG[args.series]
     root = Path(__file__).resolve().parents[1]
-    output = args.output or root / "data" / "reference" / config["default_file"]
+    default_dir = (
+        root / "data" / "raw" / "reference_inputs"
+        if args.series == "personal-loans"
+        else root / "data" / "reference"
+    )
+    output = args.output or default_dir / config["default_file"]
     df = parse_workbook(args.xlsx, args.series)
     comment = (
         f"# {config['title']} ({config['unit']}).\n"

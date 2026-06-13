@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from datetime import UTC, datetime
@@ -10,6 +11,49 @@ from pathlib import Path
 from complexity_lab.config import settings
 from complexity_lab.data.ingest import connect
 from complexity_lab.experiments.registry import get_experiment
+
+_EXPERIMENT_DEPENDENCIES = {
+    "descriptive-baseline": [
+        "panel_state_month",
+        "experiment_state_year",
+        "experiment_state_context",
+        "oem_state_edges",
+    ],
+    "ev-diffusion-states": ["panel_state_month", "experiment_state_context"],
+    "oem-state-network": ["oem_state_edges"],
+    "wholesale-retail-nowcast": ["retail_wholesale_month", "ws_segment_month"],
+    "phase-transitions": ["oem_state_edges", "experiment_state_year"],
+    "ev-threshold": ["panel_state_month", "experiment_state_context"],
+    "ev-contagion": ["experiment_state_year", "ref_state_adjacency"],
+    "fuel-regimes": ["experiment_state_year", "ref_policy_events_canonical"],
+    "adoption-network-horserace": [
+        "experiment_state_year",
+        "experiment_state_context",
+        "ref_state_adjacency",
+    ],
+    "shev-isolation": [
+        "panel_state_month",
+        "ref_policy_events_canonical",
+        "experiment_state_context",
+        "ws_fuel_month",
+    ],
+    "regime-survival": ["experiment_state_year"],
+    "suv-transition": ["ws_segment_month", "ws_state_month", "ws_model_month"],
+    "shev-counterfactual": ["ws_fuel_month", "ref_model_fuel_map"],
+}
+
+
+def _reference_contract() -> dict:
+    path = settings.reference_dir / "reference_catalog.csv"
+    return {
+        "catalog_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "canonical_interfaces": [
+            "experiment_state_year",
+            "experiment_state_context",
+            "ref_policy_events_canonical",
+        ],
+        "truth_contract": "DATA_TRUTH.md",
+    }
 
 
 def run_experiment(name: str, params: dict | None = None, out_root: Path | None = None) -> dict:
@@ -30,6 +74,10 @@ def run_experiment(name: str, params: dict | None = None, out_root: Path | None 
     manifest = {
         "experiment": name,
         "description": exp.description,
+        "data_dependencies": _EXPERIMENT_DEPENDENCIES.get(
+            name, list(exp.data_dependencies)
+        ),
+        "reference_contract": _reference_contract(),
         "params": params or {},
         "timestamp_utc": stamp,
         "elapsed_seconds": round(elapsed, 2),

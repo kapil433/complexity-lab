@@ -109,7 +109,7 @@ SELECT e.*,
        (e.hybrid_share - LAG(e.hybrid_share) OVER w) * 100  AS hybrid_share_chg_pp,
        e.total_regs::DOUBLE / NULLIF(pop_annual.population_mn * 1000, 0)
                                                                AS regs_per_1000_population,
-       e.total_regs::DOUBLE / NULLIF(pop.proj_2024_mn * 1000, 0)
+       e.total_regs::DOUBLE / NULLIF(pop_2024.population_mn * 1000, 0)
                                                                AS regs_per_1000_population_2024,
        e.total_regs::DOUBLE / NULLIF(pop_annual.population_mn * 1000, 0)
                                                                AS regs_per_1000_capita,
@@ -119,10 +119,6 @@ SELECT e.*,
        pop_annual.method                                       AS population_method,
        pop_annual.source                                       AS population_source,
        pop_annual.quality                                      AS population_quality,
-       inc.pc_nsdp_current_inr                                 AS pc_income_inr,
-       inc.fy                                                  AS income_fy,
-       inc.source                                              AS income_source,
-       inc.quality                                             AS income_quality,
        inc_real.pc_nsdp_constant_2011_12_inr                   AS pc_income_constant_2011_12_inr,
        inc_real.fy                                             AS income_constant_fy,
        inc_real.source                                         AS income_constant_source,
@@ -136,10 +132,10 @@ SELECT e.*,
        credit.personal_loans_yoy_growth_pct,
        credit.source                                            AS credit_depth_source,
        credit.quality                                           AS credit_depth_quality,
-       urb.urban_pct,
-       urb.census_year                                         AS urbanization_census_year,
-       urb.source                                              AS urbanization_source,
-       urb.quality                                             AS urbanization_quality,
+       pop_annual.urban_pct_basis                              AS urban_pct,
+       pop_annual.urban_share_year                             AS urbanization_census_year,
+       pop_annual.source                                       AS urbanization_source,
+       pop_annual.quality                                      AS urbanization_quality,
        cng.stations                                            AS cng_stations,
        cng.source                                              AS cng_stations_source,
        cng.quality                                             AS cng_stations_quality,
@@ -174,20 +170,16 @@ SELECT e.*,
             WHEN fp_c_all.state_code IS NOT NULL THEN 'ALL/Delhi fallback'
        END                                                     AS cng_price_basis
 FROM enriched e
-LEFT JOIN ref_population pop
-       ON pop.state_code = e.state_code
 LEFT JOIN ref_state_population_annual pop_annual
        ON pop_annual.state_code = e.state_code AND pop_annual.year = e.year
-LEFT JOIN ref_state_income inc
-       ON inc.state_code = e.state_code AND inc.fy = e.fy_starting
+LEFT JOIN ref_state_population_annual pop_2024
+       ON pop_2024.state_code = e.state_code AND pop_2024.year = 2024
 LEFT JOIN ref_state_income_constant inc_real
        ON inc_real.state_code = e.state_code AND inc_real.fy = e.fy_starting
 LEFT JOIN ref_state_gsdp gsdp
        ON gsdp.state_code = e.state_code AND gsdp.fy = e.fy_starting
 LEFT JOIN ref_state_credit_depth credit
        ON credit.state_code = e.state_code AND credit.year = e.year
-LEFT JOIN ref_urbanization urb
-       ON urb.state_code = e.state_code
 LEFT JOIN ref_cng_stations cng
        ON cng.state_code = e.state_code AND cng.year = e.year
 LEFT JOIN ref_ev_charging ev
@@ -218,6 +210,104 @@ LEFT JOIN ref_fuel_prices fp_c_all
       AND fp_c_all.state_code = 'ALL'
 WINDOW w AS (PARTITION BY e.state_code ORDER BY e.year)
 ORDER BY e.state_code, e.year
+"""
+
+_SQL_EXPERIMENT_VIEWS = """
+CREATE OR REPLACE VIEW experiment_state_year AS
+SELECT state_code,
+       state_name,
+       year,
+       total_regs,
+       ev_regs,
+       cng_regs,
+       petrol_regs,
+       diesel_regs,
+       hybrid_regs,
+       ev_share,
+       cng_share,
+       petrol_share,
+       diesel_share,
+       hybrid_share,
+       yoy_growth,
+       hhi_oem,
+       entropy_oem,
+       n_oems,
+       regs_per_1000_population,
+       population_mn,
+       urban_population_mn,
+       rural_population_mn,
+       urban_pct,
+       pc_income_constant_2011_12_inr AS real_pc_income_inr,
+       gsdp_constant_2011_12_lakh AS real_gsdp_lakh,
+       gsdp_real_growth_pct AS real_gsdp_growth_pct,
+       personal_loans_per_capita_inr AS broad_credit_per_capita_inr,
+       personal_loans_yoy_growth_pct AS broad_credit_growth_pct,
+       petrol_price_inr,
+       diesel_price_inr,
+       cng_price_inr
+FROM panel_state_year
+WHERE state_code <> 'ALL';
+
+CREATE OR REPLACE VIEW experiment_state_context AS
+WITH latest AS (
+    SELECT state_code,
+           MAX_BY(pc_income_constant_2011_12_inr, year)
+               FILTER (WHERE pc_income_constant_2011_12_inr IS NOT NULL)
+               AS real_pc_income_inr,
+           MAX_BY(gsdp_constant_2011_12_lakh, year)
+               FILTER (WHERE gsdp_constant_2011_12_lakh IS NOT NULL)
+               AS real_gsdp_lakh,
+           MAX_BY(gsdp_real_growth_pct, year)
+               FILTER (WHERE gsdp_real_growth_pct IS NOT NULL)
+               AS latest_real_gsdp_growth_pct,
+           MAX_BY(personal_loans_per_capita_inr, year)
+               FILTER (WHERE personal_loans_per_capita_inr IS NOT NULL)
+               AS broad_credit_per_capita_inr,
+           MAX_BY(population_mn, year) FILTER (WHERE year = 2025)
+               AS population_2025_mn,
+           MAX(urban_pct) AS urban_pct
+    FROM panel_state_year
+    WHERE state_code <> 'ALL'
+    GROUP BY state_code
+),
+tax AS (
+    SELECT state_code,
+           MAX(lifetime_tax_rate_pct) FILTER (WHERE fuel = 'EV') AS ev_tax_rate_pct,
+           MAX(lifetime_tax_rate_pct) FILTER (WHERE fuel = 'Strong Hybrid')
+               AS hybrid_tax_rate_pct,
+           MAX(lifetime_tax_rate_pct) FILTER (WHERE fuel = 'Petrol') AS ice_tax_rate_pct,
+           MAX(as_of) AS tax_as_of
+    FROM ref_vehicle_lifetime_tax
+    GROUP BY state_code
+)
+SELECT d.state_code,
+       d.state_name,
+       d.zone,
+       l.real_pc_income_inr,
+       l.real_gsdp_lakh,
+       l.latest_real_gsdp_growth_pct,
+       l.broad_credit_per_capita_inr,
+       l.population_2025_mn,
+       l.urban_pct,
+       cng.stations AS cng_stations_2024,
+       cng.snapshot_date AS cng_snapshot_date,
+       cng.quality AS cng_quality,
+       ev.public_chargers AS ev_chargers_2025,
+       ev.snapshot_date AS ev_snapshot_date,
+       ev.quality AS ev_quality,
+       ev.state_allocation_coverage_pct AS ev_allocation_coverage_pct,
+       tax.ev_tax_rate_pct,
+       tax.hybrid_tax_rate_pct,
+       tax.ice_tax_rate_pct,
+       tax.tax_as_of
+FROM dim_state d
+LEFT JOIN latest l USING (state_code)
+LEFT JOIN ref_cng_stations cng
+       ON cng.state_code = d.state_code AND cng.year = 2024
+LEFT JOIN ref_ev_charging ev
+       ON ev.state_code = d.state_code AND ev.year = 2025
+LEFT JOIN tax USING (state_code)
+WHERE d.state_code <> 'ALL';
 """
 
 _SQL_EDGES = """
@@ -258,10 +348,17 @@ def build_panels(db_path: Path | None = None) -> dict[str, int]:
         con.execute(_SQL_PANEL_YEAR)
         con.execute(_SQL_EDGES)
         con.execute(_SQL_MAKER_SHARE)
+        con.execute(_SQL_EXPERIMENT_VIEWS)
         return {
             "panel_state_month": con.execute("SELECT COUNT(*) FROM panel_state_month").fetchone()[0],
             "panel_state_year": con.execute("SELECT COUNT(*) FROM panel_state_year").fetchone()[0],
             "maker_state_share": con.execute("SELECT COUNT(*) FROM maker_state_share").fetchone()[0],
+            "experiment_state_year": con.execute(
+                "SELECT COUNT(*) FROM experiment_state_year"
+            ).fetchone()[0],
+            "experiment_state_context": con.execute(
+                "SELECT COUNT(*) FROM experiment_state_context"
+            ).fetchone()[0],
         }
     finally:
         con.close()

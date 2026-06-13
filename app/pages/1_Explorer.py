@@ -32,15 +32,15 @@ METRICS = {
         "Registrations per 1,000 people (estimated annual population)",
         "raw",
     ),
-    "pc_income_inr": ("Per-capita income, current prices (₹)", "indian"),
-    "pc_income_constant_2011_12_inr": (
+    "real_pc_income_inr": (
         "Per-capita income, constant 2011-12 prices (₹)",
         "indian",
     ),
-    "gsdp_real_growth_pct": ("Real GSDP growth", "pct"),
+    "real_gsdp_growth_pct": ("Real GSDP growth", "pct"),
+    "broad_credit_per_capita_inr": ("Broad credit per capita (₹)", "indian"),
 }
 
-panel = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
+panel = query("SELECT * FROM experiment_state_year")
 y0, y1 = year_range_slider(panel)
 metric = st.selectbox(
     "Metric", list(METRICS), format_func=lambda m: METRICS[m][0],

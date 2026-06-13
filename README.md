@@ -75,6 +75,10 @@ into the site. Conventions in [docs/lab-guide.md](docs/lab-guide.md).
 - **Reproducibility**: DuckDB is a build artifact; everything rebuilds from the
   committed bundle + reference CSVs. `_freeze/` carries locally-executed notebook
   results so CI can publish wholesale-dependent experiments without the data.
+- **Experiment data contract**: all registered experiments declare dependencies;
+  reference-aware analyses use `experiment_state_year`,
+  `experiment_state_context`, or the canonical policy timeline. Superseded
+  reference tables and placeholder observations are not loaded.
 - **Data refresh**: monthly ritual in [docs/refresh-runbook.md](docs/refresh-runbook.md).
 - 70+ tests; ruff; experiment registry with timestamped, manifest-ed artifacts.
 

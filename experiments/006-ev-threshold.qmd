@@ -71,18 +71,19 @@ fig.show()
 
 ```{python}
 cov = con.execute(
-    "SELECT state_code, MAX(pc_income_inr) pc_income_inr, MAX(ev_chargers) ev_chargers "
-    "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code").df().set_index("state_code")
+    "SELECT state_code, real_pc_income_inr, ev_chargers_2025, "
+    "broad_credit_per_capita_inr, latest_real_gsdp_growth_pct "
+    "FROM experiment_state_context").df().set_index("state_code")
 j = sat.join(cov)
-fig = px.scatter(j.reset_index(), x="pc_income_inr", y="tau_pct",
-                 size="ev_chargers", text="state_code", log_x=True,
+fig = px.scatter(j.reset_index(), x="real_pc_income_inr", y="tau_pct",
+                 size="ev_chargers_2025", text="state_code", log_x=True,
                  title="Richer states bend later: saturation threshold vs per-capita income",
-                 labels={"pc_income_inr": "per-capita NSDP (INR, log)",
+                 labels={"real_pc_income_inr": "real per-capita NSDP (2011-12 INR, log)",
                          "tau_pct": "τ* (%)"})
 fig.update_traces(textposition="top center")
 fig.show()
 print("Spearman corr(τ*, income):",
-      round(float(j["tau_pct"].corr(j["pc_income_inr"], method="spearman")), 3))
+      round(float(j["tau_pct"].corr(j["real_pc_income_inr"], method="spearman")), 3))
 ```
 
 ## Finding

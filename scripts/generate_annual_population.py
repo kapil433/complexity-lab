@@ -13,8 +13,9 @@ from pathlib import Path
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[1]
-POPULATION = ROOT / "data" / "reference" / "population.csv"
-URBANIZATION = ROOT / "data" / "reference" / "urbanization.csv"
+INPUTS = ROOT / "data" / "raw" / "reference_inputs"
+POPULATION = INPUTS / "population_anchors.csv"
+URBANIZATION = INPUTS / "urbanization_2011.csv"
 OUTPUT = ROOT / "data" / "reference" / "state_population_annual.csv"
 
 
@@ -47,8 +48,8 @@ def build() -> pd.DataFrame:
                     "urban_share_year": 2011,
                     "method": method,
                     "source": (
-                        "Derived from data/reference/population.csv anchors and "
-                        "Census-2011 urban/rural shares"
+                        "Derived from preserved population anchors and "
+                        "Census-2011 urban/rural source inputs"
                     ),
                     "quality": "estimate",
                 }

@@ -35,9 +35,10 @@ fits[["p", "q", "m", "r2", "peak_time"]].sort_values("q", ascending=False).head(
 
 ```{python}
 cov = con.execute(
-    "SELECT state_code, MAX_BY(pc_income_inr, year) AS income, "
-    "MAX_BY(urban_pct, year) AS urban_pct, MAX(ev_chargers) AS chargers "
-    "FROM panel_state_year WHERE state_code <> 'ALL' GROUP BY state_code").df().set_index("state_code")
+    "SELECT state_code, real_pc_income_inr AS income, urban_pct, "
+    "ev_chargers_2025 AS chargers, broad_credit_per_capita_inr, "
+    "latest_real_gsdp_growth_pct FROM experiment_state_context"
+).df().set_index("state_code")
 joined = fits.join(cov)
 px.scatter(joined.reset_index(), x="p", y="q", size="m", text="state_code",
            color="income", hover_data=["urban_pct", "chargers"],
@@ -47,7 +48,10 @@ px.scatter(joined.reset_index(), x="p", y="q", size="m", text="state_code",
 ## Do covariates explain imitation strength?
 
 ```{python}
-corr = joined[["p", "q", "income", "urban_pct", "chargers"]].corr(method="spearman")
+corr = joined[
+    ["p", "q", "income", "urban_pct", "chargers",
+     "broad_credit_per_capita_inr", "latest_real_gsdp_growth_pct"]
+].corr(method="spearman")
 px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1)
 ```
 
@@ -55,8 +59,8 @@ px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=
 
 EV adoption in most large states fits Bass dynamics well (R² > 0.95 on
 cumulative curves), with imitation (q) dominating innovation (p) — adoption is
-contagion-led, not advertising-led. Cross-state variation in q correlates
-positively but weakly with income and charging infrastructure in this first
-pass; the EV-charger covariate is a 2025 cross-section (quality: approximate
-for mid-table states), so treat the infra relationship as suggestive. A panel
-with longer charger history is the natural follow-up.
+contagion-led, not advertising-led. With the audited real-income measure,
+cross-state q has a weak negative rank correlation (about -0.24), so richer
+states do not mechanically imitate faster in this sample. Charger counts remain
+an incomplete 2025 snapshot and broad credit is not vehicle finance; these
+cross-sectional relationships are descriptive, not annual treatment effects.

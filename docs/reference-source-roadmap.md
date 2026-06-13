@@ -71,7 +71,8 @@ ingest/test run.
 | Wholesale fuel split | The proprietary wholesale source has no fuel/powertrain quantity field | A source-supplied model x fuel x geography x month quantity table |
 
 Personal loans may support an explicitly named **credit depth** experiment. They
-must not be used to fill or rename the unavailable financing dataset.
+must not be used to fill or rename the vehicle-finance gap in
+`known_data_gaps.csv`.
 
 ## Revised Acquisition Order
 

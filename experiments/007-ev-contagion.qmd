@@ -27,7 +27,7 @@ from complexity_lab.networks.contagion import (
 con = duckdb.connect(str(settings.db_path), read_only=True)
 g = load_adjacency(con)
 panel = con.execute(
-    "SELECT state_code, year, ev_share FROM panel_state_year WHERE state_code <> 'ALL'"
+    "SELECT state_code, year, ev_share FROM experiment_state_year"
 ).df()
 latest_full = int(panel["year"].max()) - 1
 THRESHOLD = 0.02  # 2% EV share = 'adopted'

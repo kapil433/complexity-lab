@@ -25,10 +25,12 @@ con = duckdb.connect(str(settings.db_path), read_only=True)
 HAS_WS = "wholesale" in {r[0] for r in con.execute("SHOW TABLES").fetchall()}
 ```
 
-## 1 — The incentive graph has no SHEV node
+## 1 — The incentive graph has one isolated SHEV node
 
 ```{python}
-pol = con.execute("SELECT label, detail FROM ref_policy_events").df()
+pol = con.execute(
+    "SELECT label, detail FROM ref_policy_events_canonical"
+).df()
 text = (pol["label"].fillna("") + " " + pol["detail"].fillna("")).str.lower()
 counts = pd.Series({
     "EV": int(text.str.contains("ev|electric").sum()),
@@ -112,7 +114,7 @@ px.bar(pl, title="Placebo ATTs (each control treated as if it had the waiver) vs
 ## Finding
 
 The isolation thesis survives every test we can throw at it with public data:
-**zero policy nodes** touch SHEVs (vs ten for EVs), the GST wedge prices the
+**one policy node** touches SHEVs (the UP waiver, versus dozens for EVs), the GST wedge prices the
 technology like a luxury rather than an efficiency play, and the single
 incentive that did exist — UP's registration waiver — produced a **~+2.3pp
 hybrid-share lift** that exceeds every placebo state's pseudo-effect. The

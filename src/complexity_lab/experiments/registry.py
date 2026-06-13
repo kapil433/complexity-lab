@@ -21,16 +21,24 @@ class Experiment:
     name: str
     fn: Callable
     description: str = ""
+    data_dependencies: tuple[str, ...] = ()
 
 
 _REGISTRY: dict[str, Experiment] = {}
 
 
-def experiment(name: str, description: str = "") -> Callable:
+def experiment(
+    name: str, description: str = "", data_dependencies: tuple[str, ...] = ()
+) -> Callable:
     def deco(fn: Callable) -> Callable:
         if name in _REGISTRY:
             raise ValueError(f"Experiment '{name}' already registered")
-        _REGISTRY[name] = Experiment(name=name, fn=fn, description=description)
+        _REGISTRY[name] = Experiment(
+            name=name,
+            fn=fn,
+            description=description,
+            data_dependencies=data_dependencies,
+        )
         return fn
 
     return deco
