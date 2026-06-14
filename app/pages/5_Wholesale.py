@@ -7,12 +7,21 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import get_connection, query, render_card
+from common import get_connection, query, render_app_shell, render_card
 
 from complexity_lab.viz import indian_axis
 
-st.set_page_config(page_title="Wholesale", layout="wide")
-st.title("Wholesale — dispatches, models, nowcast")
+st.set_page_config(page_title="Wholesale and Channel | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Wholesale and Channel",
+    section="Observe",
+    description="Inspect dispatches, models, segments, cities, and the wholesale-retail channel.",
+    limitations=(
+        "Wholesale has no fuel cut.",
+        "April 2017-March 2022 is a panel-city sample; national claims use April 2022 onward.",
+        "Proprietary wholesale rows remain local and are never published.",
+    ),
+)
 render_card("wholesale-retail-nowcast")
 
 tables = {r[0] for r in get_connection().execute("SHOW TABLES").fetchall()}
@@ -34,10 +43,10 @@ with tab_now:
     fig_rw = px.line(rw, x="date", y=["retail", "wholesale"],
                      title="National retail vs wholesale (units/month)",
                      labels={"value": "units", "variable": ""})
-    st.plotly_chart(indian_axis(fig_rw), use_container_width=True)
+    st.plotly_chart(indian_axis(fig_rw), width="stretch")
     st.plotly_chart(
         px.line(rw, x="date", y="ws_retail_ratio", title="Wholesale / retail (channel stock build >1)"),
-        use_container_width=True,
+        width="stretch",
     )
     if st.button("Run 12-month out-of-sample nowcast"):
         from complexity_lab.analysis.nowcast import nowcast_eval
@@ -48,7 +57,7 @@ with tab_now:
         c2.metric("Seasonal baseline MAPE", f"{res['mape_baseline']:.1%}")
         st.plotly_chart(
             px.line(res["predictions"], x="date", y=["actual", "nowcast", "baseline"], markers=True),
-            use_container_width=True,
+            width="stretch",
         )
 
 with tab_models:
@@ -60,14 +69,14 @@ with tab_models:
     )
     fig_m = px.bar(models, x="units", y="model", color="maker", orientation="h",
                    height=200 + 22 * top_n, title=f"Top models by dispatches, {yr}")
-    st.plotly_chart(indian_axis(fig_m, axis="x"), use_container_width=True)
+    st.plotly_chart(indian_axis(fig_m, axis="x"), width="stretch")
     pick = st.selectbox("Model trajectory", sorted(query(
         "SELECT DISTINCT model FROM ws_model_month WHERE year >= 2022")["model"]))
     traj = query(
         f"SELECT date, SUM(wholesale) units FROM ws_model_month WHERE model = '{pick}' "
         "AND year >= 2022 GROUP BY date ORDER BY date"
     )
-    st.plotly_chart(px.line(traj, x="date", y="units", title=pick), use_container_width=True)
+    st.plotly_chart(px.line(traj, x="date", y="units", title=pick), width="stretch")
 
 with tab_seg:
     seg = query(
@@ -77,7 +86,7 @@ with tab_seg:
     st.plotly_chart(
         px.area(seg, x="date", y="units", color="segment5", groupnorm="percent",
                 title="Segment share of wholesale"),
-        use_container_width=True,
+        width="stretch",
     )
 
 with tab_ev:
@@ -98,7 +107,7 @@ with tab_ev:
     fig_ev = px.area(ev, x="date", y="units", color="maker",
                      title="EV-only nameplate dispatches by OEM (units/month)")
     st.plotly_chart(indian_axis(fig_ev, max_value=float(ev.groupby("date")["units"].sum().max())),
-                    use_container_width=True)
+                    width="stretch")
     fuel = query(
         "SELECT date, fuel, SUM(wholesale) AS units FROM ws_fuel_month "
         "WHERE year >= 2022 GROUP BY date, fuel ORDER BY date"
@@ -106,7 +115,7 @@ with tab_ev:
     st.plotly_chart(
         px.area(fuel, x="date", y="units", color="fuel", groupnorm="percent",
                 title="Legacy primary-fuel model proxy — NOT a wholesale fuel cut"),
-        use_container_width=True,
+        width="stretch",
     )
     ev_states = query(
         "SELECT state_code, SUM(wholesale) AS units FROM ws_ev_month "
@@ -116,7 +125,7 @@ with tab_ev:
     st.plotly_chart(
         px.bar(ev_states, x="units", y="state_code", orientation="h",
                title="EV-only dispatches by state, 2024+"),
-        use_container_width=True,
+        width="stretch",
     )
 
 with tab_city:
@@ -127,5 +136,5 @@ with tab_city:
     )
     st.plotly_chart(
         px.bar(cities, x="units", y="city", color="state_code", orientation="h", height=800),
-        use_container_width=True,
+        width="stretch",
     )

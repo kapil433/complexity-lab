@@ -1,6 +1,6 @@
 # Personal Complexity Lab Rebuild Plan
 
-Implementation status updated: **2026-06-13**
+Implementation status updated: **2026-06-14**
 
 The reference-data foundation described in Wave 0 is now implemented: the
 machine-readable availability catalog covers 15 canonical datasets; official RBI
@@ -8,9 +8,15 @@ constant-price income, GSDP, road length, and personal loans are preserved with
 converters; annual population denominators are explicitly estimated for 2012-2026;
 infrastructure snapshots carry dates and reconciliation coverage; tax and policy
 tables are normalized; unavailable dealer and vehicle-finance panels are blocked
-from modelling; and the app includes a visual Reference Lab. Remaining work in
-later waves is product and experiment workflow work, not permission to weaken these
-truth boundaries.
+from modelling; and the app includes a visual Reference Lab.
+
+Wave 3 shared-foundation work is also implemented: persistent global
+year/state/fuel/OEM context, URL serialization, calculated Vahan completeness,
+evidence and cutoff badges, shared methodology/provenance drawers, downloadable
+view context, and local saved views. Home is rebuilt as the context-aware Market
+Brief. All ten specialist pages use the shared shell and pass Streamlit runtime
+smoke checks. Remaining page-specific work in Waves 4-7 is not permission to
+weaken these truth boundaries.
 
 ## 1. Product Goal
 

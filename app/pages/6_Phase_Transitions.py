@@ -11,19 +11,28 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query, render_card
+from common import query, render_app_shell, render_card
 
 from complexity_lab.complexity import transitions as tr
 
-st.set_page_config(page_title="Phase Transitions", layout="wide")
-st.title("Phase Transitions & Thresholds")
+st.set_page_config(page_title="Transitions and Regimes | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Transitions and Regimes",
+    section="Explain",
+    description="Look for thresholds, early warnings, percolation, and latent fuel regimes.",
+    evidence="Estimated",
+    limitations=(
+        "Thresholds and regimes are model-dependent summaries of observed histories.",
+        "Early-warning indicators are diagnostics, not deterministic predictions.",
+    ),
+)
 
 tab_perc, tab_tip, tab_regime, tab_hmm = st.tabs(
     ["Percolation", "EV tipping / saturation", "Fuel regimes (Markov)", "Fuel regimes (HMM)"]
 )
 
 edges = query("SELECT * FROM oem_state_edges")
-max_year = int(edges["year"].max()) - 1
+max_year = min(page.filters.year_end, page.cutoff.latest_complete_year)
 
 with tab_perc:
     render_card("phase-transitions")
@@ -50,7 +59,7 @@ with tab_perc:
                       annotation_text=f"τ_c ≈ {tau_c:.1%}")
         fig.update_layout(xaxis_type="log", title=f"Percolation curve, {year}",
                           xaxis_title="edge threshold (share)", yaxis_title="giant fraction")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with c2:
         st.metric("Critical threshold τ_c", f"{tau_c:.1%}")
         st.markdown(
@@ -71,7 +80,7 @@ with tab_perc:
         px.line(_tau_by_year(max_year), markers=True,
                 title="τ_c by year — has the market's cohesion scale moved?",
                 labels={"index": "year", "value": "τ_c"}).update_layout(showlegend=False),
-        use_container_width=True,
+        width="stretch",
     )
 
 with tab_tip:
@@ -105,7 +114,7 @@ with tab_tip:
                          title="Threshold τ* per state — where growth changes regime",
                          labels={"tau_pct": "τ* (share %)", "sse_gain": "model gain vs linear"})
         fig.update_traces(textposition="top center")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
 
         pick = st.selectbox("Inspect a state", sorted(plot["state_code"]))
         s = mp[mp["state_code"] == pick].reset_index(drop=True)
@@ -115,7 +124,7 @@ with tab_tip:
                        title=f"{pick}: {share_col} (smoothed) — τ* = {srow['tau']:.2%}, "
                              f"{srow['verdict']}")
         figs.add_hline(y=srow["tau"], line_dash="dash", line_color="#A4243B")
-        st.plotly_chart(figs, use_container_width=True)
+        st.plotly_chart(figs, width="stretch")
 
 with tab_regime:
     panel_year = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")
@@ -136,12 +145,12 @@ with tab_regime:
                       "ticktext": ["fossil", "multi-fuel", "CNG", "EV-emerging"]},
         ))
         fig.update_layout(title="Regime calendar", height=700)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     with c2:
         st.plotly_chart(
             px.imshow(matrix.round(2), text_auto=True, color_continuous_scale="Blues",
                       title="P(next | current)"),
-            use_container_width=True,
+            width="stretch",
         )
         st.metric("Absorbing regimes (≥90% self)", ", ".join(absorbing) or "none")
         st.markdown(
@@ -179,15 +188,15 @@ with tab_hmm:
     c3.metric("Modal switch year",
               int(trans["year"].mode().iloc[0]) if not trans.empty else "-")
 
-    st.dataframe(means.round(3), use_container_width=True)
+    st.dataframe(means.round(3), width="stretch")
     pivot = cal.pivot(index="state_code", columns="year", values="regime")
     order = pivot.mean(axis=1).sort_values().index
     fig = px.imshow(pivot.loc[order], aspect="auto", color_continuous_scale="Viridis",
                     title="HMM regime calendar (Viterbi paths)")
     fig.update_layout(height=700, coloraxis_showscale=False)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.plotly_chart(
         px.imshow(tmat.round(2), text_auto=True, color_continuous_scale="Blues",
                   title="Fitted transition matrix"),
-        use_container_width=True,
+        width="stretch",
     )

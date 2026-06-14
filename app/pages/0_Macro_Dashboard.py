@@ -8,7 +8,7 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import get_connection, load_geojson, query, render_card
+from common import get_connection, load_geojson, query, render_app_shell, render_card
 
 from complexity_lab.viz import (
     add_event_markers,
@@ -19,12 +19,20 @@ from complexity_lab.viz import (
     ratio_band_chart,
 )
 
-st.set_page_config(page_title="Macro Dashboard", layout="wide")
-st.title("Macro Dashboard")
+st.set_page_config(page_title="Market Pulse | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Market Pulse",
+    section="Observe",
+    description="National scale, fuel transition, OEM concentration, and state divergence.",
+    limitations=(
+        "State reference variables may be estimated, proxied, or available only as snapshots.",
+        "Channel health appears only when proprietary wholesale data is present locally.",
+    ),
+)
 render_card("descriptive-baseline")
 
 national = query("SELECT * FROM panel_state_year WHERE state_code = 'ALL' ORDER BY year")
-latest = int(national["year"].max()) - 1  # last full year
+latest = min(page.filters.year_end, page.cutoff.latest_complete_year)
 row = national[national["year"] == latest].iloc[0]
 prev = national[national["year"] == latest - 1].iloc[0]
 
@@ -52,7 +60,7 @@ fig.for_each_trace(lambda t: t.update(name=t.name.replace("_regs", "").replace("
 indian_axis(fig, max_value=float(monthly["total_regs"].max()))
 if st.checkbox("Show policy events", value=True):
     fig = add_event_markers(fig, load_events(get_connection()), max_labels=12)
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 # ---- market share shift ----------------------------------------------------
 st.subheader("OEM market share & shift")
@@ -65,7 +73,7 @@ with col_a:
     st.plotly_chart(
         diverging_bar(top, "maker", "share_chg_pp",
                       title=f"Share change {latest - 1} → {latest} (pp)"),
-        use_container_width=True,
+        width="stretch",
     )
 with col_b:
     ms_hist = query(
@@ -76,7 +84,7 @@ with col_b:
     figms = px.line(ms_hist, x="year", y="share", color="maker",
                     title="Top-6 OEM market share")
     figms.update_yaxes(tickformat=".0%")
-    st.plotly_chart(figms, use_container_width=True)
+    st.plotly_chart(figms, width="stretch")
 
 # ---- fuel penetration across states ---------------------------------------
 st.subheader("Fuel penetration across states")
@@ -96,7 +104,7 @@ figc = px.choropleth(
 )
 figc.update_geos(fitbounds="locations", visible=False)
 figc.update_layout(height=520, margin={"l": 0, "r": 0, "t": 50, "b": 0})
-st.plotly_chart(figc, use_container_width=True)
+st.plotly_chart(figc, width="stretch")
 
 # heatmap: state × year EV penetration, zone-sorted (blueprint §3.1)
 hm = query("SELECT state_code, year, ev_share FROM panel_state_year "
@@ -109,7 +117,7 @@ fig_hm = px.imshow(pivot * 100, aspect="auto", color_continuous_scale="Viridis",
                    title="EV penetration % — state × year (grouped by zone)",
                    labels={"color": "EV %"})
 fig_hm.update_layout(height=720)
-st.plotly_chart(fig_hm, use_container_width=True)
+st.plotly_chart(fig_hm, width="stretch")
 
 # ---- channel health (local wholesale data) ---------------------------------
 tables = {r[0] for r in get_connection().execute("SHOW TABLES").fetchall()}
@@ -119,7 +127,7 @@ if "wholesale" in tables:
     st.plotly_chart(
         ratio_band_chart(rw, "date", "ws_retail_ratio",
                          title="Wholesale/retail ratio — green band = healthy channel"),
-        use_container_width=True,
+        width="stretch",
     )
 else:
     st.caption("Channel health needs the local wholesale data — `uv run lab wholesale`.")

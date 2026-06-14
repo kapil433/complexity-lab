@@ -8,12 +8,21 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import get_connection, query, render_card, year_range_slider
+from common import get_connection, query, render_app_shell, render_card, year_range_slider
 
 from complexity_lab.analysis import econometrics
 
-st.set_page_config(page_title="Hypothesis Tester", layout="wide")
-st.title("Hypothesis Tester")
+st.set_page_config(page_title="Causal Lab | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Causal Lab",
+    section="Explain",
+    description="Interrogate correlations, panel regressions, and structural breaks with visible limits.",
+    evidence="Derived",
+    limitations=(
+        "Correlation and fixed-effects regression do not automatically identify causal effects.",
+        "Unavailable controls are excluded; constrained fields retain their caveats.",
+    ),
+)
 render_card("hypothesis-tester")
 st.caption(
     "Quick interactive checks on the state×year panel. Reference variables are not "
@@ -37,7 +46,7 @@ with st.expander("Reference-data availability", expanded=False):
                       WHEN 'usable' THEN 1 WHEN 'constrained' THEN 2 ELSE 3 END,
                     dataset"""
     )
-    st.dataframe(availability, use_container_width=True, hide_index=True)
+    st.dataframe(availability, width="stretch", hide_index=True)
     st.caption(
         "Unavailable datasets are excluded from modelling controls. Constrained "
         "datasets require the period and quality shown above."
@@ -94,13 +103,13 @@ with tab_corr:
         corr = econometrics.correlation_matrix(panel, cols, method=method)
         st.plotly_chart(
             px.imshow(corr, text_auto=".2f", color_continuous_scale="RdBu_r", zmin=-1, zmax=1),
-            use_container_width=True,
+            width="stretch",
         )
         x, y = st.selectbox("x", cols, index=1), st.selectbox("y", cols, index=0)
         st.plotly_chart(
             px.scatter(panel.dropna(subset=[x, y]), x=x, y=y, color="zone" if "zone" in panel else None,
                        hover_name="state_name", trendline="ols", log_x=st.checkbox("log x")),
-            use_container_width=True,
+            width="stretch",
         )
 
 with tab_reg:
@@ -116,7 +125,7 @@ with tab_reg:
         try:
             res = econometrics.panel_ols(panel, y=y, x=x, entity_effects=fe_entity, time_effects=fe_time)
             coefs = pd.DataFrame({"coef": res.params, "se": res.bse, "p": res.pvalues})
-            st.dataframe(coefs.loc[["const", *x]], use_container_width=True)
+            st.dataframe(coefs.loc[["const", *x]], width="stretch")
             st.caption(f"n = {int(res.nobs)}, R² = {res.rsquared:.3f} (cluster-robust SEs by state)")
         except Exception as e:  # noqa: BLE001 — surface modelling errors to the user
             st.error(f"Regression failed: {e}")
@@ -133,5 +142,5 @@ with tab_cp:
     fig = px.line(series, x="date", y=var, title=f"{var} — {state}")
     for b in bkps:
         fig.add_vline(x=series.loc[b, "date"], line_dash="dash", line_color="red")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.caption(f"Detected breaks at: {[str(series.loc[b, 'date'])[:7] for b in bkps]}")

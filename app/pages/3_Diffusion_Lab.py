@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query, render_card
+from common import query, render_app_shell, render_card
 
 from complexity_lab.simulation.diffusion import (
     bass_cumulative,
@@ -19,8 +19,17 @@ from complexity_lab.simulation.diffusion import (
     project_bass,
 )
 
-st.set_page_config(page_title="Diffusion Lab", layout="wide")
-st.title("Diffusion Lab — Bass model")
+st.set_page_config(page_title="Diffusion Lab | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Diffusion Lab",
+    section="Explain",
+    description="Fit and stress-test technology-adoption curves against observed state histories.",
+    evidence="Estimated",
+    limitations=(
+        "Bass parameters are fitted descriptions, not structural causal estimates.",
+        "Forward paths are scenarios and remain distinct from observations.",
+    ),
+)
 render_card("ev-diffusion-states")
 st.caption(
     "All post-onset data is used — the default trim only removes the pre-introduction "
@@ -35,10 +44,15 @@ panel = query(
     f"""SELECT state_code, state_name, year, month, date, {col} AS adopt
         FROM panel_state_month ORDER BY state_code, year, month"""
 )
-state = st.selectbox(
-    "State", sorted(panel["state_name"].unique()),
-    index=sorted(panel["state_name"].unique()).index("All India"),
-)
+state_options = sorted(panel["state_name"].unique())
+default_state = "All India"
+if page.filters.states:
+    match = panel.loc[
+        panel["state_code"] == page.filters.states[0], "state_name"
+    ].drop_duplicates()
+    if not match.empty:
+        default_state = match.iloc[0]
+state = st.selectbox("State", state_options, index=state_options.index(default_state))
 series = panel[panel["state_name"] == state].reset_index(drop=True)
 data_min, data_max = int(series["year"].min()), int(series["year"].max())
 
@@ -113,7 +127,7 @@ if pd.notna(fit["p"]):
     fig.update_layout(height=440, yaxis_title=f"Cumulative {fuel} registrations",
                       title=f"{state}: observed vs fit vs scenario (levers reshape the whole curve)")
     indian_axis(fig)
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 else:
     st.warning("Could not fit Bass model for this series (too small / degenerate).")
 
@@ -157,8 +171,8 @@ if st.toggle("Scan start years", value=False,
                        title=f"{state}: fitted Bass parameters vs fit start year")
         figs.update_yaxes(matches=None, showticklabels=True)
         figs.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-        st.plotly_chart(figs, use_container_width=True)
-        st.dataframe(scan.set_index("start_year").round(5), use_container_width=True)
+        st.plotly_chart(figs, width="stretch")
+        st.dataframe(scan.set_index("start_year").round(5), width="stretch")
         st.caption(
             "Reading: a flat stretch means the window barely matters there — the estimate is "
             "structural. Parameters that jump as zeros enter (early start years) are exactly "
@@ -201,9 +215,9 @@ if st.toggle("Fit all states", value=False):
                          marker={"symbol": "circle-open", "size": 10, "color": "#999"},
                          name="m at bound")
     figp.update_traces(textposition="top center")
-    st.plotly_chart(figp, use_container_width=True)
+    st.plotly_chart(figp, width="stretch")
     st.dataframe(
         fits.set_index("state_code")[["state_name", "p", "q", "m", "m_at_bound",
                                       "r2", "peak_time", "n_months_fit"]].round(4),
-        use_container_width=True,
+        width="stretch",
     )

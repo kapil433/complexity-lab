@@ -1,6 +1,6 @@
 # Data Truth: Complexity Lab
 
-Last verified: **2026-06-13**
+Last verified: **2026-06-14**
 
 This is the governing data contract for the lab. It records what each file actually
 contains, what was verified from the files, what can be joined, and what must not be
@@ -25,6 +25,18 @@ Reference-data quality is separate:
 
 Quality is not a numeric score. It says how strongly the value is tied to the named
 source and how much transformation or judgment entered before it reached the lab.
+
+### App enforcement
+
+The interactive app now carries this contract into every page:
+
+- Global year, state, fuel, and OEM context is serialized in the URL.
+- The default period policy ends at the latest calculated complete calendar year.
+- `data_period_status` records observed versus expected months and partial-year warnings.
+- Every page is labelled Observed, Derived, Estimated, or Simulated.
+- Every page exposes cutoff, context, methodology, limitations, and downloadable JSON.
+- Saved views retain their filter payload and data cutoff in a local research store.
+- The Wholesale page explicitly states that wholesale has no fuel cut.
 
 ## 2. Verified Data Flow
 

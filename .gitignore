@@ -10,6 +10,8 @@ __pycache__/
 # Lab artifacts (rebuilt from raw + reference via `lab ingest`)
 data/lab.duckdb
 data/lab.duckdb.wal
+data/user_lab.duckdb
+data/user_lab.duckdb.wal
 outputs/
 
 # Proprietary wholesale data — never commit (raw or derived caches)

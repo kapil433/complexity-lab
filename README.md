@@ -11,7 +11,7 @@ prices, road tax, policy events, population — and a proprietary wholesale disp
 
 | Layer | Where | What it answers |
 |---|---|---|
-| Descriptive | `analysis/descriptive`, Macro Dashboard | Size, growth, shares, concentration, seasonality |
+| Descriptive | `analysis/descriptive`, Market Pulse | Size, growth, shares, concentration, seasonality |
 | Distributions | `analysis/distributions` | Power laws, rank–size, Gini |
 | Econometrics | `analysis/econometrics` | Panel FE regression, Granger, changepoints, DiD with placebos |
 | Forecasting | `analysis/forecast`, `analysis/nowcast` | Backtested SARIMA/Holt-Winters/naive; wholesale→retail nowcast |
@@ -40,16 +40,16 @@ inputs when the service starts. Proprietary wholesale files are intentionally no
 deployed, and the Wholesale page reports that limitation instead of substituting
 modeled data.
 
-## The interactive lab (10 pages)
+## The interactive lab (10 specialist pages)
 
-Macro Dashboard · Explorer · Networks · Diffusion Lab (user-controlled fit windows +
-sensitivity scans) · Hypothesis Tester (period slider, wholesale covariates) ·
-Wholesale (nowcast, models, segments, EV proxy) · Phase Transitions (percolation,
-tipping, Markov + HMM regimes) · Forecast Studio (champion-by-backtest) · Shock Lab
-(stock-and-flow channel simulation). Light/dark via app menu → Settings.
+Home is a context-aware **Market Brief**. Its year, state, fuel, and OEM filters
+persist across navigation and in shareable URLs; every page displays evidence type,
+data cutoff, limitations, provenance, and downloadable view context. Views can be
+saved to the local research library.
 
-The tenth page is the **Reference Lab**: macro, population, infrastructure, tax,
-policy, provenance, and known data gaps.
+Market Pulse · Compare and Explore · Network Lab · Diffusion Lab · Causal Lab ·
+Wholesale and Channel · Transitions and Regimes · Forecast Studio · Scenario and
+Shock Lab · Reference Lab. Light/dark via app menu → Settings.
 
 Every analytical page opens with an explainer card (question, method, plain-English concepts,
 math with toy examples, interpretation guide, limits) — same content as the site's

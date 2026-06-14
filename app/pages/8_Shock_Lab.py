@@ -7,7 +7,7 @@ import streamlit as st
 from plotly.subplots import make_subplots
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import render_card
+from common import render_app_shell, render_card
 
 from complexity_lab.simulation.shocks import (
     ShockConfig,
@@ -16,8 +16,17 @@ from complexity_lab.simulation.shocks import (
     shock_summary,
 )
 
-st.set_page_config(page_title="Shock Lab", layout="wide")
-st.title("Shock Lab — demand & supply shocks in the sales channel")
+st.set_page_config(page_title="Scenario and Shock Lab | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Scenario and Shock Lab",
+    section="Anticipate",
+    description="Run transparent demand, supply, inventory, and production-adjustment scenarios.",
+    evidence="Simulated",
+    limitations=(
+        "Every output on this page is simulated.",
+        "Scenario parameters are assumptions, not forecasts or observed wholesale behavior.",
+    ),
+)
 render_card("shock-lab")
 
 with st.sidebar:
@@ -80,7 +89,7 @@ for w, color in [(cfg.demand_shocks, "rgba(31,119,180,0.12)"), (cfg.supply_shock
 fig.update_layout(height=750, margin={"t": 60}, hovermode="x unified",
                   legend={"orientation": "h", "y": 1.06})
 indian_axis(fig, max_value=float(result["demand"].max()))
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.caption(
     "Blue band = demand shock window, red band = supply shock window. Compare scenarios: "

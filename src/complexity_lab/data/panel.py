@@ -310,6 +310,26 @@ LEFT JOIN tax USING (state_code)
 WHERE d.state_code <> 'ALL';
 """
 
+_SQL_PERIOD_STATUS = """
+CREATE OR REPLACE TABLE data_period_status AS
+SELECT 'vahan' AS source,
+       'calendar_year' AS grain,
+       CAST(year AS VARCHAR) AS period,
+       COUNT(DISTINCT month)::INTEGER AS observed_month_count,
+       12 AS expected_month_count,
+       CASE WHEN COUNT(DISTINCT month) = 12 THEN 'complete' ELSE 'partial' END
+           AS completeness_status,
+       MAX(date) AS freshness_date,
+       'national registration coverage' AS coverage_regime,
+       CASE WHEN COUNT(DISTINCT month) = 12 THEN ''
+            ELSE 'Partial calendar year; do not compare with full years.'
+       END AS warning_text
+FROM panel_state_month
+WHERE state_code = 'ALL'
+GROUP BY year
+ORDER BY year
+"""
+
 _SQL_EDGES = """
 CREATE OR REPLACE VIEW oem_state_edges AS
 SELECT state_code, state_name, maker, year, fy, SUM("count") AS regs
@@ -346,12 +366,16 @@ def build_panels(db_path: Path | None = None) -> dict[str, int]:
     try:
         con.execute(_SQL_PANEL_MONTH)
         con.execute(_SQL_PANEL_YEAR)
+        con.execute(_SQL_PERIOD_STATUS)
         con.execute(_SQL_EDGES)
         con.execute(_SQL_MAKER_SHARE)
         con.execute(_SQL_EXPERIMENT_VIEWS)
         return {
             "panel_state_month": con.execute("SELECT COUNT(*) FROM panel_state_month").fetchone()[0],
             "panel_state_year": con.execute("SELECT COUNT(*) FROM panel_state_year").fetchone()[0],
+            "data_period_status": con.execute(
+                "SELECT COUNT(*) FROM data_period_status"
+            ).fetchone()[0],
             "maker_state_share": con.execute("SELECT COUNT(*) FROM maker_state_share").fetchone()[0],
             "experiment_state_year": con.execute(
                 "SELECT COUNT(*) FROM experiment_state_year"

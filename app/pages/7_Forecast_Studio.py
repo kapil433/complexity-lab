@@ -8,18 +8,32 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import events_toggle_and_overlay, query, render_card
+from common import events_toggle_and_overlay, query, render_app_shell, render_card
 
 from complexity_lab.analysis.forecast import MODELS, benchmark
 
-st.set_page_config(page_title="Forecast Studio", layout="wide")
-st.title("Forecast Studio — benchmarked short-horizon forecasts")
+st.set_page_config(page_title="Forecast Studio | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Forecast Studio",
+    section="Anticipate",
+    description="Benchmark short-horizon forecasts and keep their training cutoff visible.",
+    evidence="Estimated",
+    limitations=(
+        "Forecasts are evaluated projections, not observed registrations.",
+        "Credibility depends on rolling-origin backtests and the recorded data vintage.",
+    ),
+)
 render_card("forecast")
 
 with st.form("forecast_controls"):
     c1, c2, c3, c4 = st.columns(4)
     states = query("SELECT DISTINCT state_code FROM panel_state_month ORDER BY state_code")
-    state = c1.selectbox("State", states["state_code"], index=int((states["state_code"] == "ALL").idxmax()))
+    default_code = page.filters.states[0] if page.filters.states else "ALL"
+    state = c1.selectbox(
+        "State",
+        states["state_code"],
+        index=int((states["state_code"] == default_code).idxmax()),
+    )
     series_name = c2.selectbox("Series", ["total_regs", "ev_regs", "cng_regs", "petrol_regs", "diesel_regs"])
     horizon = c3.slider("Horizon (months)", 1, 12, 6)
     n_origins = c4.slider("Backtest origins", 4, 16, 8)
@@ -84,11 +98,11 @@ from complexity_lab.viz import indian_axis  # noqa: E402
 
 indian_axis(fig)
 fig = events_toggle_and_overlay(fig)
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 with st.expander("Forecast table & download"):
     out = fc.round(0)
-    st.dataframe(out, use_container_width=True)
+    st.dataframe(out, width="stretch")
     st.download_button("Download CSV", out.to_csv().encode(), f"forecast_{state}_{series_name}.csv")
 
 st.caption(

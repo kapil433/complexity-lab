@@ -9,18 +9,32 @@ import plotly.graph_objects as go
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query, render_card
+from common import query, render_app_shell, render_card
 
 from complexity_lab.networks import build as nb
 from complexity_lab.networks import metrics as nm
 
-st.set_page_config(page_title="Networks", layout="wide")
-st.title("OEM–State Network")
+st.set_page_config(page_title="Network Lab | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Network Lab",
+    section="Explain",
+    description="Explore the evolving OEM-state market structure, communities, and centrality.",
+    evidence="Derived",
+    limitations=(
+        "Network edges are derived from observed registrations and depend on the share threshold.",
+        "Community membership describes structure; it does not establish causality.",
+    ),
+)
 render_card("oem-state-network")
 
 edges = query("SELECT * FROM oem_state_edges")
 years = sorted(edges["year"].unique())
-year = st.slider("Year", int(years[0]), int(years[-1]), int(years[-2]))
+year = st.slider(
+    "Year",
+    int(years[0]),
+    int(years[-1]),
+    min(page.filters.year_end, page.cutoff.latest_complete_year),
+)
 min_share = st.slider("Edge threshold (OEM share of state)", 0.0, 0.10, 0.005, 0.005, format="%.3f")
 
 g = nb.share_weighted_graph(edges[edges["year"] == year], min_share=min_share)
@@ -64,7 +78,7 @@ for kind, symbol in [("oem", "square"), ("state", "circle")]:
     )
 fig.update_layout(height=620, showlegend=True, xaxis_visible=False, yaxis_visible=False,
                   margin=dict(l=10, r=10, t=10, b=10))
-st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(fig, width="stretch")
 
 st.subheader("Temporal evolution")
 
@@ -80,4 +94,4 @@ metric = st.selectbox("Metric", ["modularity", "density", "n_communities", "n_ed
 st.line_chart(evo.set_index("period")[metric], height=280)
 
 st.subheader("Centrality table")
-st.dataframe(cent.head(25), use_container_width=True)
+st.dataframe(cent.head(25), width="stretch")

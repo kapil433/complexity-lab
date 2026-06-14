@@ -8,13 +8,21 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import query
+from common import query, render_app_shell
 
-st.set_page_config(page_title="Reference Lab", layout="wide")
-st.title("Reference Lab")
-st.caption(
-    "Reference data are context, not decoration. Every chart below exposes its "
-    "time coverage, source quality, and the observations that are still unavailable."
+st.set_page_config(page_title="Reference Lab | Complexity Lab", layout="wide")
+page = render_app_shell(
+    "Reference Lab",
+    section="System",
+    description=(
+        "Audit the contextual data, provenance, coverage, quality, and evidence "
+        "that remains unavailable."
+    ),
+    limitations=(
+        "Reference data are context, not decoration or automatic causal controls.",
+        "Sparse infrastructure snapshots are not presented as annual histories.",
+        "Wholesale has no fuel cut.",
+    ),
 )
 
 availability = query(
