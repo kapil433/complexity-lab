@@ -13,6 +13,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from common import query, render_app_shell, render_card
 
+from complexity_lab.complexity import dynamics
 from complexity_lab.complexity import transitions as tr
 
 st.set_page_config(page_title="Transitions and Regimes | Complexity Lab", layout="wide")
@@ -90,7 +91,7 @@ with tab_tip:
     cutoff = st.select_slider("Use data through", options=["2023-12 (FAME era)", "latest"],
                               value="latest")
     mp = query(
-        f"SELECT state_code, year, month, {share_col} FROM panel_state_month "
+        f"SELECT state_code, year, month, date, {share_col} FROM panel_state_month "
         "WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
     )
     if cutoff.startswith("2023"):
@@ -120,11 +121,69 @@ with tab_tip:
         s = mp[mp["state_code"] == pick].reset_index(drop=True)
         s["smoothed"] = s[share_col].rolling(smooth, center=True, min_periods=1).mean()
         srow = tips.loc[pick]
-        figs = px.line(s, y=["smoothed"], x=s.index,
+        figs = px.line(s, y=["smoothed"], x="date",
                        title=f"{pick}: {share_col} (smoothed) — τ* = {srow['tau']:.2%}, "
                              f"{srow['verdict']}")
         figs.add_hline(y=srow["tau"], line_dash="dash", line_color="#A4243B")
         st.plotly_chart(figs, width="stretch")
+
+        stability_rows = []
+        for window_size in [1, 3, 5, 7, 9]:
+            candidate = tr.tipping_summary(mp, share_col, smooth_window=window_size)
+            if pick in candidate.index:
+                stability_rows.append(
+                    {
+                        "smoothing_window": window_size,
+                        "tau": candidate.loc[pick, "tau"],
+                        "sse_gain": candidate.loc[pick, "sse_gain"],
+                        "hinge_coef": candidate.loc[pick, "hinge_coef"],
+                    }
+                )
+        stability = pd.DataFrame(stability_rows)
+        if not stability.empty:
+            tau_sd = stability["tau"].std()
+            verdict = (
+                "no credible transition"
+                if srow["sse_gain"] < 0.1 or tau_sd > 0.03
+                else "stable accelerating transition"
+                if srow["hinge_coef"] > 0
+                else "stable saturation transition"
+            )
+            st.info(
+                f"Verdict: **{verdict}**. Threshold stability SD across smoothing "
+                f"windows: {tau_sd:.2%}."
+            )
+            st.plotly_chart(
+                px.line(
+                    stability,
+                    x="smoothing_window",
+                    y="tau",
+                    markers=True,
+                    title="Threshold stability across smoothing windows",
+                ),
+                width="stretch",
+            )
+
+        warnings = dynamics.early_warning_signals(
+            s.set_index(pd.to_datetime(s["date"]))[share_col],
+            window=24,
+        ).reset_index(names="date")
+        variance_trend = dynamics.kendall_tau_trend(warnings["variance"])
+        ac_trend = dynamics.kendall_tau_trend(warnings["autocorr1"])
+        st.plotly_chart(
+            px.line(
+                warnings,
+                x="date",
+                y=["variance", "autocorr1"],
+                title="Early-warning indicators (rolling detrended series)",
+            ),
+            width="stretch",
+        )
+        st.caption(
+            f"Kendall trend: variance τ={variance_trend['tau']:.2f}; "
+            f"lag-1 autocorrelation τ={ac_trend['tau']:.2f}. "
+            "These are diagnostics, not deterministic predictions."
+        )
 
 with tab_regime:
     panel_year = query("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'")

@@ -40,7 +40,7 @@ inputs when the service starts. Proprietary wholesale files are intentionally no
 deployed, and the Wholesale page reports that limitation instead of substituting
 modeled data.
 
-## The interactive lab (10 specialist pages)
+## The interactive lab (15 specialist pages)
 
 Home is a context-aware **Market Brief**. Its year, state, fuel, and OEM filters
 persist across navigation and in shareable URLs; every page displays evidence type,
@@ -49,7 +49,12 @@ saved to the local research library.
 
 Market Pulse · Compare and Explore · Network Lab · Diffusion Lab · Causal Lab ·
 Wholesale and Channel · Transitions and Regimes · Forecast Studio · Scenario and
-Shock Lab · Reference Lab. Light/dark via app menu → Settings.
+Shock Lab · Reference Lab · State Intelligence · OEM and Model Intelligence ·
+Experiment Gallery · Saved Questions · Data Health. Light/dark via app menu → Settings.
+
+The bipartite Network Lab includes stable communities, complete community-member
+lists, cross-community OEM-state links, a community flow matrix, edge births/deaths,
+ego networks, and threshold-sensitivity diagnostics.
 
 Every analytical page opens with an explainer card (question, method, plain-English concepts,
 math with toy examples, interpretation guide, limits) — same content as the site's
@@ -80,7 +85,8 @@ into the site. Conventions in [docs/lab-guide.md](docs/lab-guide.md).
   `experiment_state_context`, or the canonical policy timeline. Superseded
   reference tables and placeholder observations are not loaded.
 - **Data refresh**: monthly ritual in [docs/refresh-runbook.md](docs/refresh-runbook.md).
-- 70+ tests; ruff; experiment registry with timestamped, manifest-ed artifacts.
+- 90+ tests; ruff; experiment registry with timestamped, privacy-classified visual
+  bundles, result briefs, diagnostics, and share cards.
 
 ## Data, licensing, caveats
 

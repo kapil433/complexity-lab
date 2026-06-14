@@ -1,8 +1,10 @@
-"""Explorer: state-level registrations, fuel mix, concentration, choropleth."""
+"""Compare and Explore: structured state comparison, maps, ranks, and cohorts."""
 
 import sys
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -15,102 +17,233 @@ st.set_page_config(page_title="Compare and Explore | Complexity Lab", layout="wi
 page = render_app_shell(
     "Compare and Explore",
     section="Observe",
-    description="Compare states across registrations, fuel adoption, concentration, and context.",
+    description=(
+        "Compare states through maps, indexed trajectories, ranks, growth, volatility, "
+        "reference context, and reproducible URL state."
+    ),
     limitations=(
-        "Maps show association and distribution, not causal effects.",
-        "Population metrics use the quality and denominator named in the metric label.",
+        "Maps and scatter plots show association and distribution, not causal effects.",
+        "Population and reference metrics retain their source quality and denominator basis.",
     ),
 )
 render_card("descriptive-baseline")
 
 METRICS = {
-    "total_regs": ("Total registrations", "indian"),
+    "total_regs": ("Total registrations", "units"),
     "ev_share": ("EV share", "pct"),
     "cng_share": ("CNG share", "pct"),
     "diesel_share": ("Diesel share", "pct"),
     "petrol_share": ("Petrol share", "pct"),
-    "hhi_oem": ("OEM concentration (HHI, 0–10,000)", "raw"),
-    "entropy_oem": ("OEM entropy (nats)", "raw"),
+    "hhi_oem": ("OEM concentration", "raw"),
     "yoy_growth": ("YoY growth", "pct"),
-    "regs_per_1000_population_2024": (
-        "Registrations per 1,000 people (fixed 2024 population basis)",
-        "raw",
-    ),
-    "regs_per_1000_population": (
-        "Registrations per 1,000 people (estimated annual population)",
-        "raw",
-    ),
-    "real_pc_income_inr": (
-        "Per-capita income, constant 2011-12 prices (₹)",
-        "indian",
-    ),
-    "real_gsdp_growth_pct": ("Real GSDP growth", "pct"),
-    "broad_credit_per_capita_inr": ("Broad credit per capita (₹)", "indian"),
+    "regs_per_1000_population": ("Registrations per 1,000 people", "raw"),
+    "real_pc_income_inr": ("Real per-capita income", "units"),
+    "real_gsdp_growth_pct": ("Real GSDP growth", "raw"),
+    "broad_credit_per_capita_inr": ("Broad credit per capita", "units"),
 }
 
 panel = query("SELECT * FROM experiment_state_year")
-y0, y1 = page.filters.year_start, page.filters.year_end
-metric = st.selectbox(
-    "Metric", list(METRICS), format_func=lambda m: METRICS[m][0],
+context = query("SELECT * FROM experiment_state_context")
+dimension = query("SELECT state_code, geojson_name, zone FROM dim_state")
+panel = panel.merge(
+    context[
+        ["state_code", "urban_pct", "real_pc_income_inr", "ev_quality", "cng_quality"]
+    ].rename(columns={"real_pc_income_inr": "context_income"}),
+    on="state_code",
+    how="left",
 )
-metric_label, metric_kind = METRICS[metric]
-
-# Independent bounds: tying this slider to the range slider above resets it
-# whenever the range moves (a "stuck slider" in practice).
-data_lo, data_hi = int(panel["year"].min()), int(panel["year"].max())
-snap_year = st.slider("Choropleth year", data_lo, data_hi, min(data_hi - 1, y1))
-snap = panel[panel["year"] == snap_year]
-if page.filters.states:
-    snap = snap[snap["state_code"].isin(page.filters.states)]
-snap = snap.merge(
-    query("SELECT state_code, geojson_name FROM dim_state"), on="state_code", how="left"
+panel = panel.merge(dimension, on="state_code", how="left", suffixes=("", "_dim"))
+panel["income_quartile"] = pd.qcut(
+    panel.groupby("state_code")["context_income"].transform("max"),
+    4,
+    labels=["Q1 income", "Q2 income", "Q3 income", "Q4 income"],
+    duplicates="drop",
+)
+panel["urban_quartile"] = pd.qcut(
+    panel.groupby("state_code")["urban_pct_y" if "urban_pct_y" in panel else "urban_pct"].transform("max"),
+    4,
+    labels=["Q1 urban", "Q2 urban", "Q3 urban", "Q4 urban"],
+    duplicates="drop",
 )
 
-fig = px.choropleth(
-    snap,
-    geojson=load_geojson(),
-    locations="geojson_name",
-    featureidkey="properties.ST_NM",
-    color=metric,
-    color_continuous_scale="Viridis",
-    hover_name="state_name",
-    hover_data={"total_regs": ":,", "ev_share": ":.2%", "geojson_name": False},
-    title=f"{metric_label} — {snap_year}",
+query_metric = st.query_params.get("metric", "total_regs")
+query_normalization = st.query_params.get("normalization", "Actual")
+controls = st.columns([1.4, 1.2, 1.1, 1.1])
+metric = controls[0].selectbox(
+    "Metric",
+    list(METRICS),
+    index=list(METRICS).index(query_metric) if query_metric in METRICS else 0,
+    format_func=lambda value: METRICS[value][0],
 )
-fig.update_geos(fitbounds="locations", visible=False)
-fig.update_layout(height=560, margin=dict(l=0, r=0, t=40, b=0),
-                  coloraxis_colorbar_title=None)
-if metric_kind == "pct":
-    fig.update_layout(coloraxis_colorbar_tickformat=".1%")
-st.plotly_chart(fig, width="stretch")
+normalization = controls[1].selectbox(
+    "Normalization",
+    ["Actual", "Index to 100", "Percentile", "Share of selected states"],
+    index=["Actual", "Index to 100", "Percentile", "Share of selected states"].index(
+        query_normalization
+    )
+    if query_normalization in ["Actual", "Index to 100", "Percentile", "Share of selected states"]
+    else 0,
+)
+grouping = controls[2].selectbox(
+    "Group states by",
+    ["None", "Zone", "Income quartile", "Urbanization quartile"],
+)
+snapshot_year = controls[3].slider(
+    "Snapshot year",
+    int(panel["year"].min()),
+    int(panel["year"].max()),
+    min(page.filters.year_end, page.cutoff.latest_complete_year),
+)
+st.query_params["metric"] = metric
+st.query_params["normalization"] = normalization
 
-st.subheader("Time series")
-default_states = panel.loc[
+state_names = sorted(panel["state_name"].unique())
+query_states = [value for value in st.query_params.get("compare", "").split(",") if value]
+default_names = panel.loc[
     panel["state_code"].isin(page.filters.states), "state_name"
 ].drop_duplicates().tolist()
-states = st.multiselect(
-    "States",
-    sorted(panel["state_name"].unique()),
-    default=default_states or ["Maharashtra", "Karnataka", "Uttar Pradesh"],
+selected_states = st.multiselect(
+    "Comparison set (six or more remain readable in the indexed and table views)",
+    state_names,
+    default=query_states or default_names or ["Maharashtra", "Karnataka", "Uttar Pradesh", "Tamil Nadu"],
 )
-sel = panel[(panel["state_name"].isin(states)) & panel["year"].between(y0, y1)]
-fig2 = px.line(sel, x="year", y=metric, color="state_name", markers=True)
-fig2.update_layout(height=380, yaxis_title=metric_label)
-if metric_kind == "pct":
-    pct_axis(fig2)
-elif metric_kind == "indian":
-    indian_axis(fig2)
-st.plotly_chart(fig2, width="stretch")
+st.query_params["compare"] = ",".join(selected_states)
 
-st.subheader("Fuel mix (All India)")
-mix = query(
-    """SELECT year, petrol_regs AS Petrol, diesel_regs AS Diesel, cng_regs AS CNG,
-              ev_regs AS EV, hybrid_regs AS "Strong Hybrid"
-       FROM panel_state_year WHERE state_code = 'ALL' ORDER BY year"""
+working = panel[
+    panel["state_name"].isin(selected_states)
+    & panel["year"].between(page.filters.year_start, page.filters.year_end)
+].copy()
+value_column = metric
+if normalization == "Index to 100":
+    working["display_value"] = working.groupby("state_code")[metric].transform(
+        lambda series: 100 * series / series.dropna().iloc[0] if series.notna().any() else np.nan
+    )
+    value_column = "display_value"
+elif normalization == "Percentile":
+    working["display_value"] = working.groupby("year")[metric].rank(pct=True)
+    value_column = "display_value"
+elif normalization == "Share of selected states":
+    working["display_value"] = working[metric] / working.groupby("year")[metric].transform("sum")
+    value_column = "display_value"
+
+tab_map, tab_compare, tab_scatter, tab_table = st.tabs(
+    ["Map", "Compare trajectories", "Scatter / bubble", "Rank and export"]
 )
-mix_long = mix.melt(id_vars="year", var_name="fuel", value_name="regs")
-mix_long = mix_long[mix_long["year"].between(y0, y1)]
-st.plotly_chart(
-    px.area(mix_long, x="year", y="regs", color="fuel", groupnorm="percent"),
-    width="stretch",
-)
+with tab_map:
+    snapshot = panel[panel["year"] == snapshot_year].copy()
+    figure = px.choropleth(
+        snapshot,
+        geojson=load_geojson(),
+        locations="geojson_name",
+        featureidkey="properties.ST_NM",
+        color=metric,
+        color_continuous_scale="Viridis",
+        hover_name="state_name",
+        hover_data={
+            "zone": True,
+            "ev_quality": True,
+            "cng_quality": True,
+            "geojson_name": False,
+        },
+        title=f"{METRICS[metric][0]}, {snapshot_year}",
+    )
+    figure.update_geos(fitbounds="locations", visible=False)
+    figure.update_layout(height=620, margin={"l": 0, "r": 0, "t": 45, "b": 0})
+    st.plotly_chart(figure, width="stretch")
+    st.caption("Select states in the comparison control above; map-click selection is not persisted by Streamlit.")
+
+with tab_compare:
+    color = {
+        "None": "state_name",
+        "Zone": "zone",
+        "Income quartile": "income_quartile",
+        "Urbanization quartile": "urban_quartile",
+    }[grouping]
+    figure = px.line(
+        working,
+        x="year",
+        y=value_column,
+        color=color,
+        line_group="state_name",
+        hover_name="state_name",
+        markers=True,
+        title=f"{METRICS[metric][0]} | {normalization}",
+    )
+    if METRICS[metric][1] == "pct" and normalization == "Actual":
+        pct_axis(figure)
+    elif METRICS[metric][1] == "units" and normalization == "Actual":
+        indian_axis(figure)
+    st.plotly_chart(figure, width="stretch")
+
+with tab_scatter:
+    numeric = list(METRICS)
+    x_metric = st.selectbox("X axis", numeric, index=numeric.index("real_pc_income_inr"))
+    y_metric = st.selectbox("Y axis", numeric, index=numeric.index("ev_share"))
+    size_metric = st.selectbox("Bubble size", ["total_regs", "population_mn", "None"])
+    scatter = panel[panel["year"] == snapshot_year].dropna(subset=[x_metric, y_metric])
+    st.plotly_chart(
+        px.scatter(
+            scatter,
+            x=x_metric,
+            y=y_metric,
+            size=None if size_metric == "None" else size_metric,
+            color="zone",
+            hover_name="state_name",
+            trendline="ols",
+            title=f"{METRICS[y_metric][0]} versus {METRICS[x_metric][0]}, {snapshot_year}",
+        ),
+        width="stretch",
+    )
+
+with tab_table:
+    rows = []
+    for state_name, group in working.groupby("state_name"):
+        clean = group.dropna(subset=[metric]).sort_values("year")
+        if clean.empty:
+            continue
+        start, end = clean.iloc[0], clean.iloc[-1]
+        years = max(int(end["year"] - start["year"]), 1)
+        cagr = (
+            (end[metric] / start[metric]) ** (1 / years) - 1
+            if start[metric] > 0 and end[metric] >= 0
+            else np.nan
+        )
+        rows.append(
+            {
+                "state": state_name,
+                "latest": end[metric],
+                "rank": clean[clean["year"] == end["year"]][metric].rank(ascending=False).iloc[0],
+                "cagr": cagr,
+                "volatility": clean[metric].pct_change().std(),
+                "contribution": end[metric]
+                / panel.loc[panel["year"] == end["year"], metric].sum(),
+            }
+        )
+    table = pd.DataFrame(rows)
+    if not table.empty:
+        table["rank"] = table["latest"].rank(ascending=False, method="min")
+        table["percentile"] = table["latest"].rank(pct=True)
+        prior = panel[panel["year"] == snapshot_year - 1].set_index("state_name")[metric]
+        current = panel[panel["year"] == snapshot_year].set_index("state_name")[metric]
+        rank_change = prior.rank(ascending=False) - current.rank(ascending=False)
+        table["rank_change"] = table["state"].map(rank_change)
+        st.dataframe(
+            table.style.format(
+                {
+                    "latest": "{:,.3g}",
+                    "cagr": "{:+.1%}",
+                    "volatility": "{:.1%}",
+                    "contribution": "{:.1%}",
+                    "percentile": "{:.0%}",
+                    "rank_change": "{:+.0f}",
+                }
+            ),
+            hide_index=True,
+            width="stretch",
+        )
+        st.download_button(
+            "Download comparison CSV",
+            table.to_csv(index=False),
+            file_name=f"state-comparison-{metric}.csv",
+            mime="text/csv",
+        )

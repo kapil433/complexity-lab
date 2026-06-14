@@ -17,6 +17,7 @@ def test_seasonal_naive_shape_and_band():
     fc = seasonal_naive(s, horizon=6)
     assert len(fc) == 6
     assert (fc["hi"] >= fc["mean"]).all() and (fc["lo"] <= fc["mean"]).all()
+    assert (fc[["mean", "lo", "hi"]] >= 0).all().all()
     # next-Jan forecast should be near last-Jan value scaled by drift
     assert abs(fc["mean"].iloc[0] / s.iloc[-12] - 1) < 0.25
 
@@ -33,6 +34,15 @@ def test_all_models_run_and_backtest_scores():
 def test_benchmark_ranks_models():
     s = _seasonal_series()
     table = benchmark(s, horizon=3, n_origins=4)
-    assert list(table.columns) == ["model", "mape", "n_origins"]
+    assert {
+        "model",
+        "mape",
+        "wape",
+        "mae",
+        "bias",
+        "interval_coverage",
+        "naive_relative_skill",
+        "n_origins",
+    } == set(table.columns)
     assert table["mape"].is_monotonic_increasing
     assert len(table) == len(MODELS)

@@ -5,8 +5,8 @@ date: 2026-06-12
 
 ::: {.callout-note}
 Companion to [010 — SHEV structural isolation](010-shev-isolation.qmd);
-requires local wholesale data. Every number below is a **scenario under
-stated assumptions**, not a forecast.
+uses observed Vahan Strong Hybrid registrations from January 2024 onward. Every
+number below is a **scenario under stated assumptions**, not a forecast.
 :::
 
 ## Question
@@ -14,7 +14,8 @@ stated assumptions**, not a forecast.
 Experiment 010 established the isolation (one state waiver versus dozens of EV policy nodes, ~43% effective
 GST) and the causal anchor (UP's waiver ⇒ +2.3pp). The remaining paper piece:
 **how large is the foregone adoption?** We fit a Bass model to the actual
-hybrid trajectory and re-project it under EV-equivalent taxation.
+post-break Vahan hybrid trajectory and re-project it under EV-equivalent taxation.
+Wholesale is not used because it has no fuel cut.
 
 ## Fit to the actual trajectory
 
@@ -26,16 +27,16 @@ from complexity_lab.config import settings
 from complexity_lab.simulation.diffusion import fit_bass, project_bass
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
-HAS_WS = "wholesale" in {r[0] for r in con.execute("SHOW TABLES").fetchall()}
-if HAS_WS:
-    ws = con.execute("SELECT date, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' "
-                     "AND date >= '2022-04-01' ORDER BY date").df()
-    cum = ws["wholesale"].fillna(0).cumsum()
-    fit = fit_bass(cum.reset_index(drop=True))
-    print(f"Bass fit: p = {fit['p']:.4f}, q = {fit['q']:.3f}, m = {fit['m']:,.0f}, "
-          f"R² = {fit['r2']:.3f}")
-    print("Note the low q (imitation) — a niche that does not feed on itself, "
-          "consistent with structural isolation.")
+observed = con.execute(
+    "SELECT date, hybrid_regs FROM panel_state_month "
+    "WHERE state_code = 'ALL' AND date >= '2024-01-01' "
+    "AND date < (SELECT MAX(date) FROM panel_state_month) ORDER BY date"
+).df()
+cum = observed["hybrid_regs"].fillna(0).cumsum()
+fit = fit_bass(cum.reset_index(drop=True))
+print(f"Bass fit: p = {fit['p']:.4f}, q = {fit['q']:.3f}, m = {fit['m']:,.0f}, "
+      f"R² = {fit['r2']:.3f}")
+print("Short post-2024 series: parameters are scenario inputs, not a stable forecast.")
 ```
 
 ## The counterfactual band
@@ -45,42 +46,41 @@ elasticity band e ∈ {−1, −1.5, −2} scales the reachable market
 m′ = m·(1 + 0.266·|e|); imitation gets a 1.2× parity-visibility uplift.
 
 ```{python}
-if HAS_WS:
-    horizon = 60
-    base = project_bass(fit, horizon=horizon)
-    fig = go.Figure()
-    fig.add_scatter(x=list(range(len(cum))), y=cum, name="actual (cumulative)",
-                    line={"color": "#1f77b4", "width": 3})
-    fig.add_scatter(x=base["t"], y=base["cumulative"], name="no-change projection",
-                    line={"dash": "dash", "color": "#888"})
-    colors = {"1": "#fdbf6f", "1.5": "#ff7f0e", "2": "#d62728"}
-    for e in (1.0, 1.5, 2.0):
-        proj = project_bass(fit, horizon=horizon, m_mult=1 + 0.266 * e, q_mult=1.2)
-        fig.add_scatter(x=proj["t"], y=proj["cumulative"],
-                        name=f"tax parity, e = −{e:g}", line={"color": colors[f'{e:g}']})
-    fig.update_layout(title="Cumulative hybrid adoption: actual vs tax-parity scenarios",
-                      xaxis_title="months since 2022-04", yaxis_title="cumulative units")
-    fig.show()
+horizon = 60
+base = project_bass(fit, horizon=horizon)
+fig = go.Figure()
+fig.add_scatter(x=list(range(len(cum))), y=cum, name="observed Vahan (cumulative)",
+                line={"color": "#1f77b4", "width": 3})
+fig.add_scatter(x=base["t"], y=base["cumulative"], name="no-change scenario",
+                line={"dash": "dash", "color": "#888"})
+colors = {"1": "#fdbf6f", "1.5": "#ff7f0e", "2": "#d62728"}
+for e in (1.0, 1.5, 2.0):
+    proj = project_bass(fit, horizon=horizon, m_mult=1 + 0.266 * e, q_mult=1.2)
+    fig.add_scatter(x=proj["t"], y=proj["cumulative"],
+                    name=f"tax parity, e = −{e:g}", line={"color": colors[f'{e:g}']})
+fig.update_layout(title="Post-2024 Vahan hybrid adoption and tax-parity scenarios",
+                  xaxis_title="months since 2024-01",
+                  yaxis_title="cumulative registrations")
+fig.show()
 ```
 
 ```{python}
-if HAS_WS:
-    rows = []
-    base5 = float(base["cumulative"].iloc[-1])
-    for e in (1.0, 1.5, 2.0):
-        proj = project_bass(fit, horizon=horizon, m_mult=1 + 0.266 * e, q_mult=1.2)
-        c5 = float(proj["cumulative"].iloc[-1])
-        rows.append({"elasticity": -e, "cum_5y": round(c5), "uplift_vs_baseline": round(c5/base5, 2)})
-    pd.DataFrame(rows)
+rows = []
+base5 = float(base["cumulative"].iloc[-1])
+for e in (1.0, 1.5, 2.0):
+    proj = project_bass(fit, horizon=horizon, m_mult=1 + 0.266 * e, q_mult=1.2)
+    c5 = float(proj["cumulative"].iloc[-1])
+    rows.append({"elasticity": -e, "cum_5y": round(c5), "uplift_vs_baseline": round(c5/base5, 2)})
+pd.DataFrame(rows)
 ```
 
 ## Finding
 
-The fitted curve says the current regime caps hybrids at a market potential of
+The short post-2024 fitted curve suggests a market potential of
 roughly a quarter-million units with weak imitation (q ≈ 0.11 — compare ~0.3–0.5
 for healthy consumer-durable diffusions). Under tax parity the same model
 implies **1.3–1.6× the cumulative adoption over five years**, before counting
 any supply response (new hybrid launches) the better tax position would
-trigger — so the band is plausibly conservative. Together with 010, the paper
+trigger. This is an assumption-sensitive scenario band, not a forecast. Together with 010, the paper
 argument is complete: *isolation documented → causal lever demonstrated (UP) →
 magnitude bounded (this counterfactual)*. Venue per blueprint §17.2.

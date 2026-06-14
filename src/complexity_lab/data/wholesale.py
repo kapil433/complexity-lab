@@ -187,6 +187,8 @@ def clean(df: pd.DataFrame) -> pd.DataFrame:
 
 
 _SQL_VIEWS = """
+DROP VIEW IF EXISTS ws_fuel_month;
+
 CREATE OR REPLACE VIEW ws_maker_month AS
 SELECT maker_vahan AS maker, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale GROUP BY maker_vahan, year, month;
@@ -209,13 +211,6 @@ CREATE OR REPLACE VIEW ws_ev_month AS
 SELECT state_code, maker, model, year, month, MIN(date) AS date, SUM(qty) AS wholesale
 FROM wholesale WHERE ev_only = 1
 GROUP BY state_code, maker, model, year, month;
-
--- LEGACY NAMEPLATE PROXY, NOT A WHOLESALE FUEL CUT. The source has no fuel field
--- or fuel-wise quantity split. Do not expose this as observed fuel mix/share/volume.
-CREATE OR REPLACE VIEW ws_fuel_month AS
-SELECT primary_fuel AS fuel, year, month, MIN(date) AS date, SUM(qty) AS wholesale
-FROM wholesale WHERE primary_fuel IS NOT NULL
-GROUP BY primary_fuel, year, month;
 
 -- National retail (registrations) vs wholesale, by month — nowcasting workhorse.
 -- Restricted to the full-coverage era (2022-04 onward); the earlier 50-city

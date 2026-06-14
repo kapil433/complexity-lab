@@ -11,8 +11,8 @@ def test_market_brief_smoke():
 
     assert not app.exception
     assert {metric.label for metric in app.metric} >= {
-        "Latest complete year",
-        "Registrations",
+        "Latest observed month",
+        "Rolling 12 months",
         "EV share",
     }
     assert len(app.get("plotly_chart")) >= 2
@@ -21,7 +21,7 @@ def test_market_brief_smoke():
 def test_every_page_uses_shared_truth_shell():
     pages = sorted((ROOT / "app" / "pages").glob("*.py"))
 
-    assert len(pages) == 10
+    assert len(pages) == 15
     for page in pages:
         source = page.read_text(encoding="utf-8")
         assert "render_app_shell(" in source, page.name

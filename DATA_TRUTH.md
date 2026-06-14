@@ -37,6 +37,10 @@ The interactive app now carries this contract into every page:
 - Every page exposes cutoff, context, methodology, limitations, and downloadable JSON.
 - Saved views retain their filter payload and data cutoff in a local research store.
 - The Wholesale page explicitly states that wholesale has no fuel cut.
+- Network communities expose their member lists and cross-community links.
+- Forecast, scenario, hypothesis, and experiment runs can be saved as dated research cards.
+- Experiment runs emit privacy-classified visual bundles and fail closed if an
+  artifact lacks a classification.
 
 ## 2. Verified Data Flow
 
@@ -52,7 +56,7 @@ flowchart LR
     D --> E["Experiment runner"]
     D --> A["Interactive app"]
     E --> O["Manifests and data artifacts"]
-    E -. planned .-> F["Charts, result pages and share cards"]
+    E --> F["Charts, diagnostics, result pages and share cards"]
 ```
 
 Transformation code:
@@ -236,8 +240,8 @@ three visible model-metadata categories:
 - **Unclassified**
 
 Do not aggregate `primary_fuel` and call it wholesale fuel mix, fuel share, fuel
-volume, or a fuel cut. The `ws_fuel_month` database view is a legacy nameplate
-proxy and should be renamed or removed from user-facing analysis.
+volume, or a fuel cut. The legacy `ws_fuel_month` nameplate-proxy view was removed
+on 2026-06-14. No app page or registered experiment uses it.
 
 ## 4. Geographic and Join Truth
 
@@ -524,31 +528,28 @@ Important panel limitations:
 
 Run artifacts live under [`outputs/`](outputs/). Current runs produce:
 
-- `manifest.json` with experiment, parameters, elapsed time, metrics, artifacts,
-  declared data dependencies, canonical interfaces, and the reference-catalog hash.
+- `manifest.json` with status, lifecycle timestamps, experiment parameters, random
+  seed, elapsed time, metrics, limitations, data cutoff, Git commit, package
+  versions, declared dependencies, row counts, reference-catalog hash, and
+  public/private artifact classification.
 - Parquet/JSON/GEXF result data.
-- No standard chart images, interactive figures, narrative result page, or social
-  preview per run.
+- `hero.png`, `figures/01-primary.png`, `figures/02-diagnostic.png`, `hero.html`,
+  `result.md`, and `share-card.png`.
 
 Published notebooks live under [`experiments/`](experiments/) and their executed
 results are frozen under [`_freeze/`](_freeze/).
 
-All 13 registered experiments were executed successfully on 2026-06-13 after the
-canonical-reference migration. Experiments use `experiment_state_year`,
+All 13 registered experiments were executed successfully on 2026-06-14 after the
+visual-publishing and canonical-reference migration. Experiments use `experiment_state_year`,
 `experiment_state_context`, or `ref_policy_events_canonical` when reference
 context is relevant. Pure Vahan-network, wholesale, segment, or simulation
 experiments declare those factual dependencies instead of adding irrelevant
 covariates.
 
-Current experiment outputs are reproducible data artifacts, but not yet a strong
-sharing product. The revised plan requires every successful run to emit:
-
-1. A hero visualization.
-2. Supporting diagnostic charts.
-3. A concise finding and limitations block.
-4. Interactive HTML plus PNG/SVG exports.
-5. A self-contained result page with data cutoff and parameters.
-6. A share card that never leaks proprietary row-level data.
+The Experiment Gallery can run experiments, show the latest result and diagnostics,
+compare two runs, save a result to the research inbox, and download result/share
+assets. Wholesale-dependent bundles are classified private; raw proprietary rows
+are never made public.
 
 ## 8. Complete Local Data File Inventory
 

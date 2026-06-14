@@ -63,3 +63,33 @@ def test_temporal_metric_series():
     series = nm.temporal_metric_series(nb.temporal_graphs(pd.concat([edges, g2])))
     assert list(series.index) == [2024, 2025]
     assert "modularity" in series.columns
+
+
+def test_community_summary_and_cross_links_are_explicit():
+    g = nb.bipartite_graph(edges_fixture())
+    comm = nm.communities(g)
+
+    summary = nm.community_summary(g, comm)
+    links = nm.cross_community_edges(g, comm)
+    flows = nm.community_flow_matrix(g, comm)
+
+    assert len(summary) == comm.attrs["n_communities"]
+    assert {"oems", "states", "cross_share"} <= set(summary.columns)
+    assert ((links["oem"] == "A") & (links["state"] == "S3")).any()
+    assert flows.to_numpy().sum() > 0
+
+
+def test_edge_changes_reports_births_and_deaths():
+    before = nb.bipartite_graph(edges_fixture(), min_weight=5)
+    after_edges = edges_fixture()
+    after_edges.loc[len(after_edges)] = {
+        "maker": "B",
+        "state_code": "S3",
+        "regs": 20,
+        "year": 2024,
+    }
+    after = nb.bipartite_graph(after_edges, min_weight=5)
+
+    changes = nm.edge_changes(before, after)
+
+    assert ((changes["status"] == "born") & (changes["after"] == 20)).any()

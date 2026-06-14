@@ -83,6 +83,9 @@ def cmd_app(_args) -> None:
 
 
 def main() -> None:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
     parser = argparse.ArgumentParser(prog="lab", description="Complexity Lab CLI")
     sub = parser.add_subparsers(dest="command", required=True)
 

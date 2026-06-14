@@ -609,21 +609,17 @@ _add(Card(
     category="Policy Network Analysis",
     tier="Tier 5 — Lead Paper",
     data_used=["Vahan fuel shares (hybrid visible only from 2024 — classification break)",
-               "Wholesale hybrid-associated nameplate metadata (no wholesale fuel cut)",
                "Policy events database", "UP hybrid tax waiver (Jul 2024) as natural experiment"],
     question="Strong hybrids are the most fuel-efficient non-plug-in technology on sale, yet "
              "stay near 2% share. Is that consumer preference — or structural isolation from "
              "India's incentive architecture (no FAME, 43% effective GST, no policy node)?",
-    method="Three pieces: (1) adoption trajectories SHEV vs EV vs CNG with the incentive map "
-           "(which policies touch which technology); (2) cross-source visibility — wholesale "
-           "has no fuel cut, but model metadata identifies hybrid-associated nameplates years "
-           "before Vahan's fuel classification does; "
-           "(3) difference-in-differences on UP's July-2024 registration-tax waiver — the one "
+    method="Two pieces: (1) post-2024 Vahan adoption trajectories SHEV vs EV vs CNG with the "
+           "incentive map (which policies touch which technology); "
+           "(2) difference-in-differences on UP's July-2024 registration-tax waiver — the one "
            "place a SHEV incentive node briefly existed.",
     how_it_works=[
         "Count policy events touching each technology (keyword-classified) — the incentive graph.",
         "Plot share trajectories on the same axis; note the Vahan 2024 classification break.",
-        "Use wholesale hybrid-nameplate dispatches for the pre-2024 trajectory Vahan can't see.",
         "DiD: UP's hybrid share change after Jul-2024 minus the same change in control states.",
         "Placebo check: re-run the DiD pretending each control state was treated.",
     ],
@@ -643,14 +639,13 @@ _add(Card(
         "Policy mentions: EV far exceeds CNG and Hybrid; the UP waiver is the lone hybrid node.",
         "SHEV trajectory flat vs EV's S-curve despite similar product availability windows.",
         "Positive UP ATT that beats all placebos = price/tax, not preference, binds adoption.",
-        "Wholesale hybrid series rising pre-2024 = the Vahan zero is a measurement artifact.",
+        "The pre-2024 Vahan zero is a classification artifact, so no continuous pre/post curve is claimed.",
     ],
     limitations=[
         "Vahan hybrid data exists only from 2024 — earlier 'zero' is a classification break, "
         "never evidence of zero sales.",
         "One treated state, short post-window; festive timing partially overlaps the waiver.",
-        "Wholesale hybrid proxy counts nameplates (Camry, Hycross, Invicto...), missing "
-        "hybrid variants inside multi-fuel nameplates.",
+        "Wholesale is excluded because the source has no fuel-wise quantity cut.",
     ],
     decisions=[
         "Policy: the quantified counterfactual for GST-rationalisation debates on SHEVs.",
@@ -769,16 +764,16 @@ _add(Card(
     name="SHEV Counterfactual — Adoption at EV-Equivalent Taxation",
     category="Simulation — Policy Scenario",
     tier="Tier 5 — Lead Paper (companion)",
-    data_used=["Wholesale hybrid-nameplate dispatches 2022-04+ (full era)",
+    data_used=["Vahan Strong Hybrid registrations from 2024-01 onward",
                "Bass fit from the diffusion module", "GST schedule (documented assumption)"],
     question="If strong hybrids were taxed like EVs (5% instead of ~43%), what does the fitted "
              "diffusion model imply adoption would have looked like?",
-    method="Fit Bass (p, q, m) to actual cumulative hybrid dispatches; re-project with the "
+    method="Fit Bass (p, q, m) to cumulative post-break Vahan hybrid registrations; re-project with the "
            "market potential m scaled by a price-elasticity band (e ∈ {−1, −1.5, −2} on a "
            "−26.6% price change) and a 1.2× imitation uplift for parity visibility. "
            "Explicitly a scenario, not a forecast.",
     how_it_works=[
-        "Fit the Bass curve to the real (wholesale-proxy) hybrid trajectory — R² ≈ 0.99.",
+        "Fit the Bass curve to the observed post-2024 Vahan hybrid trajectory.",
         "Note the fitted q ≈ 0.11: weak imitation, consistent with an un-incentivised niche.",
         "Tax parity (43%→5%) ≈ −26.6% consumer price; scale m by (1 + 0.266·|e|).",
         "Project 60 months under each elasticity; compare with the no-change projection.",
@@ -805,7 +800,8 @@ _add(Card(
         "m-scaling via elasticity is an assumption — the honest core of any counterfactual.",
         "Supply response (OEM model launches under better tax) not modelled — likely makes "
         "these numbers conservative.",
-        "Wholesale proxy misses hybrid variants inside multi-fuel nameplates.",
+        "The short post-2024 series follows a classification break; wholesale is excluded because "
+        "it has no fuel-wise quantity cut.",
     ],
     decisions=[
         "Policy: the quantified cost of the GST wedge in units foregone.",

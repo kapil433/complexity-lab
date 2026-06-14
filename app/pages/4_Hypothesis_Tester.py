@@ -8,9 +8,10 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import get_connection, query, render_app_shell, render_card, year_range_slider
+from common import get_connection, query, render_app_shell, render_card
 
 from complexity_lab.analysis import econometrics
+from complexity_lab.persistence import save_research_item
 
 st.set_page_config(page_title="Causal Lab | Complexity Lab", layout="wide")
 page = render_app_shell(
@@ -78,14 +79,64 @@ numeric_cols = [
 if HAS_WS:
     numeric_cols += ["wholesale_units", "ws_retail_ratio"]
 
-y0, y1 = year_range_slider(panel, key="ht_years")
+y0, y1 = page.filters.year_start, page.filters.year_end
 panel = panel[panel["year"].between(y0, y1)]
 st.caption(
     f"Period: {y0}–{y1} · {len(panel)} state-year observations"
     + (" · wholesale columns cover 2022+ (full-coverage era) only" if HAS_WS else "")
 )
 
-tab_corr, tab_reg, tab_cp = st.tabs(["Correlations", "Panel regression", "Changepoints"])
+st.subheader("Frame the hypothesis")
+h1, h2, h3, h4 = st.columns(4)
+hypothesis_outcome = h1.selectbox(
+    "Outcome",
+    ["ev_share", "cng_share", "total_regs", "yoy_growth"],
+)
+hypothesis_driver = h2.selectbox(
+    "Primary driver",
+    [
+        "real_pc_income_inr",
+        "urban_pct",
+        "broad_credit_per_capita_inr",
+        "petrol_price_inr",
+        "cng_price_inr",
+    ],
+)
+expected_sign = h3.selectbox("Expected sign", ["positive", "negative", "uncertain"])
+identification = h4.selectbox(
+    "Identification strategy",
+    ["Descriptive association", "Two-way fixed effects", "First difference", "Event study / DiD"],
+)
+lag = st.slider("Driver lag (years)", 0, 3, 0)
+if lag:
+    panel[f"{hypothesis_driver}_lag{lag}"] = panel.groupby("state_code")[
+        hypothesis_driver
+    ].shift(lag)
+    hypothesis_driver = f"{hypothesis_driver}_lag{lag}"
+    numeric_cols.append(hypothesis_driver)
+
+availability_preview = pd.DataFrame(
+    [
+        {
+            "variable": variable,
+            "non_missing": int(panel[variable].notna().sum()),
+            "missing_pct": float(panel[variable].isna().mean()),
+            "within_state_sd": float(
+                panel.groupby("state_code")[variable].std().median(skipna=True)
+            ),
+        }
+        for variable in [hypothesis_outcome, hypothesis_driver]
+    ]
+)
+st.dataframe(
+    availability_preview.style.format(
+        {"missing_pct": "{:.1%}", "within_state_sd": "{:.4g}"}
+    ),
+    hide_index=True,
+    width="stretch",
+)
+
+tab_corr, tab_reg, tab_cp = st.tabs(["Descriptive association", "Econometric model", "Changepoints"])
 
 with tab_corr:
     cols = st.multiselect(
@@ -113,20 +164,101 @@ with tab_corr:
         )
 
 with tab_reg:
-    y = st.selectbox("Dependent variable", numeric_cols, index=numeric_cols.index("ev_share"))
+    y = st.selectbox(
+        "Dependent variable",
+        numeric_cols,
+        index=numeric_cols.index(hypothesis_outcome),
+    )
     x = st.multiselect(
         "Regressors",
         [c for c in numeric_cols if c != y],
-        default=["real_pc_income_inr"],
+        default=[hypothesis_driver] if hypothesis_driver in numeric_cols else [],
     )
     fe_entity = st.checkbox("State fixed effects", value=True)
-    fe_time = st.checkbox("Year fixed effects", value=False)
+    fe_time = st.checkbox("Year fixed effects", value=True)
     if x and st.button("Run regression"):
+        near_invariant = [
+            variable
+            for variable in x
+            if panel.groupby("state_code")[variable].std().median(skipna=True) < 1e-9
+        ]
+        if fe_entity and near_invariant:
+            st.warning(
+                "Near-time-invariant under state fixed effects: "
+                + ", ".join(near_invariant)
+                + ". Coefficients may be weakly or not identified."
+            )
         try:
             res = econometrics.panel_ols(panel, y=y, x=x, entity_effects=fe_entity, time_effects=fe_time)
-            coefs = pd.DataFrame({"coef": res.params, "se": res.bse, "p": res.pvalues})
-            st.dataframe(coefs.loc[["const", *x]], width="stretch")
-            st.caption(f"n = {int(res.nobs)}, R² = {res.rsquared:.3f} (cluster-robust SEs by state)")
+            coefs = pd.DataFrame(
+                {
+                    "coef": res.params,
+                    "se": res.bse,
+                    "p": res.pvalues,
+                    "ci_low": res.conf_int()[0],
+                    "ci_high": res.conf_int()[1],
+                }
+            )
+            selected_coefs = coefs.loc[[item for item in ["const", *x] if item in coefs.index]].copy()
+            selected_coefs["effect_per_1sd"] = [
+                selected_coefs.loc[index, "coef"]
+                * (panel[index].std() if index in panel else 1)
+                for index in selected_coefs.index
+            ]
+            selected_coefs["n"] = int(res.nobs)
+            st.dataframe(selected_coefs, width="stretch")
+            coefficient_plot = selected_coefs.drop(index="const", errors="ignore").reset_index(
+                names="variable"
+            )
+            if not coefficient_plot.empty:
+                fig_coef = px.scatter(
+                    coefficient_plot,
+                    x="coef",
+                    y="variable",
+                    error_x=coefficient_plot["ci_high"] - coefficient_plot["coef"],
+                    error_x_minus=coefficient_plot["coef"] - coefficient_plot["ci_low"],
+                    title="Coefficient estimates with 95% intervals",
+                )
+                fig_coef.add_vline(x=0, line_dash="dash")
+                st.plotly_chart(fig_coef, width="stretch")
+            identifying_variation = (
+                "within-state changes over time, net of common year shocks"
+                if fe_entity and fe_time
+                else "within-state changes over time"
+                if fe_entity
+                else "pooled between-state and within-state variation"
+            )
+            st.info(
+                f"Identifying variation: {identifying_variation}. "
+                f"n={int(res.nobs)}, R²={res.rsquared:.3f}; cluster-robust SEs by state."
+            )
+            result_card = {
+                "outcome": y,
+                "regressors": x,
+                "expected_sign": expected_sign,
+                "identification": identifying_variation,
+                "lag": lag,
+                "n": int(res.nobs),
+                "r_squared": float(res.rsquared),
+                "coefficients": selected_coefs.reset_index(names="variable").to_dict("records"),
+            }
+            notes = st.text_area("Research-card notes", key="causal_notes")
+            if st.button("Save hypothesis and result"):
+                save_research_item(
+                    "hypothesis",
+                    title=f"{y} explained by {', '.join(x)}",
+                    parameters={
+                        "expected_sign": expected_sign,
+                        "identification_strategy": identification,
+                        "entity_effects": fe_entity,
+                        "time_effects": fe_time,
+                        "lag": lag,
+                    },
+                    result=result_card,
+                    data_cutoff=page.cutoff.latest_period,
+                    notes=notes,
+                )
+                st.success("Hypothesis card saved to Saved Questions.")
         except Exception as e:  # noqa: BLE001 — surface modelling errors to the user
             st.error(f"Regression failed: {e}")
 

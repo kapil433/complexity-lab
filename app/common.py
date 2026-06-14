@@ -65,13 +65,12 @@ def _query_dict() -> dict[str, str | list[str]]:
 
 def _sync_url(context: GlobalContext) -> None:
     desired = context.to_query_params()
-    current = {
-        key: values[-1]
-        for key, values in _query_dict().items()
-        if values
-    }
-    if current != desired:
-        st.query_params.from_dict(desired)
+    current = {key: values[-1] for key, values in _query_dict().items() if values}
+    global_keys = {"from", "to", "source", "coverage", "states", "fuels", "oems", "segments"}
+    merged = {key: value for key, value in current.items() if key not in global_keys}
+    merged.update(desired)
+    if current != merged:
+        st.query_params.from_dict(merged)
 
 
 def global_filters() -> PageContext:

@@ -60,19 +60,15 @@ fig
 
 ::: {.callout-warning}
 Vahan records `Strong Hybrid` only from 2024 — the zero before that is a
-**classification artifact**, not zero sales. Wholesale has **no fuel cut**. The
-view below uses externally assigned model metadata to show hybrid-associated
-nameplates from 2017; it cannot split mixed-powertrain model quantities.
+**classification artifact**, not zero sales. Wholesale has **no fuel cut**, so
+the lab does not construct a pre-2024 wholesale hybrid trajectory.
 :::
 
 ```{python}
-if HAS_WS:
-    wsf = con.execute(
-        "SELECT date, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' "
-        "AND date >= '2022-04-01' ORDER BY date").df()
-    px.area(wsf, x="date", y="wholesale",
-            title="Hybrid-associated nameplate dispatches (not a fuel cut) — "
-                  "Hycross/Invicto/Camry ramp from late 2022").show()
+print(
+    "No pre-2024 hybrid trajectory is constructed: Vahan has a classification "
+    "break and wholesale has no fuel cut."
+)
 ```
 
 ## 3 — The one place a SHEV incentive existed: UP's waiver

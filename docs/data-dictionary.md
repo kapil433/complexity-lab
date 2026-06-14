@@ -18,8 +18,8 @@
 | `wholesale` | city × model × month | **Local only** (proprietary; never committed). FY2017-18→present. Built by `lab wholesale`. |
 | `ws_model_month`, `ws_maker_month`, `ws_state_month`, `ws_segment_month` | views | Wholesale aggregates; state view excludes unmapped cities (~3.7% of volume overall after the current mapping). |
 | `ws_ev_month` | view | Dispatches of **EV-only nameplates**. This is a model subset, not a wholesale EV/fuel cut; mixed-fuel nameplates cannot be split. |
-| `ws_fuel_month` | view | **Legacy nameplate proxy, not a wholesale fuel cut.** It assigns every model to one externally inferred `primary_fuel`; do not report it as observed fuel mix/share/volume. |
 | `retail_wholesale_month` | month | National retail vs wholesale join, full-coverage era only — the nowcasting workhorse. |
+| `saved_view`, `watchlist_item`, `research_note`, `hypothesis_run`, `forecast_run`, `scenario_run`, `experiment_run` | local research records | JSON payload, cutoff, method version, notes, and creation time for reproducible personal research memory. |
 
 ## Known caveats (read before inferring)
 
@@ -43,10 +43,11 @@
 6. **Wholesale data is proprietary** — the raw XLSB and all derived caches are
    gitignored (`data/raw/wholesale*`); only the city→state mapping is committed.
 7. **Wholesale has no fuel cut.** The source has no fuel/powertrain column and
-   supplies no fuel-wise quantity split. `model_fuel_map.csv`, `ws_ev_month`, and
-   `ws_fuel_month` add model-level metadata only. They cannot split mixed models
+   supplies no fuel-wise quantity split. `model_fuel_map.csv` and `ws_ev_month`
+   add model-level metadata only. They cannot split mixed models
    such as Nexon into Petrol/Diesel/EV dispatches. Do not call these outputs
-   wholesale fuel mix, fuel share, or fuel volume.
+   wholesale fuel mix, fuel share, or fuel volume. The former `ws_fuel_month`
+   proxy view has been removed.
 8. **Strong Hybrid is censored before 2024 in Vahan.** `hybrid_regs` is exactly
    zero until 2023 and jumps in 2024 — a fuel-classification reporting break,
    not a sales fact (hybrids sold from ~2017 are classified as Petrol pre-2024).

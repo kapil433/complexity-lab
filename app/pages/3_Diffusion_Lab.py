@@ -8,6 +8,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+from scipy.optimize import curve_fit
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from common import query, render_app_shell, render_card
@@ -55,19 +56,25 @@ if page.filters.states:
 state = st.selectbox("State", state_options, index=state_options.index(default_state))
 series = panel[panel["state_name"] == state].reset_index(drop=True)
 data_min, data_max = int(series["year"].min()), int(series["year"].max())
+default_fit_end = min(data_max, page.cutoff.latest_complete_year)
 
 st.subheader("Fit window — you choose what the model sees")
 w1, w2, w3, w4 = st.columns([2, 1, 1, 1])
 fit_y0, fit_y1 = w1.slider("Years entering the fit", data_min, data_max,
-                           (data_min, data_max), key="fit_window")
+                           (data_min, default_fit_end), key="fit_window")
 auto_onset = w2.toggle("Auto onset trim", value=True,
                        help="Start the series at the first month with ≥ threshold cumulative "
                             "units. Off = fit from the window start, zeros included.")
 onset_units = w3.slider("Onset threshold (units)", 0, 500, 50, 10,
                         disabled=not auto_onset)
-drop_last = w4.slider("Drop trailing months", 0, 6, 2,
-                      help="VAHAN's most recent months are partial. Applied only when the "
-                           "window reaches the end of the data.")
+partial_months = int((series["year"] > page.cutoff.latest_complete_year).sum())
+drop_last = w4.slider(
+    "Drop trailing months",
+    0,
+    max(6, partial_months),
+    partial_months if fit_y1 >= data_max else 0,
+    help="Calculated from the completeness contract when the window includes the partial year.",
+)
 
 window = series[series["year"].between(fit_y0, fit_y1)].reset_index(drop=True)
 effective_drop = drop_last if fit_y1 >= data_max else 0
@@ -102,6 +109,137 @@ if m_at_bound:
         "The fitted market potential sits at the optimiser's bound: this S-curve hasn't "
         "bent yet, so m (and any projection) is an extrapolation, not an estimate."
     )
+
+st.subheader("Held-out model comparison")
+holdout = min(12, max(3, len(cum) // 5))
+train = cum.iloc[:-holdout]
+test = cum.iloc[-holdout:]
+t_train = np.arange(len(train), dtype=float)
+t_all = np.arange(len(cum), dtype=float)
+
+
+def _logistic(t, market, rate, midpoint):
+    return market / (1 + np.exp(-rate * (t - midpoint)))
+
+
+def _gompertz(t, market, rate, midpoint):
+    return market * np.exp(-np.exp(-rate * (t - midpoint)))
+
+
+def _curve_prediction(fn, training, full_t):
+    y = training.to_numpy(dtype=float)
+    upper = max(y[-1] * 50, y[-1] + 1)
+    params, covariance = curve_fit(
+        fn,
+        np.arange(len(y), dtype=float),
+        y,
+        p0=[max(y[-1] * 2, 1), 0.05, len(y) / 2],
+        bounds=([y[-1], 1e-5, -len(y)], [upper, 2.0, len(y) * 3]),
+        maxfev=30000,
+    )
+    return fn(full_t, *params), params, covariance
+
+
+comparison_rows = []
+predictions = {}
+try:
+    bass_train = fit_bass(train)
+    predictions["Bass"] = bass_cumulative(
+        t_all, bass_train["p"], bass_train["q"], bass_train["m"]
+    )
+except (RuntimeError, ValueError, KeyError):
+    pass
+for name, fn in [("Logistic", _logistic), ("Gompertz", _gompertz)]:
+    try:
+        prediction, _, _ = _curve_prediction(fn, train, t_all)
+        predictions[name] = prediction
+    except (RuntimeError, ValueError):
+        continue
+recent_slope = train.diff().tail(12).mean()
+predictions["Naive trend"] = np.maximum(
+    train.iloc[-1] + recent_slope * (t_all - (len(train) - 1)),
+    0,
+)
+for name, prediction in predictions.items():
+    actual = test.to_numpy()
+    predicted = prediction[-holdout:]
+    comparison_rows.append(
+        {
+            "model": name,
+            "holdout_months": holdout,
+            "mae": float(np.abs(predicted - actual).mean()),
+            "mape": float(np.mean(np.abs(predicted - actual) / np.maximum(actual, 1))),
+        }
+    )
+comparison = pd.DataFrame(comparison_rows).sort_values("mape")
+best_model = comparison.iloc[0]
+fit_grade = (
+    "A" if best_model["mape"] < 0.05 else
+    "B" if best_model["mape"] < 0.10 else
+    "C" if best_model["mape"] < 0.20 else
+    "D"
+)
+c1, c2, c3 = st.columns(3)
+c1.metric("Best held-out model", best_model["model"])
+c2.metric("Held-out MAPE", f"{best_model['mape']:.1%}")
+c3.metric("Fit-quality grade", fit_grade)
+st.dataframe(
+    comparison.style.format({"mae": "{:,.0f}", "mape": "{:.1%}"}),
+    hide_index=True,
+    width="stretch",
+)
+comparison_figure = go.Figure()
+comparison_figure.add_scatter(x=dates, y=cum, name="observed", line={"width": 3})
+for name, prediction in predictions.items():
+    comparison_figure.add_scatter(x=dates, y=prediction, name=name)
+comparison_figure.add_vline(
+    x=dates.iloc[-holdout].timestamp() * 1000,
+    line_dash="dash",
+    annotation_text="held-out period",
+)
+comparison_figure.update_layout(title="Historical fit and held-out test")
+st.plotly_chart(comparison_figure, width="stretch")
+
+if pd.notna(fit.get("p")):
+    bootstrap = []
+    increments = cum.diff().fillna(cum.iloc[0]).clip(lower=0).to_numpy()
+    rng = np.random.default_rng(42)
+    for _ in range(80):
+        sampled = pd.Series(rng.choice(increments, size=len(increments), replace=True).cumsum())
+        sampled_fit = fit_bass(sampled)
+        if all(
+            np.isfinite(sampled_fit.get(parameter, np.nan))
+            for parameter in ("p", "q", "m")
+        ):
+            bootstrap.append(
+                [sampled_fit["p"], sampled_fit["q"], sampled_fit["m"]]
+            )
+    if bootstrap:
+        uncertainty = pd.DataFrame(bootstrap, columns=["p", "q", "m"]).quantile(
+            [0.05, 0.5, 0.95]
+        )
+        st.markdown("#### Bootstrap parameter interval")
+        st.dataframe(uncertainty, width="stretch")
+
+        milestone_rows = []
+        for share in [0.05, 0.10, 0.20]:
+            target = fit["m"] * share
+            horizon_grid = np.arange(0, len(cum) + 360)
+            path = bass_cumulative(horizon_grid, fit["p"], fit["q"], fit["m"])
+            reached = np.flatnonzero(path >= target)
+            milestone_rows.append(
+                {
+                    "share_of_fitted_potential": share,
+                    "month_from_onset": int(reached[0]) if len(reached) else None,
+                    "calendar_date": (
+                        dates.iloc[0] + pd.offsets.MonthBegin(int(reached[0]))
+                        if len(reached)
+                        else None
+                    ),
+                }
+            )
+        st.markdown("#### Fitted-potential milestones")
+        st.dataframe(pd.DataFrame(milestone_rows), hide_index=True, width="stretch")
 
 st.subheader("Scenario levers")
 s1, s2, s3, s4 = st.columns(4)

@@ -404,16 +404,6 @@ def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
         post_months=params.get("post_months", 8),
     )
 
-    ws_hybrid_start = None
-    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
-    if "wholesale" in tables:
-        wsf = con.execute(
-            "SELECT date, fuel, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' ORDER BY date"
-        ).df()
-        if not wsf.empty:
-            wsf.to_parquet(out_dir / "wholesale_hybrid_monthly.parquet")
-            ws_hybrid_start = str(wsf["date"].min())[:7]
-
     latest = shares.dropna().iloc[-2]
     return {
         "policy_mentions": counts,
@@ -424,7 +414,7 @@ def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
         },
         "up_did_att_pp": round(100 * res_did["att"], 3),
         "up_did_placebo_rank_p": round(res_did["placebo_rank_p"], 3),
-        "wholesale_hybrid_visible_from": ws_hybrid_start,
+        "wholesale_hybrid_series": "unavailable: wholesale has no fuel cut",
         "vahan_hybrid_visible_from": "2024-01 (fuel-classification break: zero before 2024)",
     }
 
@@ -532,22 +522,23 @@ def suv_transition(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
 
 @experiment(
     "shev-counterfactual",
-    description="Bass counterfactual: what would SHEV adoption look like at EV-equivalent taxation (GST 43%→5%)? Scenario band, assumption-labelled.",
+    description="Post-2024 Vahan Bass scenario for SHEV adoption at EV-equivalent taxation; assumption-labelled, not a forecast.",
 )
 def shev_counterfactual(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
     import numpy as np
 
     from complexity_lab.simulation.diffusion import bass_cumulative, fit_bass, project_bass
 
-    tables = {r[0] for r in con.execute("SHOW TABLES").fetchall()}
-    if "wholesale" not in tables:
-        raise RuntimeError("wholesale table missing — run `uv run lab wholesale` first")
-
-    ws = con.execute(
-        "SELECT date, wholesale FROM ws_fuel_month WHERE fuel = 'Hybrid' "
-        "AND date >= '2022-04-01' ORDER BY date"
+    observed = con.execute(
+        "SELECT date, hybrid_regs FROM panel_state_month "
+        "WHERE state_code = 'ALL' AND date >= '2024-01-01' "
+        "AND date < (SELECT MAX(date) FROM panel_state_month) "
+        "ORDER BY date"
     ).df()
-    cum = ws["wholesale"].fillna(0).cumsum()
+    if len(observed) < 12:
+        raise RuntimeError("At least 12 complete post-break Vahan months are required")
+
+    cum = observed["hybrid_regs"].fillna(0).cumsum()
     fit = fit_bass(cum.reset_index(drop=True))
     if not np.isfinite(fit.get("m", float("nan"))):
         raise RuntimeError("Bass fit failed on hybrid series")
@@ -565,7 +556,7 @@ def shev_counterfactual(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
 
     base_proj = project_bass(fit, horizon=horizon)
     base_proj.to_parquet(out_dir / "scenario_baseline.parquet")
-    ws.to_parquet(out_dir / "hybrid_actual_monthly.parquet")
+    observed.to_parquet(out_dir / "vahan_hybrid_observed_post_break.parquet")
 
     y5 = {k: float(v["cumulative"].iloc[-1]) for k, v in scenarios.items()}
     base5 = float(base_proj["cumulative"].iloc[-1])
@@ -576,6 +567,11 @@ def shev_counterfactual(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
         "scenario_cum_5y": {k: round(v) for k, v in y5.items()},
         "uplift_x_at_e1_5": round(y5.get("elasticity_1.5", float("nan")) / base5, 2),
         "assumptions": "GST 43%→5% ⇒ −26.6% price; m·(1+0.266·|e|), q·1.2; NOT a forecast",
+        "data_boundary": (
+            "Observed Vahan Strong Hybrid registrations from 2024-01 onward only; "
+            "the classification break prevents a continuous pre-2024 fit. "
+            "Wholesale is not used because wholesale has no fuel cut."
+        ),
     }
 
 

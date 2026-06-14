@@ -4,6 +4,7 @@ channel health. Blueprint §7.6 P0 page."""
 import sys
 from pathlib import Path
 
+import pandas as pd
 import plotly.express as px
 import streamlit as st
 
@@ -30,6 +31,11 @@ page = render_app_shell(
     ),
 )
 render_card("descriptive-baseline")
+st.info(
+    f"Completeness: Vahan is observed through {page.cutoff.latest_period}; "
+    f"{page.cutoff.latest_complete_year} is the latest complete calendar year. "
+    "Partial 2026 observations are excluded from full-year comparisons."
+)
 
 national = query("SELECT * FROM panel_state_year WHERE state_code = 'ALL' ORDER BY year")
 latest = min(page.filters.year_end, page.cutoff.latest_complete_year)
@@ -52,15 +58,67 @@ c5.metric("OEM concentration (HHI)", f"{row['hhi_oem']:,.0f}",
 
 # ---- national trend with policy events ------------------------------------
 monthly = query("SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date")
-fig = px.area(monthly, x="date",
-              y=["petrol_regs", "diesel_regs", "cng_regs", "ev_regs", "hybrid_regs"],
-              title="Monthly registrations by fuel — the structural story",
-              labels={"value": "registrations", "variable": "fuel"})
+period_mode, display_mode = st.columns(2)
+period = period_mode.selectbox(
+    "Period mode",
+    ["Month", "Rolling quarter", "YTD", "Rolling 12 months", "Calendar year", "Financial year"],
+)
+display = display_mode.radio("Display", ["Absolute units", "Share"], horizontal=True)
+fuel_columns = ["petrol_regs", "diesel_regs", "cng_regs", "ev_regs", "hybrid_regs"]
+trend = monthly[["date", "year", "month", "fy", "total_regs", *fuel_columns]].copy()
+if period == "Rolling quarter":
+    trend[fuel_columns + ["total_regs"]] = trend[fuel_columns + ["total_regs"]].rolling(
+        3, min_periods=3
+    ).sum()
+elif period == "Rolling 12 months":
+    trend[fuel_columns + ["total_regs"]] = trend[fuel_columns + ["total_regs"]].rolling(
+        12, min_periods=12
+    ).sum()
+elif period == "YTD":
+    trend[fuel_columns + ["total_regs"]] = trend.groupby("year")[
+        fuel_columns + ["total_regs"]
+    ].cumsum()
+elif period == "Calendar year":
+    trend = trend.groupby("year", as_index=False)[fuel_columns + ["total_regs"]].sum()
+    trend["date"] = pd.to_datetime(trend["year"].astype(str) + "-12-01")
+elif period == "Financial year":
+    trend = trend.groupby("fy", as_index=False)[fuel_columns + ["total_regs"]].sum()
+    trend["date"] = pd.to_datetime(trend["fy"].str[:4] + "-04-01")
+trend["other_unclassified"] = trend["total_regs"] - trend[fuel_columns].sum(axis=1)
+plot_columns = [*fuel_columns, "other_unclassified"]
+if display == "Share":
+    trend[plot_columns] = trend[plot_columns].div(trend["total_regs"], axis=0)
+fig = px.area(
+    trend,
+    x="date",
+    y=plot_columns,
+    groupnorm=None,
+    title=f"{period}: observed fuel structure ({display.lower()})",
+    labels={"value": "share" if display == "Share" else "registrations", "variable": "fuel"},
+)
 fig.for_each_trace(lambda t: t.update(name=t.name.replace("_regs", "").replace("hybrid", "strong hybrid").title()))
-indian_axis(fig, max_value=float(monthly["total_regs"].max()))
+if display == "Share":
+    fig.update_yaxes(tickformat=".0%")
+else:
+    indian_axis(fig, max_value=float(trend["total_regs"].max()))
 if st.checkbox("Show policy events", value=True):
     fig = add_event_markers(fig, load_events(get_connection()), max_labels=12)
 st.plotly_chart(fig, width="stretch")
+
+seasonal = monthly.copy()
+seasonal["month_factor"] = seasonal.groupby("month")["total_regs"].transform("mean")
+seasonal["seasonally_adjusted"] = (
+    seasonal["total_regs"] / seasonal["month_factor"] * seasonal["total_regs"].mean()
+)
+st.plotly_chart(
+    px.line(
+        seasonal,
+        x="date",
+        y=["total_regs", "seasonally_adjusted"],
+        title="Observed and simple month-factor seasonally adjusted registrations",
+    ),
+    width="stretch",
+)
 
 # ---- market share shift ----------------------------------------------------
 st.subheader("OEM market share & shift")
@@ -85,6 +143,89 @@ with col_b:
                     title="Top-6 OEM market share")
     figms.update_yaxes(tickformat=".0%")
     st.plotly_chart(figms, width="stretch")
+
+st.subheader("Contribution to growth")
+contribution_tabs = st.tabs(["States", "OEMs", "Fuels"])
+with contribution_tabs[0]:
+    state_contrib = get_connection().execute(
+        """
+        WITH annual AS (
+            SELECT state_code, state_name, year, total_regs
+            FROM panel_state_year
+            WHERE state_code <> 'ALL' AND year IN (?, ?)
+        )
+        SELECT state_code, MAX(state_name) AS state_name,
+               MAX(total_regs) FILTER (WHERE year = ?) -
+               MAX(total_regs) FILTER (WHERE year = ?) AS contribution
+        FROM annual
+        GROUP BY state_code
+        ORDER BY ABS(contribution) DESC
+        LIMIT 15
+        """,
+        [latest - 1, latest, latest, latest - 1],
+    ).df()
+    st.plotly_chart(
+        px.bar(
+            state_contrib.sort_values("contribution"),
+            x="contribution",
+            y="state_name",
+            orientation="h",
+            color="contribution",
+            color_continuous_scale="RdBu",
+            title=f"State contribution to national volume change, {latest - 1} to {latest}",
+        ),
+        width="stretch",
+    )
+with contribution_tabs[1]:
+    oem_contrib = get_connection().execute(
+        """
+        WITH annual AS (
+            SELECT maker, year, SUM("count") AS regs
+            FROM registrations
+            WHERE state_code = 'ALL' AND year IN (?, ?)
+            GROUP BY maker, year
+        )
+        SELECT maker,
+               MAX(regs) FILTER (WHERE year = ?) -
+               MAX(regs) FILTER (WHERE year = ?) AS contribution
+        FROM annual
+        GROUP BY maker
+        ORDER BY ABS(contribution) DESC
+        LIMIT 15
+        """,
+        [latest - 1, latest, latest, latest - 1],
+    ).df()
+    st.plotly_chart(
+        px.bar(
+            oem_contrib.sort_values("contribution"),
+            x="contribution",
+            y="maker",
+            orientation="h",
+            color="contribution",
+            color_continuous_scale="RdBu",
+            title="OEM contribution to growth",
+        ),
+        width="stretch",
+    )
+with contribution_tabs[2]:
+    fuel_contrib = pd.DataFrame(
+        {
+            "fuel": fuel_columns,
+            "contribution": [row[column] - prev[column] for column in fuel_columns],
+        }
+    )
+    st.plotly_chart(
+        px.bar(
+            fuel_contrib.sort_values("contribution"),
+            x="contribution",
+            y="fuel",
+            orientation="h",
+            color="contribution",
+            color_continuous_scale="RdBu",
+            title="Fuel contribution to growth",
+        ),
+        width="stretch",
+    )
 
 # ---- fuel penetration across states ---------------------------------------
 st.subheader("Fuel penetration across states")
@@ -127,6 +268,17 @@ if "wholesale" in tables:
     st.plotly_chart(
         ratio_band_chart(rw, "date", "ws_retail_ratio",
                          title="Wholesale/retail ratio — green band = healthy channel"),
+        width="stretch",
+    )
+    rw["gap"] = rw["wholesale"] - rw["retail"]
+    rw["episode"] = rw["ws_retail_ratio"].map(
+        lambda value: "build" if value > 1.08 else "depletion" if value < 0.92 else "balanced"
+    )
+    st.dataframe(
+        rw[rw["episode"] != "balanced"][
+            ["date", "retail", "wholesale", "gap", "ws_retail_ratio", "episode"]
+        ].tail(18),
+        hide_index=True,
         width="stretch",
     )
 else:

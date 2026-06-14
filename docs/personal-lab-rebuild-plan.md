@@ -10,13 +10,20 @@ infrastructure snapshots carry dates and reconciliation coverage; tax and policy
 tables are normalized; unavailable dealer and vehicle-finance panels are blocked
 from modelling; and the app includes a visual Reference Lab.
 
-Wave 3 shared-foundation work is also implemented: persistent global
+Waves 3-7 are implemented at the operational product level: persistent global
 year/state/fuel/OEM context, URL serialization, calculated Vahan completeness,
 evidence and cutoff badges, shared methodology/provenance drawers, downloadable
-view context, and local saved views. Home is rebuilt as the context-aware Market
-Brief. All ten specialist pages use the shared shell and pass Streamlit runtime
-smoke checks. Remaining page-specific work in Waves 4-7 is not permission to
-weaken these truth boundaries.
+view context, local research memory, rebuilt observation/explanation/forecast/
+simulation pages, State and OEM intelligence, Data Health, Saved Questions, and
+the visual Experiment Gallery. Home is rebuilt as the context-aware Market Brief.
+All 15 specialist pages plus Home use the shared shell and pass Streamlit runtime
+smoke checks. All 13 registered experiments run end to end and emit a hero,
+diagnostic, result page, manifest, and share card.
+
+Unavailable source capabilities remain explicitly unavailable: dated state x OEM
+dealer history and vehicle-finance penetration are not synthesized. Optional
+animated exports and a future official annual population replacement remain
+enhancements, not dependencies of the working lab.
 
 ## 1. Product Goal
 
@@ -43,8 +50,8 @@ saved research notes.
 
 Repository health:
 
-- 10 Streamlit pages and 13 published Quarto experiments.
-- 84 tests pass; Ruff reports no issues.
+- 15 Streamlit specialist pages plus Home and 13 published Quarto experiments.
+- 90+ tests pass; Ruff reports no issues.
 - DuckDB contains 205,779 registration fact rows and 727,040 wholesale fact rows.
 - Existing modules already cover descriptive analysis, econometrics, forecasting,
   network analysis, diffusion, regimes, tipping points, and shock simulation.
@@ -80,10 +87,8 @@ Important audit findings:
 - `regs_per_1000_capita` now uses an explicitly estimated annual population
   denominator. The fixed-2024 version remains separately named for sensitivity.
   Infrastructure variables remain sparse dated snapshots, not historical panels.
-- The Home page still contains a cache-warming placeholder and describes only
-  four of the nine pages.
-- Most pages are method-first. They expose an analysis technique but do not retain
-  a shared market context, saved question, comparison set, or research trail.
+- The former Home placeholder and method-first navigation have been replaced by
+  a context-aware brief, task entry points, shared filters, and a local research trail.
 
 ## 3. Product Principles
 
@@ -652,6 +657,8 @@ flowchart TD
 
 ## Wave 0: Truth and Contracts
 
+Status: implemented, with unavailable sources blocked and documented.
+
 - Turn `DATA_TRUTH.md` rules into executable checks.
 - Use the promoted RBI constant-price income (Table 20) for real-income questions;
   keep current-price income for nominal context.
@@ -675,6 +682,8 @@ data-health report.
 
 ## Wave 1: Semantic Data Layer
 
+Status: implemented for the app's production query paths and truth boundaries.
+
 - Create parameterized data-access functions and semantic views.
 - Centralize time, geography, coverage, OEM, fuel, model, and segment filters.
 - Add exact/mapped/derived/estimated/simulated metadata to result objects.
@@ -684,6 +693,9 @@ data-health report.
 Terminal condition: no app page needs raw SQL to enforce coverage or join rules.
 
 ## Wave 2: Visual Experiment Engine
+
+Status: implemented. All 13 registered experiments were regenerated successfully
+on 2026-06-14 with visual and privacy-classified result bundles.
 
 - Extend the runner lifecycle and manifest.
 - Build chart-rendering helpers and the standard artifact directory.
@@ -697,6 +709,8 @@ visually complete, shareable result bundle.
 
 ## Wave 3: Shared App Foundation
 
+Status: implemented.
+
 - Implement global filters and URL state.
 - Build the shared page shell, badges, KPI, finding, export, provenance, and
   methodology components.
@@ -708,6 +722,8 @@ retains its data-truth context.
 
 ## Wave 4: Observation Pages
 
+Status: implemented.
+
 - Rebuild Home, Market Pulse, Explorer, and Wholesale.
 - Add State Intelligence and OEM/Model Intelligence.
 - Add drill-through links, watchlists, chart exports, and share views.
@@ -718,6 +734,9 @@ segment, model, and channel layers without violating a truth rule.
 
 ## Wave 5: Explanation Pages
 
+Status: implemented, including explicit bipartite community membership and
+cross-community link outputs.
+
 - Rebuild Networks, Diffusion, Causal Lab, and Transitions.
 - Add diagnostics, uncertainty, nulls/placebos, and saved research cards.
 - Connect each page to runnable, visual experiments.
@@ -727,6 +746,10 @@ and a visible "do not infer" boundary.
 
 ## Wave 6: Forecast and Simulation
 
+Status: implemented for selectable single-series Vahan scopes and calibrated
+national shock scenarios, with non-negative intervals, benchmark skill, vintages,
+Monte Carlo ranges, and saved cards.
+
 - Rebuild Forecast Studio and Scenario/Shock Lab.
 - Add wholesale-driven forecasts, vintages, calibration, and scenario comparison.
 - Add reconciliation, interval validation, and visual run comparison.
@@ -735,6 +758,9 @@ Terminal condition: forecasts and simulations are reproducible, evaluated, visua
 distinct, and shareable without being mistaken for observations.
 
 ## Wave 7: Research and Publishing Workflow
+
+Status: implemented through local Saved Questions, research-brief export, visual
+experiment runs, run comparison, downloadable result briefs, and share cards.
 
 - Build Saved Questions and research notes.
 - Export visual research briefs.
