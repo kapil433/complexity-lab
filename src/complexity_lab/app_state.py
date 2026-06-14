@@ -14,6 +14,25 @@ def _values(value: str | Sequence[str] | None) -> list[str]:
     return [str(item) for item in value if str(item)]
 
 
+def normalized_year_range(
+    value: object,
+    *,
+    fallback: tuple[int, int],
+    min_year: int,
+    max_year: int,
+) -> tuple[int, int]:
+    """Restore a valid range when Streamlit drops or scalarizes widget state."""
+    if not isinstance(value, (list, tuple)) or len(value) != 2:
+        return fallback
+    try:
+        start, end = (int(value[0]), int(value[1]))
+    except (TypeError, ValueError):
+        return fallback
+    start = min(max(start, min_year), max_year)
+    end = min(max(end, min_year), max_year)
+    return (start, end) if start <= end else (end, start)
+
+
 @dataclass(frozen=True)
 class GlobalContext:
     year_start: int

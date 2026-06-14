@@ -25,3 +25,17 @@ def test_every_page_uses_shared_truth_shell():
     for page in pages:
         source = page.read_text(encoding="utf-8")
         assert "render_app_shell(" in source, page.name
+
+
+def test_page_recovers_scalar_year_state_after_navigation():
+    app = AppTest.from_file(
+        str(ROOT / "app" / "pages" / "0_Macro_Dashboard.py"),
+        default_timeout=45,
+    )
+    app.session_state["_lab_global_initialized"] = True
+    app.session_state["global_years"] = 2012
+    app.run()
+
+    assert not app.exception
+    assert isinstance(app.session_state["global_years"], tuple)
+    assert len(app.session_state["global_years"]) == 2

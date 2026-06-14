@@ -9,7 +9,7 @@ import duckdb
 import pandas as pd
 import streamlit as st
 
-from complexity_lab.app_state import GlobalContext
+from complexity_lab.app_state import GlobalContext, normalized_year_range
 from complexity_lab.config import settings
 from complexity_lab.data.access import (
     DataCutoff,
@@ -77,20 +77,31 @@ def global_filters() -> PageContext:
     states, oems, cutoff, has_wholesale = _shell_options()
     min_year = int(query("SELECT MIN(year) AS y FROM panel_state_year")["y"][0])
     max_year = int(query("SELECT MAX(year) AS y FROM panel_state_year")["y"][0])
+    initial = GlobalContext.from_query_params(
+        _query_dict(),
+        min_year=min_year,
+        max_year=max_year,
+        default_end=cutoff.latest_complete_year,
+    )
 
     if "_lab_global_initialized" not in st.session_state:
-        initial = GlobalContext.from_query_params(
-            _query_dict(),
-            min_year=min_year,
-            max_year=max_year,
-            default_end=cutoff.latest_complete_year,
-        )
-        st.session_state["global_years"] = (initial.year_start, initial.year_end)
-        st.session_state["global_states"] = list(initial.states)
-        st.session_state["global_fuels"] = list(initial.fuels)
-        st.session_state["global_oems"] = list(initial.oems)
-        st.session_state["global_coverage"] = initial.coverage
         st.session_state["_lab_global_initialized"] = True
+
+    # Streamlit removes page-scoped widget keys during multipage navigation while
+    # leaving ordinary session keys intact. Restore and validate every shared
+    # control before constructing its widget.
+    fallback_years = (initial.year_start, initial.year_end)
+    st.session_state["global_years"] = normalized_year_range(
+        st.session_state.get("global_years"),
+        fallback=fallback_years,
+        min_year=min_year,
+        max_year=max_year,
+    )
+    st.session_state.setdefault("global_states", list(initial.states))
+    st.session_state.setdefault("global_fuels", list(initial.fuels))
+    st.session_state.setdefault("global_oems", list(initial.oems))
+    if st.session_state.get("global_coverage") not in {"complete", "available"}:
+        st.session_state["global_coverage"] = initial.coverage
 
     state_names = dict(zip(states["state_code"], states["state_name"], strict=True))
     with st.sidebar:
