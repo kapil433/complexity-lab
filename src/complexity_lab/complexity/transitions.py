@@ -149,6 +149,46 @@ def tipping_summary(
     return pd.DataFrame(rows).set_index(entity_col) if rows else pd.DataFrame()
 
 
+def recent_acceleration_summary(
+    panel_year: pd.DataFrame,
+    share_col: str,
+    *,
+    entity_col: str = "state_code",
+    noise_pp: float = 0.1,
+) -> pd.DataFrame:
+    """Classify latest annual share momentum separately from threshold tipping."""
+    rows = []
+    for entity, group in panel_year.sort_values("year").groupby(entity_col):
+        d = group[["year", share_col]].dropna().copy()
+        d["change_pp"] = d[share_col].diff() * 100
+        d["acceleration_pp"] = d["change_pp"].diff()
+        latest = d.dropna(subset=["change_pp", "acceleration_pp"]).tail(1)
+        if latest.empty:
+            continue
+        row = latest.iloc[0]
+        change = float(row["change_pp"])
+        acceleration = float(row["acceleration_pp"])
+        if change < -noise_pp:
+            verdict = "contracting"
+        elif acceleration > noise_pp:
+            verdict = "accelerating"
+        elif acceleration < -noise_pp:
+            verdict = "decelerating"
+        else:
+            verdict = "steady"
+        rows.append(
+            {
+                entity_col: entity,
+                "year": int(row["year"]),
+                "share": float(row[share_col]),
+                "change_pp": change,
+                "acceleration_pp": acceleration,
+                "momentum_verdict": verdict,
+            }
+        )
+    return pd.DataFrame(rows).set_index(entity_col) if rows else pd.DataFrame()
+
+
 # ------------------------------------------------------------- fuel regimes
 
 

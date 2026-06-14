@@ -88,25 +88,127 @@ with tab_tip:
     render_card("ev-threshold")
     share_col = st.selectbox("Technology share", ["ev_share", "cng_share"])
     smooth = st.slider("Smoothing window (months)", 1, 9, 3, step=2)
-    cutoff = st.select_slider("Use data through", options=["2023-12 (FAME era)", "latest"],
-                              value="latest")
+    window_label = st.selectbox(
+        "Structural-threshold window",
+        [
+            "Full history (2012+)",
+            "FAME-II era (2019-04 to 2024-03)",
+            "Recent adoption era (2022+)",
+            "Current surge (2023+)",
+        ],
+        help=(
+            "The hinge test is sensitive to the selected policy/adoption era. "
+            "Full history remains the default; all windows are compared below."
+        ),
+    )
     mp = query(
         f"SELECT state_code, year, month, date, {share_col} FROM panel_state_month "
         "WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
     )
-    if cutoff.startswith("2023"):
-        mp = mp[(mp["year"] < 2024)]
-    tips = tr.tipping_summary(mp, share_col, smooth_window=smooth)
+    annual = query(
+        f"SELECT state_code, year, {share_col} FROM panel_state_year "
+        "WHERE state_code <> 'ALL' AND year <= "
+        "(SELECT MAX(CAST(period AS INTEGER)) FROM data_period_status "
+        " WHERE source = 'vahan' AND completeness_status = 'complete') "
+        "ORDER BY state_code, year"
+    )
+    momentum = tr.recent_acceleration_summary(annual, share_col)
+    latest_momentum_year = int(momentum["year"].max()) if not momentum.empty else None
+    observed_accelerating = (
+        int((momentum["momentum_verdict"] == "accelerating").sum())
+        if not momentum.empty
+        else 0
+    )
+    dates = pd.to_datetime(mp["date"])
+    windows = {
+        "Full history (2012+)": mp,
+        "FAME-II era (2019-04 to 2024-03)": mp[
+            (dates >= pd.Timestamp("2019-04-01"))
+            & (dates <= pd.Timestamp("2024-03-01"))
+        ],
+        "Recent adoption era (2022+)": mp[dates >= pd.Timestamp("2022-01-01")],
+        "Current surge (2023+)": mp[dates >= pd.Timestamp("2023-01-01")],
+    }
+    selected_mp = windows[window_label]
+    tips = tr.tipping_summary(selected_mp, share_col, smooth_window=smooth)
     if tips.empty:
         st.warning("No states reached the minimum share for scanning.")
     else:
         tips = tips[tips["sse_gain"].notna()]
-        tips["verdict"] = np.where(tips["sse_gain"] < 0.1, "no clear threshold",
-                                   np.where(tips["hinge_coef"] > 0, "tipping ↑", "saturation ↓"))
-        c1, c2, c3 = st.columns(3)
+        tips["verdict"] = np.where(
+            tips["sse_gain"] < 0.1,
+            "no clear threshold",
+            np.where(
+                tips["hinge_coef"] > 0,
+                "feedback threshold",
+                "saturation threshold",
+            ),
+        )
+        structural_tipping = int((tips["verdict"] == "feedback threshold").sum())
+        c1, c2, c3, c4 = st.columns(4)
         c1.metric("States scanned", len(tips))
-        c2.metric("Tipping (accelerating)", int((tips["verdict"] == "tipping ↑").sum()))
-        c3.metric("Saturating", int((tips["verdict"] == "saturation ↓").sum()))
+        c2.metric(
+            f"Observed acceleration, {latest_momentum_year}",
+            observed_accelerating,
+            help="Latest annual share gain exceeded the prior year's gain by more than 0.1 pp.",
+        )
+        c3.metric(
+            "Self-reinforcing thresholds",
+            structural_tipping,
+            help="Positive hinge and at least 10% SSE improvement over the linear model.",
+        )
+        c4.metric(
+            "Saturation thresholds",
+            int((tips["verdict"] == "saturation threshold").sum()),
+        )
+        st.info(
+            f"These answer different questions. **{observed_accelerating} states show "
+            f"observed calendar-time acceleration in {latest_momentum_year}**, while "
+            f"**{structural_tipping} show a robust self-reinforcing share threshold** "
+            "in the selected window. Acceleration does not automatically prove tipping."
+        )
+
+        window_rows = []
+        for label, frame in windows.items():
+            candidate = tr.tipping_summary(frame, share_col, smooth_window=smooth)
+            valid = (
+                candidate[candidate["sse_gain"].notna()]
+                if not candidate.empty
+                else candidate
+            )
+            window_rows.append(
+                {
+                    "window": label,
+                    "states_scanned": len(valid),
+                    "feedback_thresholds": (
+                        int(
+                            (
+                                (valid["hinge_coef"] > 0)
+                                & (valid["sse_gain"] >= 0.1)
+                            ).sum()
+                        )
+                        if not valid.empty
+                        else 0
+                    ),
+                    "saturation_thresholds": (
+                        int(
+                            (
+                                (valid["hinge_coef"] < 0)
+                                & (valid["sse_gain"] >= 0.1)
+                            ).sum()
+                        )
+                        if not valid.empty
+                        else 0
+                    ),
+                }
+            )
+        st.dataframe(pd.DataFrame(window_rows), hide_index=True, width="stretch")
+        with st.expander("Observed latest-year momentum by state"):
+            st.dataframe(
+                momentum.sort_values("acceleration_pp", ascending=False).reset_index(),
+                hide_index=True,
+                width="stretch",
+            )
 
         plot = tips.reset_index()
         plot["tau_pct"] = plot["tau"] * 100
@@ -118,7 +220,7 @@ with tab_tip:
         st.plotly_chart(fig, width="stretch")
 
         pick = st.selectbox("Inspect a state", sorted(plot["state_code"]))
-        s = mp[mp["state_code"] == pick].reset_index(drop=True)
+        s = selected_mp[selected_mp["state_code"] == pick].reset_index(drop=True)
         s["smoothed"] = s[share_col].rolling(smooth, center=True, min_periods=1).mean()
         srow = tips.loc[pick]
         figs = px.line(s, y=["smoothed"], x="date",
@@ -129,7 +231,11 @@ with tab_tip:
 
         stability_rows = []
         for window_size in [1, 3, 5, 7, 9]:
-            candidate = tr.tipping_summary(mp, share_col, smooth_window=window_size)
+            candidate = tr.tipping_summary(
+                selected_mp,
+                share_col,
+                smooth_window=window_size,
+            )
             if pick in candidate.index:
                 stability_rows.append(
                     {
@@ -145,7 +251,7 @@ with tab_tip:
             verdict = (
                 "no credible transition"
                 if srow["sse_gain"] < 0.1 or tau_sd > 0.03
-                else "stable accelerating transition"
+                else "stable feedback threshold"
                 if srow["hinge_coef"] > 0
                 else "stable saturation transition"
             )

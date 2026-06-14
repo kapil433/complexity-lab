@@ -134,7 +134,10 @@ def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
     description="EV tipping-point scan: piecewise threshold regression of adoption growth per state.",
 )
 def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
-    from complexity_lab.complexity.transitions import tipping_summary
+    from complexity_lab.complexity.transitions import (
+        recent_acceleration_summary,
+        tipping_summary,
+    )
 
     month_panel = con.execute(
         "SELECT state_code, year, month, ev_share FROM panel_state_month "
@@ -151,6 +154,22 @@ def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
     ]
     tips_policy = tipping_summary(policy_era, "ev_share", min_share_reached=min_share)
     tips_policy.to_parquet(out_dir / "ev_tipping_policy_era.parquet")
+    tips_recent = tipping_summary(
+        month_panel[month_panel["year"] >= 2022],
+        "ev_share",
+        min_share_reached=min_share,
+    )
+    tips_recent.to_parquet(out_dir / "ev_tipping_recent_era.parquet")
+
+    annual = con.execute(
+        "SELECT state_code, year, ev_share FROM panel_state_year "
+        "WHERE state_code <> 'ALL' "
+        "AND year <= (SELECT MAX(CAST(period AS INTEGER)) FROM data_period_status "
+        "WHERE source = 'vahan' AND completeness_status = 'complete') "
+        "ORDER BY state_code, year"
+    ).df()
+    momentum = recent_acceleration_summary(annual, "ev_share")
+    momentum.to_parquet(out_dir / "ev_recent_annual_momentum.parquet")
 
     cov = con.execute(
         """SELECT state_code, real_pc_income_inr, ev_chargers_2025,
@@ -162,18 +181,41 @@ def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
     accelerating = tips_policy[(tips_policy["hinge_coef"] > 0) & (tips_policy["sse_gain"] > 0.1)]
     return {
+        "latest_complete_year": int(momentum["year"].max()),
+        "n_states_observed_accelerating": int(
+            (momentum["momentum_verdict"] == "accelerating").sum()
+        ),
         "n_states_scanned": len(tips),
         "full_series": {
             "n_accelerating": int(((tips["hinge_coef"] > 0) & (tips["sse_gain"] > 0.1)).sum()),
-            "n_saturating": int((tips["hinge_coef"] < 0).sum()),
+            "n_saturating": int(
+                ((tips["hinge_coef"] < 0) & (tips["sse_gain"] > 0.1)).sum()
+            ),
         },
         "policy_era_to_2024_03": {
             "n_accelerating": len(accelerating),
-            "n_saturating": int((tips_policy["hinge_coef"] < 0).sum()),
+            "n_saturating": int(
+                (
+                    (tips_policy["hinge_coef"] < 0)
+                    & (tips_policy["sse_gain"] > 0.1)
+                ).sum()
+            ),
             "median_tau_accelerating": round(float(accelerating["tau"].median()), 4)
             if len(accelerating)
             else None,
         },
+        "recent_era_from_2022": {
+            "n_feedback_thresholds": int(
+                ((tips_recent["hinge_coef"] > 0) & (tips_recent["sse_gain"] > 0.1)).sum()
+            ),
+            "n_saturation_thresholds": int(
+                ((tips_recent["hinge_coef"] < 0) & (tips_recent["sse_gain"] > 0.1)).sum()
+            ),
+        },
+        "interpretation": (
+            "Observed calendar-time acceleration is not the same claim as a "
+            "self-reinforcing share threshold."
+        ),
     }
 
 

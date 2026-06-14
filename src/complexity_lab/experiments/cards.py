@@ -280,6 +280,8 @@ _add(Card(
            "Δs_t = a + b·s_{t−1} + c·max(0, s_{t−1} − τ); grid-search τ; "
            "positive significant c = self-acceleration past τ (tipping).",
     how_it_works=[
+        "First report observed calendar-time momentum: did the latest annual share gain "
+        "speed up or slow down versus the prior year?",
         "For each state, build the monthly EV-share series.",
         "Regress each month's share *change* on last month's share *level*, allowing the "
         "slope to change at an unknown threshold τ.",
@@ -302,6 +304,8 @@ _add(Card(
          "Model quality: SSE gain vs the straight line (no threshold). 30%+ gain = the "
          "threshold is real structure, not noise.",
     look_for=[
+        "Many states can be accelerating in calendar time even when no stable share threshold "
+        "is detected; these are different empirical claims.",
         "Cluster of fitted τ* around similar share levels (e.g. 4–6%) across rich states = "
         "a market-wide critical mass level.",
         "c < 0 instead = saturation (Kerala-style early plateau) — different policy problem.",
@@ -309,6 +313,8 @@ _add(Card(
     ],
     limitations=[
         "Needs enough post-threshold months; late-adopting states give unstable τ*.",
+        "Results are sensitive to the analysis era; compare full history, FAME-II, 2022+, "
+        "and 2023+ windows before calling a structural threshold.",
         "Tipping is inferred from time-series shape, not causally identified — "
         "the DiD/event-study experiments are the causal companion.",
     ],

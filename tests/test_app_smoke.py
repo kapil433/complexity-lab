@@ -39,3 +39,19 @@ def test_page_recovers_scalar_year_state_after_navigation():
     assert not app.exception
     assert isinstance(app.session_state["global_years"], tuple)
     assert len(app.session_state["global_years"]) == 2
+
+
+def test_phase_transitions_separates_momentum_from_feedback_thresholds():
+    app = AppTest.from_file(
+        str(ROOT / "app" / "pages" / "6_Phase_Transitions.py"),
+        default_timeout=90,
+    )
+    app.run()
+
+    assert not app.exception
+    metrics = {metric.label: metric.value for metric in app.metric}
+    acceleration_label = next(
+        label for label in metrics if label.startswith("Observed acceleration")
+    )
+    assert int(metrics[acceleration_label]) > 0
+    assert "Self-reinforcing thresholds" in metrics

@@ -29,7 +29,7 @@ import pandas as pd
 import plotly.express as px
 import complexity_lab.viz  # lab plotly template
 from complexity_lab.config import settings
-from complexity_lab.complexity.transitions import tipping_summary
+from complexity_lab.complexity.transitions import recent_acceleration_summary, tipping_summary
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
 mp = con.execute(
@@ -39,6 +39,12 @@ mp = con.execute(
 tips_full = tipping_summary(mp, "ev_share")
 policy_era = mp[(mp["year"] < 2024) | ((mp["year"] == 2024) & (mp["month"] <= 3))]
 tips_policy = tipping_summary(policy_era, "ev_share")
+tips_recent = tipping_summary(mp[mp["year"] >= 2022], "ev_share")
+annual = con.execute(
+    "SELECT state_code, year, ev_share FROM panel_state_year "
+    "WHERE state_code <> 'ALL' AND year <= 2025 ORDER BY state_code, year"
+).df()
+momentum = recent_acceleration_summary(annual, "ev_share")
 ```
 
 ## The verdict across states
@@ -52,8 +58,16 @@ def classify(t):
 summary = pd.DataFrame({
     "full series": tips_full.apply(classify, axis=1).value_counts(),
     "policy era (≤ Mar 2024)": tips_policy.apply(classify, axis=1).value_counts(),
+    "recent era (2022+)": tips_recent.apply(classify, axis=1).value_counts(),
 }).fillna(0).astype(int)
 summary
+```
+
+This threshold test is not a test of whether the latest annual growth rate rose.
+In 2025, the observed EV-share gain accelerated versus 2024 in:
+
+```{python}
+momentum["momentum_verdict"].value_counts().to_frame("states")
 ```
 
 ```{python}
@@ -88,19 +102,18 @@ print("Spearman corr(τ*, income):",
 
 ## Finding
 
-Across 30 scanned states, **no state shows super-linear tipping — in either
-the full series or the FAME-II policy era**. The dominant pattern is
-**saturation**: EV share growth decelerates beyond a state-specific level τ*,
-exactly what bounded logistic diffusion past its inflection looks like.
-This is a substantive negative result: at state grain, India's EV adoption
-2012–2026 behaves like **classic imitation-driven diffusion with a soft
-ceiling**, not a runaway cascade — visibility/charging feedbacks are real
-(Bass q ≫ p in experiment 002) but they do not (yet) overcome the shrinking
-adopter pool. The *level* of the ceiling varies systematically: states with
-higher income bend later (higher τ*), suggesting the binding constraint is
-the affordability frontier, not enthusiasm.
+Across 30 scanned states, the full-history and FAME-II hinge models find **no
+robust self-reinforcing share threshold** at the stated 10% model-gain rule.
+That does **not** mean no state is accelerating: most states recorded a faster
+annual EV-share gain in 2025 than in 2024. These are different claims.
 
-**Policy reading**: pushing states "past the tipping point" is the wrong
-mental model on this data; raising the ceiling (price parity, charging
-density) is the right one. **Publishable angle**: saturation-threshold map +
-its income gradient, as a counterpoint to tipping-point rhetoric.
+The structural result is window-sensitive. The 2022+ and 2023+ scans can surface
+positive hinges in selected states, but the set is not stable enough to call a
+national tipping law. Negative hinges in the full history are evidence of
+deceleration conditional on share, not proof that the current market has stopped
+accelerating in calendar time.
+
+**Policy reading**: current acceleration is real, but a universal autonomous
+tipping point is not established. Raising the ceiling through price parity and
+charging density remains more defensible than assuming adoption will now run
+without continued support.

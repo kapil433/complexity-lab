@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from complexity_lab.complexity.transitions import (
     absorbing_regimes,
     classify_regimes,
     critical_threshold,
     percolation_curve,
+    recent_acceleration_summary,
     regime_transition_matrix,
     threshold_scan,
 )
@@ -50,6 +52,23 @@ def test_threshold_scan_detects_saturation_as_negative_hinge():
     res = threshold_scan(s)
     assert res["hinge_coef"] < 0
     assert res["sse_gain"] > 0.3
+
+
+def test_recent_acceleration_is_distinct_from_threshold_tipping():
+    panel = pd.DataFrame(
+        {
+            "state_code": ["A"] * 4 + ["B"] * 4,
+            "year": [2022, 2023, 2024, 2025] * 2,
+            "ev_share": [0.01, 0.02, 0.03, 0.06, 0.01, 0.03, 0.06, 0.08],
+        }
+    )
+
+    result = recent_acceleration_summary(panel, "ev_share")
+
+    assert result.loc["A", "momentum_verdict"] == "accelerating"
+    assert result.loc["A", "acceleration_pp"] == 2.0
+    assert result.loc["B", "momentum_verdict"] == "decelerating"
+    assert result.loc["B", "acceleration_pp"] == pytest.approx(-1.0)
 
 
 def test_regime_classification_and_matrix():
