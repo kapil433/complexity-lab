@@ -31,7 +31,10 @@ source and how much transformation or judgment entered before it reached the lab
 The interactive app now carries this contract into every page:
 
 - Global year, state, fuel, and OEM context is serialized in the URL.
-- The default period policy ends at the latest calculated complete calendar year.
+- The default period policy includes every observation through the latest available
+  month: April 2026 for both Vahan and wholesale in the current files.
+- Calendar comparisons involving partial 2026 use matched January-April windows
+  for every compared year. Partial 2026 is never compared with full-year 2025.
 - `data_period_status` records observed versus expected months and partial-year warnings.
 - Every page is labelled Observed, Derived, Estimated, or Simulated.
 - Every page exposes cutoff, context, methodology, limitations, and downloadable JSON.
@@ -122,6 +125,20 @@ Verified contents:
 7. **Recent Vahan months can continue filling after first publication.** Forecast
    training cutoffs and current-month comparisons need a completeness/vintage rule,
    not a permanent "drop two months" assumption.
+
+#### Latest-observed analysis contract
+
+1. Monthly forecasting, diffusion, threshold, shock, and scenario inputs include
+   observations through **April 2026**.
+2. Annual market growth, fuel-share movement, OEM-share movement, state ranks,
+   concentration, profiles, maps, and transition momentum use **January-April
+   matched YTD** for 2026 and every comparison year.
+3. Level-only network and regime snapshots may use the 2026 January-April
+   aggregate, but must label it YTD rather than a full calendar year.
+4. Full-calendar-year summaries may still end in 2025 only when explicitly
+   labelled complete-year history.
+5. Wholesale analyses include dispatches through April 2026. Wholesale still has
+   **no fuel cut**; adding the latest months does not change that limitation.
 
 ### 3.2 Wholesale dispatches
 
@@ -508,6 +525,10 @@ Verified row counts:
 
 Important panel limitations:
 
+- `panel_state_year` contains a partial 2026 aggregate. Its raw YoY and change
+  fields compare that partial period with full 2025 and are not valid current
+  comparisons. App pages and registered experiments instead use
+  `matched_ytd_state_year()` and `matched_ytd_maker_state()`.
 - Population, real income, urbanization basis, CNG, charging, and fuel-price fields retain
   source and quality columns in `panel_state_year`. Fuel prices also retain whether
   the value is state-specific or an ALL/Delhi fallback.
@@ -539,8 +560,9 @@ Run artifacts live under [`outputs/`](outputs/). Current runs produce:
 Published notebooks live under [`experiments/`](experiments/) and their executed
 results are frozen under [`_freeze/`](_freeze/).
 
-All 13 registered experiments were executed successfully on 2026-06-14 after the
-visual-publishing and canonical-reference migration. Experiments use `experiment_state_year`,
+All 13 registered experiments are required to consume observations through April
+2026. Monthly experiments use the latest observations directly; annual comparisons
+use the matched-YTD semantic layer. Experiments use `experiment_state_year`,
 `experiment_state_context`, or `ref_policy_events_canonical` when reference
 context is relevant. Pure Vahan-network, wholesale, segment, or simulation
 experiments declare those factual dependencies instead of adding irrelevant

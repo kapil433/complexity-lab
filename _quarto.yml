@@ -15,6 +15,8 @@ website:
         text: Experiments
       - href: experiments/guide.qmd
         text: Guide
+      - href: https://complexity-lab.onrender.com
+        text: Interactive Lab
       - href: https://github.com/kapil433/complexity-lab
         text: GitHub
   sidebar:

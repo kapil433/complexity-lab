@@ -10,10 +10,16 @@ sys.path.insert(0, str(Path(__file__).parents[1]))
 from common import render_app_shell
 
 from complexity_lab.persistence import (
+    delete_research_item,
+    delete_saved_view,
+    export_research_brief_markdown,
     list_research_items,
     list_watchlist,
     save_research_item,
+    update_research_item_notes,
+    update_saved_view_notes,
 )
+from complexity_lab.research_session import ResearchSession
 
 st.set_page_config(page_title="Saved Questions | Complexity Lab", layout="wide")
 page = render_app_shell(
@@ -81,6 +87,40 @@ with tab_inbox:
         result = json.loads(row["result_payload"])
         if result:
             st.json(result)
+        action_cols = st.columns(4)
+        try:
+            session = ResearchSession.from_payload(json.loads(row["parameter_payload"]))
+        except (KeyError, TypeError, ValueError):
+            session = None
+        if session is not None:
+            if action_cols[0].button("Restore URL context"):
+                st.query_params.from_dict(session.restore_query_params())
+                st.success("URL context restored. Open the relevant page from the sidebar.")
+            action_cols[1].download_button(
+                "Download session",
+                json.dumps(session.to_payload(), indent=2, default=str),
+                file_name=f"{row['kind']}-{selected_id}-session.json",
+                mime="application/json",
+            )
+        else:
+            action_cols[0].caption("This legacy card has no session payload.")
+        edited_notes = st.text_area("Edit notes", value=row["notes"], key=f"notes-{selected_id}")
+        if action_cols[2].button("Save notes"):
+            if row["kind"] == "view":
+                update_saved_view_notes(selected_id, edited_notes)
+            else:
+                update_research_item_notes(row["kind"], selected_id, edited_notes)
+            st.success("Notes updated.")
+            st.rerun()
+        if action_cols[3].button("Delete card"):
+            removed = (
+                delete_saved_view(selected_id)
+                if row["kind"] == "view"
+                else delete_research_item(row["kind"], selected_id)
+            )
+            if removed:
+                st.success("Card deleted.")
+                st.rerun()
 
 with tab_watchlist:
     if watchlist.empty:
@@ -89,6 +129,7 @@ with tab_watchlist:
         st.dataframe(watchlist, hide_index=True, width="stretch")
 
 with tab_export:
+    markdown_brief = export_research_brief_markdown()
     brief = {
         "generated_from": "Complexity Lab",
         "data_cutoff": page.cutoff.latest_period,
@@ -96,6 +137,12 @@ with tab_export:
         "research_items": items.to_dict("records"),
         "watchlist": watchlist.to_dict("records"),
     }
+    st.download_button(
+        "Download research brief (Markdown)",
+        markdown_brief,
+        file_name="complexity-lab-research-brief.md",
+        mime="text/markdown",
+    )
     st.download_button(
         "Download research brief (JSON)",
         json.dumps(brief, indent=2, default=str),

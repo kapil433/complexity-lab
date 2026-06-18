@@ -53,13 +53,13 @@ observed = get_connection().execute(
     SELECT date, total_regs
     FROM panel_state_month
     WHERE state_code = 'ALL'
-      AND date <= MAKE_DATE(?, 12, 1)
+      AND date <= MAKE_DATE(?, ?, 1)
     ORDER BY date
     """,
-    [page.cutoff.latest_complete_year],
+    [page.cutoff.latest_observed_year, page.cutoff.latest_observed_month],
 ).df()
 calibration_options = {
-    "Latest complete 12 months": observed.tail(12),
+    "Latest observed 12 months": observed.tail(12),
     "Pre-COVID 2019": observed[pd.to_datetime(observed["date"]).dt.year == 2019],
     "Post-COVID 2023": observed[pd.to_datetime(observed["date"]).dt.year == 2023],
 }

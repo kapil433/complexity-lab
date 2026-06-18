@@ -41,7 +41,7 @@ from complexity_lab.complexity import transitions as tr
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
 edges = con.execute("SELECT * FROM oem_state_edges").df()
-latest = int(edges["year"].max()) - 1
+latest = int(edges["year"].max())
 ```
 
 ## Percolation of the OEM–state network
@@ -116,7 +116,8 @@ national market cohesion rides on a few dominant footholds, not on the long
 tail of small presences. The regime analysis shows **fossil-dominant and
 CNG-transitioned states are near-absorbing** (once there, states stay), while
 **EV-emerging is not yet absorbing** — states near the 5% EV line can slip
-back, i.e. the EV transition had not yet ratcheted as of the latest full year.
+back, i.e. the EV transition had not yet ratcheted in the latest observed
+January-April 2026 snapshot.
 The CNG stepping-stone path (fossil → CNG → EV) is visible in the calendar for
 the gas-grid states (GJ, MH, DL/NCR), while several southern states jump
 directly toward EV-emerging.

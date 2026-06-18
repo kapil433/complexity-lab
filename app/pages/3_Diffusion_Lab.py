@@ -56,7 +56,7 @@ if page.filters.states:
 state = st.selectbox("State", state_options, index=state_options.index(default_state))
 series = panel[panel["state_name"] == state].reset_index(drop=True)
 data_min, data_max = int(series["year"].min()), int(series["year"].max())
-default_fit_end = min(data_max, page.cutoff.latest_complete_year)
+default_fit_end = data_max
 
 st.subheader("Fit window — you choose what the model sees")
 w1, w2, w3, w4 = st.columns([2, 1, 1, 1])
@@ -67,13 +67,12 @@ auto_onset = w2.toggle("Auto onset trim", value=True,
                             "units. Off = fit from the window start, zeros included.")
 onset_units = w3.slider("Onset threshold (units)", 0, 500, 50, 10,
                         disabled=not auto_onset)
-partial_months = int((series["year"] > page.cutoff.latest_complete_year).sum())
 drop_last = w4.slider(
     "Drop trailing months",
     0,
-    max(6, partial_months),
-    partial_months if fit_y1 >= data_max else 0,
-    help="Calculated from the completeness contract when the window includes the partial year.",
+    6,
+    0,
+    help="Sensitivity control only. The default fit uses every observed month.",
 )
 
 window = series[series["year"].between(fit_y0, fit_y1)].reset_index(drop=True)

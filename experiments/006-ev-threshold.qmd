@@ -29,7 +29,7 @@ import pandas as pd
 import plotly.express as px
 import complexity_lab.viz  # lab plotly template
 from complexity_lab.config import settings
-from complexity_lab.complexity.transitions import recent_acceleration_summary, tipping_summary
+from complexity_lab.complexity.transitions import recent_ytd_acceleration_summary, tipping_summary
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
 mp = con.execute(
@@ -41,10 +41,10 @@ policy_era = mp[(mp["year"] < 2024) | ((mp["year"] == 2024) & (mp["month"] <= 3)
 tips_policy = tipping_summary(policy_era, "ev_share")
 tips_recent = tipping_summary(mp[mp["year"] >= 2022], "ev_share")
 annual = con.execute(
-    "SELECT state_code, year, ev_share FROM panel_state_year "
-    "WHERE state_code <> 'ALL' AND year <= 2025 ORDER BY state_code, year"
+    "SELECT state_code, year, month, ev_regs, total_regs FROM panel_state_month "
+    "WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
 ).df()
-momentum = recent_acceleration_summary(annual, "ev_share")
+momentum = recent_ytd_acceleration_summary(annual, "ev_regs")
 ```
 
 ## The verdict across states
@@ -64,7 +64,8 @@ summary
 ```
 
 This threshold test is not a test of whether the latest annual growth rate rose.
-In 2025, the observed EV-share gain accelerated versus 2024 in:
+Through April 2026, the matched January-April EV-share gain accelerated versus
+the same months of 2025 in:
 
 ```{python}
 momentum["momentum_verdict"].value_counts().to_frame("states")
@@ -105,7 +106,7 @@ print("Spearman corr(τ*, income):",
 Across 30 scanned states, the full-history and FAME-II hinge models find **no
 robust self-reinforcing share threshold** at the stated 10% model-gain rule.
 That does **not** mean no state is accelerating: most states recorded a faster
-annual EV-share gain in 2025 than in 2024. These are different claims.
+matched-YTD EV-share gain in 2026 than in 2025. These are different claims.
 
 The structural result is window-sensitive. The 2022+ and 2023+ scans can surface
 positive hinges in selected states, but the set is not stable enough to call a

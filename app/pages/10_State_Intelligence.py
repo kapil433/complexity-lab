@@ -40,7 +40,12 @@ state_code = st.selectbox(
     format_func=lambda code: states.set_index("state_code").loc[code, "state_name"],
 )
 state_name = states.set_index("state_code").loc[state_code, "state_name"]
-profile = state_profile(get_connection(), state_code, page.cutoff.latest_complete_year)
+profile = state_profile(
+    get_connection(),
+    state_code,
+    page.cutoff.latest_observed_year,
+    page.cutoff.latest_observed_month,
+)
 annual = profile["annual"]
 latest = annual.iloc[-1]
 previous = annual.iloc[-2]
@@ -58,7 +63,8 @@ c3.metric("CNG share", f"{latest['cng_share']:.1%}", f"{latest['cng_share_chg_pp
 c4.metric("Leading OEM", profile["oems"].query("year == @latest.year").iloc[0]["maker"])
 c5.metric("OEM concentration", f"{latest['hhi_oem']:,.0f}")
 render_finding(
-    f"{state_name} registrations changed {latest['yoy_growth']:+.1%} in {int(latest['year'])}. "
+    f"{state_name} matched Jan-Apr registrations changed {latest['yoy_growth']:+.1%} "
+    f"in {int(latest['year'])}. "
     f"EV share moved {latest['ev_share_chg_pp']:+.2f} pp and CNG share "
     f"{latest['cng_share_chg_pp']:+.2f} pp."
 )
@@ -79,7 +85,7 @@ with tab_market:
             x="year",
             y="total_regs",
             markers=True,
-            title=f"{state_name} annual registrations",
+            title=f"{state_name} matched Jan-Apr registrations",
         )
         st.plotly_chart(indian_axis(fig), width="stretch")
     with right:
@@ -112,7 +118,7 @@ with tab_oem:
             orientation="h",
             color="share_chg_pp",
             color_continuous_scale="RdBu",
-            title=f"OEM leaderboard and share movement, {int(latest['year'])}",
+            title=f"OEM leaderboard and matched Jan-Apr share movement, {int(latest['year'])}",
         ),
         width="stretch",
     )

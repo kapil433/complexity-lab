@@ -7,7 +7,7 @@ in a page, or a new experiment never appears on the site index.
 import re
 from pathlib import Path
 
-from complexity_lab.experiments.cards import CARDS
+from complexity_lab.experiments.cards import CARD_ALIASES, CARDS
 from complexity_lab.experiments.registry import list_experiments
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -23,8 +23,8 @@ def test_every_page_card_id_exists():
 
 def test_every_experiment_has_a_card():
     exps = {e.name for e in list_experiments()}
-    # forecasting/hypothesis-tester are method cards without a registered experiment — fine.
-    missing = {e for e in exps if e not in CARDS}
+    # Some interactive wrappers intentionally reuse method cards through aliases.
+    missing = {e for e in exps if e not in CARDS and e not in CARD_ALIASES}
     assert not missing, f"experiments without an explainer card: {missing}"
 
 

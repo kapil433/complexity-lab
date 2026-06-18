@@ -8,6 +8,7 @@ from complexity_lab.complexity.transitions import (
     critical_threshold,
     percolation_curve,
     recent_acceleration_summary,
+    recent_ytd_acceleration_summary,
     regime_transition_matrix,
     threshold_scan,
 )
@@ -69,6 +70,34 @@ def test_recent_acceleration_is_distinct_from_threshold_tipping():
     assert result.loc["A", "acceleration_pp"] == 2.0
     assert result.loc["B", "momentum_verdict"] == "decelerating"
     assert result.loc["B", "acceleration_pp"] == pytest.approx(-1.0)
+
+
+def test_recent_ytd_acceleration_matches_months_across_years():
+    rows = []
+    shares = {
+        2023: [0.01, 0.01, 0.01, 0.01],
+        2024: [0.02, 0.02, 0.02, 0.02],
+        2025: [0.04, 0.04, 0.04, 0.04],
+    }
+    for year, monthly_shares in shares.items():
+        for month, share in enumerate(monthly_shares, start=1):
+            rows.append(
+                {
+                    "state_code": "A",
+                    "year": year,
+                    "month": month,
+                    "ev_regs": share * 1000,
+                    "total_regs": 1000,
+                }
+            )
+    panel = pd.DataFrame(rows)
+
+    result = recent_ytd_acceleration_summary(panel, "ev_regs")
+
+    assert result.loc["A", "year"] == 2025
+    assert result.loc["A", "change_pp"] == pytest.approx(2.0)
+    assert result.loc["A", "acceleration_pp"] == pytest.approx(1.0)
+    assert result.loc["A", "momentum_verdict"] == "accelerating"
 
 
 def test_regime_classification_and_matrix():

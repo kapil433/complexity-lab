@@ -19,6 +19,8 @@ from complexity_lab.data.access import (
     vahan_cutoff,
 )
 from complexity_lab.persistence import list_saved_views, save_view
+from complexity_lab.research_graph import get_page_node
+from complexity_lab.research_session import ResearchSession
 from complexity_lab.viz import use_lab_theme
 
 use_lab_theme()
@@ -78,10 +80,13 @@ def global_filters() -> PageContext:
     min_year = int(query("SELECT MIN(year) AS y FROM panel_state_year")["y"][0])
     max_year = int(query("SELECT MAX(year) AS y FROM panel_state_year")["y"][0])
     initial = GlobalContext.from_query_params(
-        _query_dict(),
+        {
+            **({"coverage": "available"} if "coverage" not in st.query_params else {}),
+            **_query_dict(),
+        },
         min_year=min_year,
         max_year=max_year,
-        default_end=cutoff.latest_complete_year,
+        default_end=cutoff.latest_observed_year,
     )
 
     if "_lab_global_initialized" not in st.session_state:
@@ -194,7 +199,7 @@ def render_app_shell(
     badges = [
         evidence,
         f"Vahan through {context.cutoff.latest_period}",
-        f"Latest complete year {context.cutoff.latest_complete_year}",
+        f"Latest observed {context.cutoff.latest_period}",
         f"{filter_scope}, {context.filters.year_start}-{context.filters.year_end}",
     ]
     st.markdown(
@@ -224,6 +229,41 @@ def render_app_shell(
             mime="application/json",
             key=f"context-download-{title}",
         )
+        session = ResearchSession(
+            page=title,
+            global_context=context.filters,
+            evidence=evidence,
+            data_cutoff=context.cutoff.latest_period,
+            limitations=limitations,
+        )
+        st.download_button(
+            "Download research session",
+            json.dumps(session.to_payload(), indent=2, default=str),
+            file_name="complexity-lab-session.json",
+            mime="application/json",
+            key=f"session-download-{title}",
+        )
+
+    try:
+        node = get_page_node(title)
+    except KeyError:
+        node = None
+    if node is not None:
+        with st.expander("Research compass", expanded=False):
+            st.markdown("**Use this page to**")
+            for action in node.research_actions:
+                st.markdown(f"- {action}")
+            if node.experiment_slugs:
+                st.markdown("**Runnable methods**")
+                st.markdown(", ".join(f"`{slug}`" for slug in node.experiment_slugs))
+            if node.notebooks:
+                st.markdown("**Notebook links**")
+                for notebook in node.notebooks:
+                    st.markdown(f"- `{notebook}`")
+            if node.truth_guardrails:
+                st.markdown("**Truth guardrails**")
+                for guardrail in node.truth_guardrails:
+                    st.markdown(f"- {guardrail}")
 
     with st.sidebar.expander("Save this view"):
         saved_title = st.text_input("Title", value=title, key=f"save-title-{title}")

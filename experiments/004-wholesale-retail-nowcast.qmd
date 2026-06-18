@@ -72,9 +72,9 @@ if HAS_WS:
 if HAS_WS:
     seg = con.execute("""
         SELECT segment5, year, SUM(wholesale) AS units FROM ws_segment_month
-        WHERE year BETWEEN 2022 AND 2025 GROUP BY segment5, year""").df()
+        WHERE date >= '2022-04-01' GROUP BY segment5, year""").df()
     px.area(seg, x="year", y="units", color="segment5", groupnorm="percent",
-            title="Wholesale segment mix, 2022–2025 (share of units)").show()
+            title="Wholesale segment mix through April 2026 (share of units)").show()
 ```
 
 ## Finding

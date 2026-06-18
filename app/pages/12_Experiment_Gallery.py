@@ -8,13 +8,23 @@ import pandas as pd
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import render_app_shell
+from common import get_connection, render_app_shell
 
 from complexity_lab.config import settings
+from complexity_lab.experiments.params import (
+    default_params,
+    dependency_gate,
+    parameter_schema_for,
+    preset_options_for,
+    validate_params,
+)
 from complexity_lab.experiments.publishing import discover_runs, latest_runs_by_experiment
 from complexity_lab.experiments.registry import list_experiments
 from complexity_lab.experiments.runner import run_experiment
 from complexity_lab.persistence import save_research_item
+from complexity_lab.research_graph import app_page_for_experiment
+from complexity_lab.research_session import ResearchSession
+from complexity_lab.science_rigor import rigor_for_method
 
 st.set_page_config(page_title="Experiment Gallery | Complexity Lab", layout="wide")
 page = render_app_shell(
@@ -43,27 +53,99 @@ selected = st.selectbox(
 experiment = next(item for item in experiments if item.name == selected)
 st.markdown(f"**Registered ID:** `{experiment.name}`")
 st.write(experiment.description)
+rigor = rigor_for_method(experiment.name)
+with st.expander("Claim boundary and robustness checks", expanded=True):
+    st.markdown(f"**Evidence:** {rigor.evidence} · **Claim type:** `{rigor.claim_type}`")
+    st.info(rigor.claim_boundary)
+    st.markdown("**Before publishing, check**")
+    for check in rigor.robustness_checks:
+        st.markdown(f"- {check}")
 
-params_text = st.text_area("Parameters (JSON)", value="{}", height=90)
-run_col, save_col = st.columns([1, 1])
-if run_col.button("Run experiment", type="primary"):
-    try:
-        params = json.loads(params_text)
-    except json.JSONDecodeError as exc:
-        st.error(f"Invalid JSON: {exc}")
-    else:
-        with st.status("Running experiment", expanded=True) as status:
-            st.write("Validating data contract")
-            try:
-                manifest = run_experiment(selected, params=params)
-            except Exception as exc:  # noqa: BLE001
-                status.update(label="Experiment failed", state="error")
-                st.error(str(exc))
+tables = {row[0] for row in get_connection().execute("SHOW TABLES").fetchall()}
+gate = dependency_gate(selected, tables)
+if gate.available:
+    st.success(gate.message)
+else:
+    st.warning(gate.message)
+
+schema = parameter_schema_for(selected)
+presets = preset_options_for(selected)
+preset = st.selectbox(
+    "Preset",
+    presets,
+    format_func=lambda item: f"{item.name} — {item.description}",
+)
+params = {**default_params(selected), **preset.params}
+with st.form(f"experiment-params-{selected}"):
+    st.markdown("#### Parameters")
+    if schema:
+        for key, spec in schema.items():
+            current = params.get(key, spec.default)
+            if spec.kind == "bool":
+                params[key] = st.checkbox(spec.label, value=bool(current), help=spec.help)
+            elif spec.kind == "int":
+                params[key] = st.number_input(
+                    spec.label,
+                    value=int(current),
+                    min_value=int(spec.min_value) if spec.min_value is not None else None,
+                    max_value=int(spec.max_value) if spec.max_value is not None else None,
+                    step=1,
+                    help=spec.help,
+                )
+            elif spec.kind == "float":
+                params[key] = st.number_input(
+                    spec.label,
+                    value=float(current),
+                    min_value=float(spec.min_value) if spec.min_value is not None else None,
+                    max_value=float(spec.max_value) if spec.max_value is not None else None,
+                    step=0.01,
+                    format="%.4f",
+                    help=spec.help,
+                )
             else:
-                st.write("Building diagnostics and visual bundle")
-                status.update(label="Experiment published", state="complete")
-                st.session_state["gallery_last_manifest"] = manifest
-                st.rerun()
+                params[key] = st.text_input(spec.label, value=str(current), help=spec.help)
+    else:
+        st.caption("This experiment has no configurable parameters.")
+    with st.expander("Advanced JSON override"):
+        override_text = st.text_area(
+            "Override parameters",
+            value=json.dumps(params, indent=2),
+            height=120,
+        )
+    submitted = st.form_submit_button("Validate parameters")
+
+if submitted:
+    try:
+        params = validate_params(selected, json.loads(override_text))
+    except (json.JSONDecodeError, ValueError) as exc:
+        st.error(f"Invalid parameters: {exc}")
+    else:
+        st.session_state[f"gallery_params_{selected}"] = params
+        st.success("Parameters validated.")
+params = st.session_state.get(f"gallery_params_{selected}", params)
+st.json(params)
+
+try:
+    app_target = app_page_for_experiment(selected)
+except KeyError:
+    app_target = None
+if app_target is not None:
+    st.caption(f"Interactive companion page: {app_target.title} (`{app_target.app_path}`)")
+
+run_col, save_col = st.columns([1, 1])
+if run_col.button("Run experiment", type="primary", disabled=not gate.available):
+    with st.status("Running experiment", expanded=True) as status:
+        st.write("Validating data contract")
+        try:
+            manifest = run_experiment(selected, params=params)
+        except Exception as exc:  # noqa: BLE001
+            status.update(label="Experiment failed", state="error")
+            st.error(str(exc))
+        else:
+            st.write("Building diagnostics and visual bundle")
+            status.update(label="Experiment published", state="complete")
+            st.session_state["gallery_last_manifest"] = manifest
+            st.rerun()
 
 run = st.session_state.get("gallery_last_manifest") or latest.get(selected)
 if run:
@@ -126,11 +208,25 @@ if run:
         st.json(run)
 
     if save_col.button("Save result to research inbox"):
+        session = ResearchSession(
+            page="Experiment Gallery",
+            global_context=page.filters,
+            page_params={"experiment": selected, **run.get("params", {})},
+            method_id=selected,
+            evidence="Estimated",
+            data_cutoff=run.get("data_cutoff", {}).get("vahan", page.cutoff.latest_period),
+            limitations=tuple(run.get("limitations", ())),
+            rerun_label="Run experiment",
+        )
         save_research_item(
             "experiment",
             title=f"{selected}: {run.get('primary_finding', 'result')}",
-            parameters=run.get("params", {}),
-            result=run.get("metrics", {}),
+            parameters=session.to_payload(),
+            result={
+                "metrics": run.get("metrics", {}),
+                "primary_finding": run.get("primary_finding", ""),
+                "privacy": run.get("privacy", ""),
+            },
             data_cutoff=run.get("data_cutoff", {}).get("vahan", page.cutoff.latest_period),
         )
         st.success("Experiment result saved.")
@@ -194,3 +290,4 @@ if len(all_selected_runs) >= 2:
                 metric_rows.append({"metric": key, chosen[0]: str(values[0]), chosen[1]: str(values[1])})
         if metric_rows:
             st.dataframe(pd.DataFrame(metric_rows), hide_index=True, width="stretch")
+        st.caption("Compare parameters and metrics before promoting a run into a notebook brief.")

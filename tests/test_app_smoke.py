@@ -51,7 +51,7 @@ def test_phase_transitions_separates_momentum_from_feedback_thresholds():
     assert not app.exception
     metrics = {metric.label: metric.value for metric in app.metric}
     acceleration_label = next(
-        label for label in metrics if label.startswith("Observed acceleration")
+        label for label in metrics if label.startswith("Matched-YTD acceleration")
     )
     assert int(metrics[acceleration_label]) > 0
     assert "Self-reinforcing thresholds" in metrics

@@ -9,8 +9,9 @@ import plotly.express as px
 import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
-from common import load_geojson, query, render_app_shell, render_card
+from common import get_connection, load_geojson, query, render_app_shell, render_card
 
+from complexity_lab.data.access import matched_ytd_state_year
 from complexity_lab.viz import indian_axis, pct_axis
 
 st.set_page_config(page_title="Compare and Explore | Complexity Lab", layout="wide")
@@ -42,7 +43,8 @@ METRICS = {
     "broad_credit_per_capita_inr": ("Broad credit per capita", "units"),
 }
 
-panel = query("SELECT * FROM experiment_state_year")
+panel = matched_ytd_state_year(get_connection(), page.cutoff.latest_observed_month)
+panel = panel[panel["state_code"] != "ALL"]
 context = query("SELECT * FROM experiment_state_context")
 dimension = query("SELECT state_code, geojson_name, zone FROM dim_state")
 panel = panel.merge(
@@ -92,7 +94,11 @@ snapshot_year = controls[3].slider(
     "Snapshot year",
     int(panel["year"].min()),
     int(panel["year"].max()),
-    min(page.filters.year_end, page.cutoff.latest_complete_year),
+    min(page.filters.year_end, page.cutoff.latest_observed_year),
+)
+st.caption(
+    f"Registration levels, growth, shares, and concentration use matched January-"
+    f"{page.cutoff.latest_period.split()[0]} windows in every year."
 )
 st.query_params["metric"] = metric
 st.query_params["normalization"] = normalization

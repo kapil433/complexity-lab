@@ -9,6 +9,7 @@ import duckdb
 import pandas as pd
 
 from complexity_lab.analysis import descriptive, distributions
+from complexity_lab.data.access import matched_ytd_state_year
 from complexity_lab.experiments.registry import experiment
 from complexity_lab.networks import build as nb
 from complexity_lab.networks import metrics as nm
@@ -20,19 +21,19 @@ from complexity_lab.simulation.diffusion import fit_bass_by_state
     description="Market size, growth, fuel mix, seasonality and OEM concentration — the baseline every other experiment builds on.",
 )
 def descriptive_baseline(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
-    year_panel = con.execute("SELECT * FROM experiment_state_year").df()
     month_panel = con.execute(
         "SELECT * FROM panel_state_month WHERE state_code = 'ALL' ORDER BY year, month"
     ).df()
+    through_month = int(month_panel["month"].iloc[-1])
+    year_panel = matched_ytd_state_year(con, through_month)
+    year_panel = year_panel[year_panel["state_code"] != "ALL"]
 
     summary = descriptive.summary_table(year_panel)
     summary.to_parquet(out_dir / "state_summary.parquet")
     context = con.execute("SELECT * FROM experiment_state_context").df()
     context.to_parquet(out_dir / "state_reference_context.parquet")
 
-    seasonality = descriptive.seasonality_profile(
-        month_panel[month_panel["year"].between(2013, 2025)]
-    )
+    seasonality = descriptive.seasonality_profile(month_panel[month_panel["year"] >= 2013])
     seasonality.to_parquet(out_dir / "seasonality_all_india.parquet")
 
     edges = con.execute("SELECT * FROM oem_state_edges").df()
@@ -40,17 +41,18 @@ def descriptive_baseline(con: duckdb.DuckDBPyConnection, out_dir: Path, **params
     conc.to_parquet(out_dir / "oem_concentration_by_year.parquet")
 
     latest = year_panel
-    latest_year = int(latest["year"].max()) - 1
+    latest_year = int(latest["year"].max())
     sizes = latest[latest["year"] == latest_year].set_index("state_code")["total_regs"]
     zipf = distributions.zipf_exponent(sizes)
     gini = distributions.gini(sizes)
 
     return {
-        "latest_full_year": latest_year,
+        "latest_observed_year": latest_year,
+        "latest_period": str(month_panel["date"].max())[:10],
         "state_gini": round(gini, 4),
         "zipf_slope": round(zipf["slope"], 4),
         "zipf_r2": round(zipf["r2"], 4),
-        "hhi_latest": round(float(conc["hhi"].iloc[-2]), 1),
+        "hhi_latest": round(float(conc["hhi"].iloc[-1]), 1),
     }
 
 
@@ -96,7 +98,7 @@ def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
     from complexity_lab.complexity import transitions as tr
 
     edges = con.execute("SELECT * FROM oem_state_edges").df()
-    latest_year = int(edges["year"].max()) - 1
+    latest_year = int(edges["year"].max())
 
     curve = tr.percolation_curve(edges[edges["year"] == latest_year])
     curve.to_parquet(out_dir / "percolation_curve.parquet")
@@ -112,9 +114,13 @@ def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
         out_dir / "critical_threshold_by_year.parquet"
     )
 
-    panel_year = con.execute(
-        "SELECT * FROM experiment_state_year"
-    ).df()
+    through_month = int(
+        con.execute(
+            "SELECT month FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date DESC LIMIT 1"
+        ).fetchone()[0]
+    )
+    panel_year = matched_ytd_state_year(con, through_month)
+    panel_year = panel_year[panel_year["state_code"] != "ALL"]
     regimes = tr.classify_regimes(panel_year[panel_year["year"] <= latest_year])
     regimes.to_parquet(out_dir / "fuel_regimes.parquet")
     matrix = tr.regime_transition_matrix(regimes)
@@ -135,7 +141,7 @@ def phase_transitions(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
 )
 def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
     from complexity_lab.complexity.transitions import (
-        recent_acceleration_summary,
+        recent_ytd_acceleration_summary,
         tipping_summary,
     )
 
@@ -161,14 +167,12 @@ def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
     )
     tips_recent.to_parquet(out_dir / "ev_tipping_recent_era.parquet")
 
-    annual = con.execute(
-        "SELECT state_code, year, ev_share FROM panel_state_year "
-        "WHERE state_code <> 'ALL' "
-        "AND year <= (SELECT MAX(CAST(period AS INTEGER)) FROM data_period_status "
-        "WHERE source = 'vahan' AND completeness_status = 'complete') "
-        "ORDER BY state_code, year"
+    momentum_panel = con.execute(
+        "SELECT state_code, year, month, ev_regs, total_regs "
+        "FROM panel_state_month WHERE state_code <> 'ALL' "
+        "ORDER BY state_code, year, month"
     ).df()
-    momentum = recent_acceleration_summary(annual, "ev_share")
+    momentum = recent_ytd_acceleration_summary(momentum_panel, "ev_regs")
     momentum.to_parquet(out_dir / "ev_recent_annual_momentum.parquet")
 
     cov = con.execute(
@@ -181,7 +185,7 @@ def ev_threshold(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
     accelerating = tips_policy[(tips_policy["hinge_coef"] > 0) & (tips_policy["sse_gain"] > 0.1)]
     return {
-        "latest_complete_year": int(momentum["year"].max()),
+        "latest_matched_ytd_year": int(momentum["year"].max()),
         "n_states_observed_accelerating": int(
             (momentum["momentum_verdict"] == "accelerating").sum()
         ),
@@ -272,10 +276,16 @@ def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
     threshold = params.get("threshold", 0.02)
     g = load_adjacency(con)
-    panel = con.execute(
-        "SELECT state_code, year, ev_share FROM experiment_state_year"
-    ).df()
-    latest_full = int(panel["year"].max()) - 1
+    through_month = int(
+        con.execute(
+            "SELECT month FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date DESC LIMIT 1"
+        ).fetchone()[0]
+    )
+    panel = matched_ytd_state_year(con, through_month)[
+        ["state_code", "year", "ev_share"]
+    ]
+    panel = panel[panel["state_code"] != "ALL"]
+    latest_full = int(panel["year"].max())
 
     latest = panel[panel["year"] == latest_full].set_index("state_code")["ev_share"]
     moran = morans_i(latest, g)
@@ -292,7 +302,7 @@ def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 
     return {
         "threshold": threshold,
-        "latest_full_year": latest_full,
+        "latest_observed_year": latest_full,
         "morans_i": round(moran["I"], 3),
         "morans_p": round(moran["p_value"], 4),
         "n_states_crossed": int(observed.notna().sum()),
@@ -309,11 +319,23 @@ def ev_contagion(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dic
 def fuel_regimes(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
     from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
 
-    panel = con.execute(
-        "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
-        "FROM experiment_state_year WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
-        "ORDER BY state_code, year"
-    ).df()
+    through_month = int(
+        con.execute(
+            "SELECT month FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date DESC LIMIT 1"
+        ).fetchone()[0]
+    )
+    panel = matched_ytd_state_year(con, through_month)
+    panel = panel[panel["state_code"] != "ALL"][
+        [
+            "state_code",
+            "year",
+            "petrol_share",
+            "diesel_share",
+            "cng_share",
+            "ev_share",
+            "hybrid_share",
+        ]
+    ]
     res = fit_fuel_regimes(panel, k_range=tuple(params.get("k_range", (2, 3, 4))))
 
     res["calendar"].to_parquet(out_dir / "regime_calendar.parquet")
@@ -446,7 +468,7 @@ def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
         post_months=params.get("post_months", 8),
     )
 
-    latest = shares.dropna().iloc[-2]
+    latest = shares.dropna().iloc[-1]
     return {
         "policy_mentions": counts,
         "latest_shares_pct": {
@@ -454,6 +476,7 @@ def shev_isolation(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
             "ev": round(100 * float(latest["ev_share"]), 2),
             "cng": round(100 * float(latest["cng_share"]), 2),
         },
+        "latest_period": str(shares["date"].max())[:10],
         "up_did_att_pp": round(100 * res_did["att"], 3),
         "up_did_placebo_rank_p": round(res_did["placebo_rank_p"], 3),
         "wholesale_hybrid_series": "unavailable: wholesale has no fuel cut",
@@ -473,13 +496,26 @@ def regime_survival(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> 
         kaplan_meier,
     )
 
-    panel = con.execute(
-        "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share, "
-        "real_pc_income_inr, real_gsdp_growth_pct, broad_credit_per_capita_inr "
-        "FROM experiment_state_year "
-        "WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
-        "ORDER BY state_code, year"
-    ).df()
+    through_month = int(
+        con.execute(
+            "SELECT month FROM panel_state_month WHERE state_code = 'ALL' ORDER BY date DESC LIMIT 1"
+        ).fetchone()[0]
+    )
+    panel = matched_ytd_state_year(con, through_month)
+    panel = panel[panel["state_code"] != "ALL"][
+        [
+            "state_code",
+            "year",
+            "petrol_share",
+            "diesel_share",
+            "cng_share",
+            "ev_share",
+            "hybrid_share",
+            "real_pc_income_inr",
+            "real_gsdp_growth_pct",
+            "broad_credit_per_capita_inr",
+        ]
+    ]
     regimes = fit_fuel_regimes(panel)
     covs = params.get(
         "covariates",
@@ -545,14 +581,14 @@ def suv_transition(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> d
     movers = seg.classify_movers(traj)
     movers.to_parquet(out_dir / "oem_mover_classes.parquet")
 
-    latest_full = int(st_series["year"].max()) - 1
+    latest_full = int(st_series["year"].max())
     arch = seg.state_archetypes(con, year=latest_full, k=params.get("k", 4))
     arch.to_parquet(out_dir / "state_archetypes.parquet")
 
     tipping_city = city_tips[city_tips["hinge_coef"] > 0]
     return {
         "panel_cities": len(cities),
-        "latest_full_year": latest_full,
+        "latest_observed_year": latest_full,
         "n_states_tipping_up": int((st_tips["hinge_coef"] > 0).sum()),
         "n_cities_tipping_up": int(len(tipping_city)),
         "median_city_tau": round(float(tipping_city["tau"].median()), 3) if len(tipping_city) else None,
@@ -574,7 +610,6 @@ def shev_counterfactual(con: duckdb.DuckDBPyConnection, out_dir: Path, **params)
     observed = con.execute(
         "SELECT date, hybrid_regs FROM panel_state_month "
         "WHERE state_code = 'ALL' AND date >= '2024-01-01' "
-        "AND date < (SELECT MAX(date) FROM panel_state_month) "
         "ORDER BY date"
     ).df()
     if len(observed) < 12:
@@ -628,7 +663,7 @@ def oem_state_network(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
     evolution = nm.temporal_metric_series(graphs)
     evolution.to_parquet(out_dir / "network_evolution_by_year.parquet")
 
-    latest_year = int(edges["year"].max()) - 1
+    latest_year = int(edges["year"].max())
     g = nb.share_weighted_graph(edges[edges["year"] == latest_year])
     cent = nm.centrality_table(g)
     cent.to_parquet(out_dir / "centrality_latest.parquet")
@@ -648,4 +683,128 @@ def oem_state_network(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -
         "n_communities_latest": int(comm.attrs["n_communities"]),
         "density_trend_first": round(float(evolution["density"].iloc[0]), 4),
         "density_trend_last": round(float(evolution["density"].iloc[-1]), 4),
+    }
+
+
+@experiment(
+    "hypothesis-screen",
+    description="Interactive Causal Lab wrapper: panel screening model with explicit non-causal labeling.",
+)
+def hypothesis_screen(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.analysis.econometrics import panel_ols
+
+    min_year = int(params.get("min_year", 2015))
+    panel = con.execute(
+        "SELECT * FROM experiment_state_year WHERE state_code <> 'ALL' AND year >= ?",
+        [min_year],
+    ).df()
+    candidates = [
+        "real_pc_income_inr",
+        "urban_pct",
+        "broad_credit_per_capita_inr",
+        "latest_real_gsdp_growth_pct",
+    ]
+    x_cols = [col for col in candidates if col in panel.columns]
+    if "ev_share" not in panel.columns or not x_cols:
+        raise RuntimeError("experiment_state_year lacks ev_share or usable screening covariates")
+    result = panel_ols(panel, "ev_share", x_cols[:3], time_effects=True)
+    coef = result.params.head(12).rename("coefficient").to_frame()
+    coef["p_value"] = result.pvalues.reindex(coef.index)
+    coef.to_parquet(out_dir / "hypothesis_screen_coefficients.parquet")
+    return {
+        "outcome": "ev_share",
+        "min_year": min_year,
+        "n_rows": int(result.nobs),
+        "n_covariates": len(x_cols[:3]),
+        "r2": round(float(result.rsquared), 4),
+        "interpretation": "Screening regression only; not causal identification.",
+    }
+
+
+@experiment(
+    "forecast-benchmark",
+    description="Interactive Forecast Studio wrapper: rolling-origin benchmark for national registrations.",
+)
+def forecast_benchmark(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.analysis.forecast import benchmark
+
+    horizon = int(params.get("horizon", 12))
+    min_train_months = int(params.get("min_train_months", 48))
+    monthly = con.execute(
+        """
+        SELECT date, total_regs
+        FROM panel_state_month
+        WHERE state_code = 'ALL'
+        ORDER BY date
+        """
+    ).df()
+    series = monthly.set_index(pd.to_datetime(monthly["date"]))["total_regs"].astype(float)
+    if len(series) < min_train_months:
+        raise RuntimeError(f"Need at least {min_train_months} months for forecast benchmark")
+    table = benchmark(series, horizon=min(3, horizon), n_origins=max(4, min(12, horizon)))
+    table.to_parquet(out_dir / "forecast_benchmark.parquet")
+    champion = table.iloc[0]
+    naive = table[table["model"] == "seasonal_naive"].iloc[0]
+    return {
+        "series": "All India total registrations",
+        "horizon": horizon,
+        "champion_model": champion["model"],
+        "champion_mape": round(float(champion["mape"]), 4),
+        "naive_mape": round(float(naive["mape"]), 4),
+        "naive_relative_skill": round(float(champion["naive_relative_skill"]), 4),
+        "interpretation": "Backtested estimate; not a policy counterfactual.",
+    }
+
+
+@experiment(
+    "shock-scenario",
+    description="Interactive Shock Lab wrapper: transparent channel stock-flow scenario.",
+)
+def shock_scenario(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    from complexity_lab.simulation.shocks import (
+        ShockConfig,
+        ShockWindow,
+        run_shock_sim,
+        shock_summary,
+    )
+
+    months = int(params.get("months", 12))
+    demand_shock = float(params.get("demand_shock", -0.15))
+    cfg = ShockConfig(
+        n_months=max(months, 24),
+        demand_shocks=[ShockWindow(start=3, end=3 + months, multiplier=max(0.0, 1 + demand_shock))],
+    )
+    baseline = run_shock_sim(ShockConfig(n_months=cfg.n_months))
+    scenario = run_shock_sim(cfg)
+    baseline.to_parquet(out_dir / "shock_baseline.parquet")
+    scenario.to_parquet(out_dir / "shock_scenario.parquet")
+    summary = shock_summary(scenario, baseline)
+    return {
+        **summary,
+        "months": months,
+        "demand_shock": demand_shock,
+        "interpretation": "Simulated stock-flow channel response under explicit assumptions.",
+    }
+
+
+@experiment(
+    "bass-scenario",
+    description="Interactive Diffusion Lab wrapper: Bass fits saved as a reproducible scenario.",
+)
+def bass_scenario(con: duckdb.DuckDBPyConnection, out_dir: Path, **params) -> dict:
+    min_total = int(params.get("min_total", 1000))
+    projection_months = int(params.get("projection_months", 36))
+    month_panel = con.execute(
+        "SELECT * FROM panel_state_month WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
+    ).df()
+    fits = fit_bass_by_state(month_panel, value_col="ev_regs", min_total=min_total)
+    fits.to_parquet(out_dir / "bass_scenario_fits.parquet")
+    usable = fits.dropna(subset=["p", "q", "m"])
+    return {
+        "n_states_fit": int(len(usable)),
+        "projection_months": projection_months,
+        "median_p": round(float(usable["p"].median()), 5) if not usable.empty else None,
+        "median_q": round(float(usable["q"].median()), 4) if not usable.empty else None,
+        "median_market_potential": round(float(usable["m"].median())) if not usable.empty else None,
+        "interpretation": "Bass parameters are descriptive and sensitive to policy-era shocks.",
     }

@@ -133,6 +133,13 @@ RESEARCH_TABLES = {
 }
 
 
+def _table_for_kind(kind: str) -> str:
+    table = RESEARCH_TABLES.get(kind)
+    if table is None:
+        raise ValueError(f"Unknown research item kind: {kind}")
+    return table
+
+
 def save_research_item(
     kind: str,
     *,
@@ -144,9 +151,7 @@ def save_research_item(
     method_version: str = "0.1.0",
     path: Path | None = None,
 ) -> str:
-    table = RESEARCH_TABLES.get(kind)
-    if table is None:
-        raise ValueError(f"Unknown research item kind: {kind}")
+    table = _table_for_kind(kind)
     db_path = initialize(path)
     item_id = uuid4().hex
     con = duckdb.connect(str(db_path))
@@ -170,6 +175,89 @@ def save_research_item(
     finally:
         con.close()
     return item_id
+
+
+def update_research_item_notes(
+    kind: str,
+    item_id: str,
+    notes: str,
+    *,
+    path: Path | None = None,
+) -> bool:
+    """Update notes for a saved research item; returns whether a row changed."""
+    table = _table_for_kind(kind)
+    db_path = initialize(path)
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute(
+            f"UPDATE {table} SET notes = ? WHERE id = ?",
+            [notes.strip(), item_id],
+        )
+        changed = con.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE id = ? AND notes = ?",
+            [item_id, notes.strip()],
+        ).fetchone()[0]
+        return bool(changed)
+    finally:
+        con.close()
+
+
+def delete_research_item(kind: str, item_id: str, *, path: Path | None = None) -> bool:
+    """Delete one saved research item; returns False if the item was absent."""
+    table = _table_for_kind(kind)
+    db_path = initialize(path)
+    con = duckdb.connect(str(db_path))
+    try:
+        existing = con.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE id = ?",
+            [item_id],
+        ).fetchone()[0]
+        if not existing:
+            return False
+        con.execute(f"DELETE FROM {table} WHERE id = ?", [item_id])
+        return True
+    finally:
+        con.close()
+
+
+def delete_saved_view(item_id: str, *, path: Path | None = None) -> bool:
+    """Delete one saved view; returns False if the view was absent."""
+    db_path = initialize(path)
+    con = duckdb.connect(str(db_path))
+    try:
+        existing = con.execute(
+            "SELECT COUNT(*) FROM saved_view WHERE id = ?",
+            [item_id],
+        ).fetchone()[0]
+        if not existing:
+            return False
+        con.execute("DELETE FROM saved_view WHERE id = ?", [item_id])
+        return True
+    finally:
+        con.close()
+
+
+def update_saved_view_notes(
+    item_id: str,
+    notes: str,
+    *,
+    path: Path | None = None,
+) -> bool:
+    """Update notes for a saved view; returns whether a row changed."""
+    db_path = initialize(path)
+    con = duckdb.connect(str(db_path))
+    try:
+        con.execute(
+            "UPDATE saved_view SET notes = ? WHERE id = ?",
+            [notes.strip(), item_id],
+        )
+        changed = con.execute(
+            "SELECT COUNT(*) FROM saved_view WHERE id = ? AND notes = ?",
+            [item_id, notes.strip()],
+        ).fetchone()[0]
+        return bool(changed)
+    finally:
+        con.close()
 
 
 def list_research_items(path: Path | None = None) -> pd.DataFrame:
@@ -200,6 +288,49 @@ def list_research_items(path: Path | None = None) -> pd.DataFrame:
         )
     finally:
         con.close()
+
+
+def export_research_brief_markdown(path: Path | None = None) -> str:
+    """Render saved research memory as a portable markdown brief."""
+    items = list_research_items(path)
+    watchlist = list_watchlist(path)
+    lines = [
+        "# Complexity Lab Research Brief",
+        "",
+        "This brief exports local research memory. Saved cutoffs are preserved; reruns may use newer data.",
+        "",
+        "## Research Cards",
+    ]
+    if items.empty:
+        lines.append("No research cards saved.")
+    else:
+        for row in items.itertuples(index=False):
+            lines.extend(
+                [
+                    "",
+                    f"### {row.title}",
+                    f"- Kind: {row.kind}",
+                    f"- Data cutoff: {row.data_cutoff}",
+                    f"- Method version: {row.method_version}",
+                    f"- Created: {row.created_at}",
+                ]
+            )
+            if row.notes:
+                lines.append(f"- Notes: {row.notes}")
+            params = json.loads(row.parameter_payload)
+            result = json.loads(row.result_payload)
+            if params:
+                lines.append(f"- Parameters: `{json.dumps(params, sort_keys=True, default=str)}`")
+            if result:
+                lines.append(f"- Result: `{json.dumps(result, sort_keys=True, default=str)}`")
+
+    lines.extend(["", "## Watchlist"])
+    if watchlist.empty:
+        lines.append("No watchlist items saved.")
+    else:
+        for row in watchlist.itertuples(index=False):
+            lines.append(f"- {row.label} ({row.item_type}: `{row.item_key}`) — {row.notes}")
+    return "\n".join(lines) + "\n"
 
 
 def add_watchlist_item(

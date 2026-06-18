@@ -29,8 +29,7 @@ from complexity_lab.simulation.diffusion import fit_bass, project_bass
 con = duckdb.connect(str(settings.db_path), read_only=True)
 observed = con.execute(
     "SELECT date, hybrid_regs FROM panel_state_month "
-    "WHERE state_code = 'ALL' AND date >= '2024-01-01' "
-    "AND date < (SELECT MAX(date) FROM panel_state_month) ORDER BY date"
+    "WHERE state_code = 'ALL' AND date >= '2024-01-01' ORDER BY date"
 ).df()
 cum = observed["hybrid_regs"].fillna(0).cumsum()
 fit = fit_bass(cum.reset_index(drop=True))

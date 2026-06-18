@@ -28,7 +28,8 @@
    When joining covariates to AP, consider that AP registrations may span
    undivided AP — income/urbanization for residual AP are not strictly aligned.
 2. **Partial years.** 2026 (and the latest 1–2 months generally) are partial —
-   `meta` flags them; experiments use `max(year) - 1` as the latest full year.
+   `data_period_status` flags them. Latest-observed experiments include 2026
+   through April; annual comparisons use matched January-April windows.
 3. **All India ≠ Σ states** by design (different RTO coverage).
 4. **Covariate quality flags.** Every reference CSV carries `source` and
    `quality` columns: `official` > `official_derived` > `reported` >

@@ -20,13 +20,14 @@ import pandas as pd
 import plotly.express as px
 from complexity_lab.config import settings
 from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
+from complexity_lab.data.access import matched_ytd_state_year
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
-panel = con.execute(
-    "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share "
-    "FROM experiment_state_year WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
-    "ORDER BY state_code, year"
-).df()
+latest_date = con.execute(
+    "SELECT MAX(date) FROM panel_state_month WHERE state_code = 'ALL'"
+).fetchone()[0]
+panel = matched_ytd_state_year(con, latest_date.month)
+panel = panel[panel["state_code"] != "ALL"]
 res = fit_fuel_regimes(panel)
 res["selection"].round(1)
 ```

@@ -189,6 +189,32 @@ def recent_acceleration_summary(
     return pd.DataFrame(rows).set_index(entity_col) if rows else pd.DataFrame()
 
 
+def recent_ytd_acceleration_summary(
+    panel_month: pd.DataFrame,
+    value_col: str,
+    *,
+    total_col: str = "total_regs",
+    entity_col: str = "state_code",
+    noise_pp: float = 0.1,
+) -> pd.DataFrame:
+    """Compare the latest YTD share gain with the two prior matched YTD periods."""
+    latest_year = int(panel_month["year"].max())
+    latest_month = int(panel_month.loc[panel_month["year"] == latest_year, "month"].max())
+    d = panel_month[panel_month["month"] <= latest_month].copy()
+    annual = (
+        d.groupby([entity_col, "year"], as_index=False)[[value_col, total_col]]
+        .sum()
+        .sort_values([entity_col, "year"])
+    )
+    annual["share"] = annual[value_col] / annual[total_col].replace(0, np.nan)
+    return recent_acceleration_summary(
+        annual.rename(columns={"share": "_matched_ytd_share"}),
+        "_matched_ytd_share",
+        entity_col=entity_col,
+        noise_pp=noise_pp,
+    )
+
+
 # ------------------------------------------------------------- fuel regimes
 
 

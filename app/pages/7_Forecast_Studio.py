@@ -77,7 +77,11 @@ if not submitted and "forecast_result" not in st.session_state:
     st.stop()
 
 fuel = SERIES[series_label]
-complete_cutoff = pd.Timestamp(f"{page.cutoff.latest_complete_year}-12-01")
+observed_cutoff = pd.Timestamp(
+    page.cutoff.latest_observed_year,
+    page.cutoff.latest_observed_month,
+    1,
+)
 if scope in {"National", "State"}:
     state_code = "ALL" if scope == "National" else entity
     if fuel is None:
@@ -126,7 +130,7 @@ else:
         ).df()
 
 frame["date"] = pd.to_datetime(frame["date"])
-training = frame[frame["date"] <= complete_cutoff]
+training = frame[frame["date"] <= observed_cutoff]
 series = pd.Series(
     training["y"].to_numpy(),
     index=pd.DatetimeIndex(training["date"]),

@@ -819,8 +819,16 @@ _add(Card(
 ))
 
 
+CARD_ALIASES = {
+    "hypothesis-screen": "hypothesis-tester",
+    "forecast-benchmark": "forecast",
+    "shock-scenario": "shock-lab",
+    "bass-scenario": "ev-diffusion-states",
+}
+
+
 def get_card(card_id: str) -> Card:
-    return CARDS[card_id]
+    return CARDS[CARD_ALIASES.get(card_id, card_id)]
 
 
 def all_cards() -> list[Card]:

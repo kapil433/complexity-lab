@@ -5,39 +5,33 @@ from __future__ import annotations
 import duckdb
 import pandas as pd
 
+from complexity_lab.data.access import matched_ytd_maker_state, matched_ytd_state_year
+
 
 def state_profile(
     con: duckdb.DuckDBPyConnection,
     state_code: str,
     through_year: int,
+    through_month: int = 12,
 ) -> dict[str, pd.DataFrame]:
-    annual = con.execute(
-        """
-        SELECT *
-        FROM panel_state_year
-        WHERE state_code = ? AND year <= ?
-        ORDER BY year
-        """,
-        [state_code, through_year],
-    ).df()
+    annual = matched_ytd_state_year(con, through_month)
+    annual = annual[
+        (annual["state_code"] == state_code) & (annual["year"] <= through_year)
+    ].sort_values("year")
     monthly = con.execute(
         """
         SELECT *
         FROM panel_state_month
-        WHERE state_code = ? AND year <= ?
+        WHERE state_code = ?
+          AND (year < ? OR (year = ? AND month <= ?))
         ORDER BY date
         """,
-        [state_code, through_year],
+        [state_code, through_year, through_year, through_month],
     ).df()
-    oems = con.execute(
-        """
-        SELECT year, maker, regs, share, share_chg_pp, rnk
-        FROM maker_state_share
-        WHERE state_code = ? AND year <= ?
-        ORDER BY year, rnk
-        """,
-        [state_code, through_year],
-    ).df()
+    oems = matched_ytd_maker_state(con, through_month)
+    oems = oems[
+        (oems["state_code"] == state_code) & (oems["year"] <= through_year)
+    ].sort_values(["year", "rnk"])
     context = con.execute(
         "SELECT * FROM experiment_state_context WHERE state_code = ?",
         [state_code],
@@ -84,47 +78,29 @@ def oem_profile(
     con: duckdb.DuckDBPyConnection,
     maker: str,
     through_year: int,
+    through_month: int = 12,
 ) -> dict[str, pd.DataFrame]:
-    annual = con.execute(
-        """
-        WITH maker_year AS (
-            SELECT year, SUM("count") AS regs
-            FROM registrations
-            WHERE state_code = 'ALL' AND maker = ? AND year <= ?
-            GROUP BY year
-        ),
-        market AS (
-            SELECT year, SUM("count") AS market_regs
-            FROM registrations
-            WHERE state_code = 'ALL' AND year <= ?
-            GROUP BY year
-        )
-        SELECT m.year, m.regs, m.regs::DOUBLE / NULLIF(t.market_regs, 0) AS share
-        FROM maker_year m
-        JOIN market t USING (year)
-        ORDER BY m.year
-        """,
-        [maker, through_year, through_year],
-    ).df()
+    maker_state = matched_ytd_maker_state(con, through_month)
+    annual = maker_state[
+        (maker_state["state_code"] == "ALL")
+        & (maker_state["maker"] == maker)
+        & (maker_state["year"] <= through_year)
+    ][["year", "regs", "share", "share_chg_pp", "rnk", "rank_chg"]].sort_values("year")
     fuels = con.execute(
         """
         SELECT year, fuel, SUM("count") AS regs
         FROM registrations
-        WHERE state_code = 'ALL' AND maker = ? AND year <= ?
+        WHERE state_code = 'ALL' AND maker = ? AND year <= ? AND month <= ?
         GROUP BY year, fuel
         ORDER BY year, fuel
         """,
-        [maker, through_year],
+        [maker, through_year, through_month],
     ).df()
-    states = con.execute(
-        """
-        SELECT state_code, state_name, year, regs, share, rnk
-        FROM maker_state_share
-        WHERE maker = ? AND state_code <> 'ALL' AND year <= ?
-        ORDER BY year, share DESC
-        """,
-        [maker, through_year],
-    ).df()
+    states = maker_state[
+        (maker_state["maker"] == maker)
+        & (maker_state["state_code"] != "ALL")
+        & (maker_state["year"] <= through_year)
+    ].sort_values(["year", "share"], ascending=[True, False])
     return {"annual": annual, "fuels": fuels, "states": states}
 
 
@@ -132,7 +108,32 @@ def largest_moves(
     con: duckdb.DuckDBPyConnection,
     year: int,
     limit: int = 8,
+    through_month: int | None = None,
 ) -> dict[str, pd.DataFrame]:
+    if through_month is not None:
+        panel = matched_ytd_state_year(con, through_month)
+        states = (
+            panel[(panel["state_code"] != "ALL") & (panel["year"] == year)]
+            .sort_values("yoy_growth", key=lambda values: values.abs(), ascending=False)
+            .head(limit)[
+                [
+                    "state_code",
+                    "state_name",
+                    "total_regs",
+                    "yoy_growth",
+                    "ev_share_chg_pp",
+                    "cng_share_chg_pp",
+                ]
+            ]
+        )
+        makers = matched_ytd_maker_state(con, through_month)
+        oems = (
+            makers[(makers["state_code"] == "ALL") & (makers["year"] == year)]
+            .sort_values("share_chg_pp", key=lambda values: values.abs(), ascending=False)
+            .head(limit)[["maker", "regs", "share", "share_chg_pp", "rank_chg"]]
+        )
+        return {"states": states, "oems": oems}
+
     states = con.execute(
         """
         SELECT state_code, state_name, total_regs, yoy_growth,

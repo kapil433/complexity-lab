@@ -33,7 +33,7 @@ tab_perc, tab_tip, tab_regime, tab_hmm = st.tabs(
 )
 
 edges = query("SELECT * FROM oem_state_edges")
-max_year = min(page.filters.year_end, page.cutoff.latest_complete_year)
+max_year = min(page.filters.year_end, page.cutoff.latest_observed_year)
 
 with tab_perc:
     render_card("phase-transitions")
@@ -105,14 +105,13 @@ with tab_tip:
         f"SELECT state_code, year, month, date, {share_col} FROM panel_state_month "
         "WHERE state_code <> 'ALL' ORDER BY state_code, year, month"
     )
-    annual = query(
-        f"SELECT state_code, year, {share_col} FROM panel_state_year "
-        "WHERE state_code <> 'ALL' AND year <= "
-        "(SELECT MAX(CAST(period AS INTEGER)) FROM data_period_status "
-        " WHERE source = 'vahan' AND completeness_status = 'complete') "
-        "ORDER BY state_code, year"
+    fuel_regs = share_col.replace("_share", "_regs")
+    momentum_panel = query(
+        f"SELECT state_code, year, month, {fuel_regs}, total_regs "
+        "FROM panel_state_month WHERE state_code <> 'ALL' "
+        "ORDER BY state_code, year, month"
     )
-    momentum = tr.recent_acceleration_summary(annual, share_col)
+    momentum = tr.recent_ytd_acceleration_summary(momentum_panel, fuel_regs)
     latest_momentum_year = int(momentum["year"].max()) if not momentum.empty else None
     observed_accelerating = (
         int((momentum["momentum_verdict"] == "accelerating").sum())
@@ -148,7 +147,7 @@ with tab_tip:
         c1, c2, c3, c4 = st.columns(4)
         c1.metric("States scanned", len(tips))
         c2.metric(
-            f"Observed acceleration, {latest_momentum_year}",
+        f"Matched-YTD acceleration, {latest_momentum_year}",
             observed_accelerating,
             help="Latest annual share gain exceeded the prior year's gain by more than 0.1 pp.",
         )
@@ -163,7 +162,7 @@ with tab_tip:
         )
         st.info(
             f"These answer different questions. **{observed_accelerating} states show "
-            f"observed calendar-time acceleration in {latest_momentum_year}**, while "
+            f"matched Jan-Apr acceleration in {latest_momentum_year}**, while "
             f"**{structural_tipping} show a robust self-reinforcing share threshold** "
             "in the selected window. Acceleration does not automatically prove tipping."
         )
@@ -337,9 +336,8 @@ with tab_hmm:
         from complexity_lab.complexity.regimes import fit_fuel_regimes, transition_years
 
         p = query(
-            "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, "
-            "hybrid_share FROM panel_state_year "
-            "WHERE year < (SELECT MAX(year) FROM panel_state_year) ORDER BY state_code, year"
+        "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, "
+            "hybrid_share FROM panel_state_year ORDER BY state_code, year"
         )
         res = fit_fuel_regimes(p)
         return (res["selection"], res["regime_means"], res["transition_matrix"],

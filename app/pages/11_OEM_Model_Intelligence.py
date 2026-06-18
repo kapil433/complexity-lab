@@ -42,7 +42,12 @@ maker = st.selectbox(
     makers,
     index=makers.index(default_maker) if default_maker in makers else 0,
 )
-profile = oem_profile(get_connection(), maker, page.cutoff.latest_complete_year)
+profile = oem_profile(
+    get_connection(),
+    maker,
+    page.cutoff.latest_observed_year,
+    page.cutoff.latest_observed_month,
+)
 annual = profile["annual"]
 latest = annual.iloc[-1]
 previous = annual.iloc[-2]
@@ -55,8 +60,9 @@ c2.metric("National share", f"{latest['share']:.1%}", f"{latest['share'] - previ
 c3.metric("Strongest state share", f"{top_state['share']:.1%}", top_state["state_name"])
 c4.metric("States in top 3", int((state_latest["rnk"] <= 3).sum()))
 render_finding(
-    f"{maker} held {latest['share']:.1%} of national registrations in {int(latest['year'])}, "
-    f"a {(latest['share'] - previous['share']) * 100:+.2f} pp change from the prior year."
+    f"{maker} held {latest['share']:.1%} of national Jan-Apr registrations in "
+    f"{int(latest['year'])}, a {(latest['share'] - previous['share']) * 100:+.2f} pp "
+    "change from matched Jan-Apr in the prior year."
 )
 if st.button(f"Add {maker} to watchlist"):
     add_watchlist_item(item_type="oem", item_key=maker, label=maker)
@@ -71,7 +77,7 @@ with tab_retail:
         x="year",
         y=["regs", "share"],
         markers=True,
-        title=f"{maker}: registrations and national share",
+        title=f"{maker}: matched Jan-Apr registrations and national share",
     )
     st.plotly_chart(fig, width="stretch")
 
@@ -84,7 +90,7 @@ with tab_states:
             y="state_name",
             orientation="h",
             color="rnk",
-            title=f"State strength, {int(latest['year'])}",
+            title=f"State strength, Jan-Apr {int(latest['year'])}",
         ),
         width="stretch",
     )

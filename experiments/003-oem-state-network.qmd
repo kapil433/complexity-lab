@@ -20,7 +20,7 @@ from complexity_lab.networks import build as nb, metrics as nm
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
 edges = con.execute("SELECT * FROM oem_state_edges").df()
-LATEST_FULL = int(edges.year.max()) - 1
+LATEST_FULL = int(edges.year.max())
 ```
 
 ## Topology over time

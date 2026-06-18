@@ -95,7 +95,8 @@ with tab_now:
         )
 
 with tab_models:
-    yr = st.slider("Year", 2022, 2026, 2025, key="m_yr")
+    latest_ws_year = int(query("SELECT MAX(year) AS year FROM wholesale")["year"].iloc[0])
+    yr = st.slider("Year", 2022, latest_ws_year, latest_ws_year, key="m_yr")
     top_n = st.slider("Top N models", 5, 40, 20)
     models = query(
         f"""SELECT model, maker, segment5, SUM(qty) AS units FROM wholesale
@@ -184,7 +185,7 @@ with tab_ev:
     )
 
 with tab_city:
-    yr2 = st.slider("Year", 2022, 2026, 2025, key="c_yr")
+    yr2 = st.slider("Year", 2022, latest_ws_year, latest_ws_year, key="c_yr")
     cities = query(
         f"""SELECT city, state_code, SUM(qty) AS units FROM wholesale
             WHERE year = {yr2} AND coverage = 'full'

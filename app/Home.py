@@ -25,14 +25,19 @@ page = render_app_shell(
         "actual Vahan registrations and clearly bounded wholesale evidence."
     ),
     limitations=(
-        "The latest calendar year is partial and is excluded under the default period policy.",
+        "The latest calendar year is partial; annual changes use matched January-April windows.",
         "Reference variables retain their own dates and quality labels; sparse snapshots are not time series.",
         "Wholesale has no fuel cut. Model metadata never becomes observed fuel volume.",
     ),
 )
 
 monthly = market_monthly(get_connection(), page.filters)
-annual = market_annual(get_connection(), page.filters)
+comparison_month = (
+    page.cutoff.latest_observed_month
+    if page.filters.year_end >= page.cutoff.latest_observed_year
+    else None
+)
+annual = market_annual(get_connection(), page.filters, through_month=comparison_month)
 if monthly.empty or annual.empty:
     st.warning("No observations match this research context. Broaden the sidebar filters.")
     st.stop()
@@ -102,7 +107,7 @@ c6.metric("Latest wholesale / retail", f"{ws_ratio:.2f}" if ws_ratio is not None
 comparison = ""
 if previous is not None and pd.notna(growth):
     comparison = (
-        f"Registrations changed {growth:+.1%} versus {int(previous['year'])}. "
+        f"Matched-YTD registrations changed {growth:+.1%} versus {int(previous['year'])}. "
     )
 render_finding(
     comparison
@@ -116,9 +121,10 @@ render_finding(
 
 st.markdown("#### Five-line market brief")
 brief_lines = [
-    f"1. **Scale:** {kpi_value(latest['total_regs'])} registrations in {int(latest['year'])}; "
+    f"1. **Scale:** {kpi_value(latest['total_regs'])} registrations in "
+    f"Jan-Apr {int(latest['year'])}; "
     f"{kpi_value(rolling)} over the latest 12 observed months.",
-    f"2. **Growth:** {growth:+.1%} versus {int(previous['year'])}."
+    f"2. **Growth:** {growth:+.1%} versus matched Jan-Apr {int(previous['year'])}."
     if previous is not None and pd.notna(growth)
     else "2. **Growth:** no like-for-like prior period in the selected context.",
     "3. **Fuel shift:** "
@@ -135,6 +141,21 @@ brief_lines = [
     ),
 ]
 st.markdown("\n".join(brief_lines))
+
+st.subheader("Start a research path")
+path_cols = st.columns(5)
+paths = [
+    ("EV transition", "Thresholds, diffusion, contagion, and regime shifts.", "pages/6_Phase_Transitions.py"),
+    ("Channel stress", "Wholesale-retail nowcast and shock scenarios.", "pages/5_Wholesale.py"),
+    ("OEM structure", "Network position, communities, and state strength.", "pages/2_Networks.py"),
+    ("SHEV policy", "Hybrid isolation, tax wedge, and counterfactuals.", "pages/4_Hypothesis_Tester.py"),
+    ("SUV shift", "Segment transition and model lifecycle evidence.", "pages/11_OEM_Model_Intelligence.py"),
+]
+for col, (label, detail, page_path) in zip(path_cols, paths, strict=True):
+    with col:
+        st.markdown(f"**{label}**")
+        st.caption(detail)
+        st.page_link(page_path, label="Open path")
 
 st.subheader("The observed market trajectory")
 fuel_columns = [column for column in FUEL_COLUMNS.values() if column in monthly]
@@ -164,8 +185,9 @@ st.plotly_chart(fig, width="stretch")
 
 snapshot = state_snapshot(
     get_connection(),
-    min(page.filters.year_end, page.cutoff.latest_complete_year),
+    min(page.filters.year_end, page.cutoff.latest_observed_year),
     page.filters.states,
+    through_month=comparison_month,
 )
 if not snapshot.empty:
     left, right = st.columns([1.35, 1])
@@ -178,7 +200,7 @@ if not snapshot.empty:
                 x="growth_pct",
                 y="state_name",
                 orientation="h",
-                title=f"Fastest state growth in {int(latest['year'])}",
+                title=f"Fastest matched-YTD state growth in {int(latest['year'])}",
                 labels={"growth_pct": "YoY growth (%)", "state_name": ""},
             ),
             width="stretch",
@@ -196,7 +218,11 @@ if not snapshot.empty:
             "Growth and EV share are observed registration measures. They do not identify causes."
         )
 
-moves = largest_moves(get_connection(), int(latest["year"]))
+moves = largest_moves(
+    get_connection(),
+    int(latest["year"]),
+    through_month=comparison_month,
+)
 st.subheader("Largest moves")
 tab_states, tab_oems, tab_fuels, tab_models = st.tabs(["States", "OEMs", "Fuels", "Models"])
 with tab_states:
@@ -232,7 +258,7 @@ with tab_models:
             WITH annual AS (
                 SELECT model, year, SUM(qty) AS units
                 FROM wholesale
-                WHERE coverage = 'full' AND year IN (?, ?)
+                WHERE coverage = 'full' AND year IN (?, ?) AND month <= ?
                 GROUP BY model, year
             ),
             pivoted AS (
@@ -247,7 +273,13 @@ with tab_models:
             ORDER BY ABS(unit_change) DESC
             LIMIT 15
             """,
-            [int(latest["year"]) - 1, int(latest["year"]), int(latest["year"]), int(latest["year"]) - 1],
+            [
+                int(latest["year"]) - 1,
+                int(latest["year"]),
+                page.cutoff.latest_observed_month,
+                int(latest["year"]),
+                int(latest["year"]) - 1,
+            ],
         ).df()
         st.dataframe(model_moves, hide_index=True, width="stretch")
         st.warning("Wholesale has no fuel cut. Model movement is total dispatch volume.")

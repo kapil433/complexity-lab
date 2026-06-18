@@ -10,6 +10,12 @@ fuel prices, road tax, policy events.
 Every page under **Experiments** is a reproducible Quarto notebook committed to
 [the repo](https://github.com/kapil433/complexity-lab); the site re-renders on push.
 
+The companion **Interactive lab** is the researcher-on-the-go workbench: choose a
+market signal, run a method, save the session with its cutoff and limitations,
+rerun after a data refresh, compare results, and promote the finding back into
+this notebook. It is intentionally governed by the same `DATA_TRUTH.md` contract
+as the published experiments.
+
 ## Analytical ladder
 
 1. **Descriptive** — size, growth, fuel mix, seasonality, concentration

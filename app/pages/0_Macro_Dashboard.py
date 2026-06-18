@@ -11,6 +11,7 @@ import streamlit as st
 sys.path.insert(0, str(Path(__file__).parents[1]))
 from common import get_connection, load_geojson, query, render_app_shell, render_card
 
+from complexity_lab.data.access import matched_ytd_maker_state, matched_ytd_state_year
 from complexity_lab.viz import (
     add_event_markers,
     diverging_bar,
@@ -34,16 +35,18 @@ render_card("descriptive-baseline")
 st.info(
     f"Completeness: Vahan is observed through {page.cutoff.latest_period}; "
     f"{page.cutoff.latest_complete_year} is the latest complete calendar year. "
-    "Partial 2026 observations are excluded from full-year comparisons."
+    "Current annual comparisons use matched January-April windows in every year."
 )
 
-national = query("SELECT * FROM panel_state_year WHERE state_code = 'ALL' ORDER BY year")
-latest = min(page.filters.year_end, page.cutoff.latest_complete_year)
+matched = matched_ytd_state_year(get_connection(), page.cutoff.latest_observed_month)
+maker_matched = matched_ytd_maker_state(get_connection(), page.cutoff.latest_observed_month)
+national = matched[matched["state_code"] == "ALL"].sort_values("year")
+latest = min(page.filters.year_end, page.cutoff.latest_observed_year)
 row = national[national["year"] == latest].iloc[0]
 prev = national[national["year"] == latest - 1].iloc[0]
 
 # ---- KPI strip -------------------------------------------------------------
-st.subheader(f"India 4W PV — {latest} (last full year)")
+st.subheader(f"India 4W PV - Jan-Apr {latest} (matched YTD)")
 c1, c2, c3, c4, c5 = st.columns(5)
 c1.metric("Registrations", kpi_value(row["total_regs"]),
           f"{row['yoy_growth']:+.1%} YoY")
@@ -123,22 +126,28 @@ st.plotly_chart(
 # ---- market share shift ----------------------------------------------------
 st.subheader("OEM market share & shift")
 col_a, col_b = st.columns([1, 1])
-ms = query(f"SELECT * FROM maker_state_share WHERE state_code = 'ALL' AND year = {latest} "
-           "ORDER BY share DESC")
+ms = maker_matched[
+    (maker_matched["state_code"] == "ALL") & (maker_matched["year"] == latest)
+].sort_values("share", ascending=False)
 with col_a:
     top = ms.head(12).copy()
     top["share_pct"] = top["share"] * 100
     st.plotly_chart(
-        diverging_bar(top, "maker", "share_chg_pp",
-                      title=f"Share change {latest - 1} → {latest} (pp)"),
+        diverging_bar(
+            top,
+            "maker",
+            "share_chg_pp",
+            title=f"Matched Jan-Apr share change {latest - 1} to {latest} (pp)",
+        ),
         width="stretch",
     )
 with col_b:
-    ms_hist = query(
-        "SELECT year, maker, share FROM maker_state_share WHERE state_code = 'ALL' "
-        f"AND maker IN (SELECT maker FROM maker_state_share WHERE state_code='ALL' "
-        f"AND year={latest} ORDER BY share DESC LIMIT 6) AND year <= {latest} ORDER BY year"
-    )
+    leaders = ms.head(6)["maker"]
+    ms_hist = maker_matched[
+        (maker_matched["state_code"] == "ALL")
+        & (maker_matched["maker"].isin(leaders))
+        & (maker_matched["year"] <= latest)
+    ]
     figms = px.line(ms_hist, x="year", y="share", color="maker",
                     title="Top-6 OEM market share")
     figms.update_yaxes(tickformat=".0%")
@@ -147,23 +156,18 @@ with col_b:
 st.subheader("Contribution to growth")
 contribution_tabs = st.tabs(["States", "OEMs", "Fuels"])
 with contribution_tabs[0]:
-    state_contrib = get_connection().execute(
-        """
-        WITH annual AS (
-            SELECT state_code, state_name, year, total_regs
-            FROM panel_state_year
-            WHERE state_code <> 'ALL' AND year IN (?, ?)
-        )
-        SELECT state_code, MAX(state_name) AS state_name,
-               MAX(total_regs) FILTER (WHERE year = ?) -
-               MAX(total_regs) FILTER (WHERE year = ?) AS contribution
-        FROM annual
-        GROUP BY state_code
-        ORDER BY ABS(contribution) DESC
-        LIMIT 15
-        """,
-        [latest - 1, latest, latest, latest - 1],
-    ).df()
+    state_pair = matched[
+        (matched["state_code"] != "ALL") & matched["year"].isin([latest - 1, latest])
+    ]
+    state_contrib = state_pair.pivot_table(
+        index=["state_code", "state_name"], columns="year", values="total_regs"
+    ).reset_index()
+    state_contrib["contribution"] = (
+        state_contrib.get(latest, 0) - state_contrib.get(latest - 1, 0)
+    )
+    state_contrib = state_contrib.reindex(
+        state_contrib["contribution"].abs().sort_values(ascending=False).index
+    ).head(15)
     st.plotly_chart(
         px.bar(
             state_contrib.sort_values("contribution"),
@@ -172,29 +176,24 @@ with contribution_tabs[0]:
             orientation="h",
             color="contribution",
             color_continuous_scale="RdBu",
-            title=f"State contribution to national volume change, {latest - 1} to {latest}",
+            title=f"State contribution to matched Jan-Apr change, {latest - 1} to {latest}",
         ),
         width="stretch",
     )
 with contribution_tabs[1]:
-    oem_contrib = get_connection().execute(
-        """
-        WITH annual AS (
-            SELECT maker, year, SUM("count") AS regs
-            FROM registrations
-            WHERE state_code = 'ALL' AND year IN (?, ?)
-            GROUP BY maker, year
-        )
-        SELECT maker,
-               MAX(regs) FILTER (WHERE year = ?) -
-               MAX(regs) FILTER (WHERE year = ?) AS contribution
-        FROM annual
-        GROUP BY maker
-        ORDER BY ABS(contribution) DESC
-        LIMIT 15
-        """,
-        [latest - 1, latest, latest, latest - 1],
-    ).df()
+    maker_pair = maker_matched[
+        (maker_matched["state_code"] == "ALL")
+        & maker_matched["year"].isin([latest - 1, latest])
+    ]
+    oem_contrib = maker_pair.pivot_table(
+        index="maker", columns="year", values="regs"
+    ).reset_index()
+    oem_contrib["contribution"] = (
+        oem_contrib.get(latest, 0) - oem_contrib.get(latest - 1, 0)
+    )
+    oem_contrib = oem_contrib.reindex(
+        oem_contrib["contribution"].abs().sort_values(ascending=False).index
+    ).head(15)
     st.plotly_chart(
         px.bar(
             oem_contrib.sort_values("contribution"),
@@ -203,7 +202,7 @@ with contribution_tabs[1]:
             orientation="h",
             color="contribution",
             color_continuous_scale="RdBu",
-            title="OEM contribution to growth",
+            title="OEM contribution to matched Jan-Apr growth",
         ),
         width="stretch",
     )
@@ -234,7 +233,7 @@ fuel_choice = st.selectbox("Fuel", ["ev_share", "cng_share", "diesel_share",
 mode = st.radio("Show", ["level (%)", "change (pp, YoY)"], horizontal=True)
 col_map_field = fuel_choice if mode.startswith("level") else fuel_choice.replace("_share", "_share_chg_pp")
 
-snap = query(f"SELECT * FROM panel_state_year WHERE year = {latest} AND state_code <> 'ALL'").merge(
+snap = matched[(matched["year"] == latest) & (matched["state_code"] != "ALL")].merge(
     query("SELECT state_code, geojson_name, zone FROM dim_state"), on="state_code", how="left"
 )
 figc = px.choropleth(
@@ -248,14 +247,15 @@ figc.update_layout(height=520, margin={"l": 0, "r": 0, "t": 50, "b": 0})
 st.plotly_chart(figc, width="stretch")
 
 # heatmap: state × year EV penetration, zone-sorted (blueprint §3.1)
-hm = query("SELECT state_code, year, ev_share FROM panel_state_year "
-           f"WHERE state_code <> 'ALL' AND year BETWEEN 2016 AND {latest}").merge(
+hm = matched[
+    (matched["state_code"] != "ALL") & matched["year"].between(2016, latest)
+][["state_code", "year", "ev_share"]].merge(
     query("SELECT state_code, zone FROM dim_state"), on="state_code")
 hm = hm.sort_values(["zone", "state_code"])
 pivot = hm.pivot_table(index="state_code", columns="year", values="ev_share")
 pivot = pivot.reindex(hm["state_code"].unique())
 fig_hm = px.imshow(pivot * 100, aspect="auto", color_continuous_scale="Viridis",
-                   title="EV penetration % — state × year (grouped by zone)",
+                   title="EV penetration % - matched Jan-Apr by state and year",
                    labels={"color": "EV %"})
 fig_hm.update_layout(height=720)
 st.plotly_chart(fig_hm, width="stretch")

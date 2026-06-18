@@ -90,7 +90,7 @@ if HAS_WS:
 
 ```{python}
 if HAS_WS:
-    latest_full = int(traj["year"].max()) - 1
+    latest_full = int(traj["year"].max())
     arch = seg.state_archetypes(con, year=latest_full)
     counts = arch["archetype"].value_counts()
     px.bar(counts, title=f"State archetypes by segment mix, {latest_full}",

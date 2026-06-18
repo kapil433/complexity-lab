@@ -36,7 +36,7 @@ render_card("oem-state-network")
 
 edges = query("SELECT * FROM oem_state_edges")
 years = sorted(int(value) for value in edges["year"].unique())
-latest = min(page.filters.year_end, page.cutoff.latest_complete_year)
+latest = min(page.filters.year_end, page.cutoff.latest_observed_year)
 
 control_a, control_b, control_c, control_d = st.columns([1.2, 1, 1, 1])
 mode = control_a.selectbox(

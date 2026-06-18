@@ -46,6 +46,10 @@ _EXPERIMENT_DEPENDENCIES = {
     "regime-survival": ["experiment_state_year"],
     "suv-transition": ["ws_segment_month", "ws_state_month", "ws_model_month"],
     "shev-counterfactual": ["panel_state_month"],
+    "hypothesis-screen": ["experiment_state_year"],
+    "forecast-benchmark": ["panel_state_month"],
+    "shock-scenario": ["panel_state_month"],
+    "bass-scenario": ["panel_state_month"],
 }
 
 
@@ -105,7 +109,11 @@ def _data_contract(con, dependencies: list[str]) -> tuple[dict, dict]:
     cutoff = {
         "vahan": str(cutoff_row[0]),
         "latest_complete_year": int(cutoff_row[1]),
-        "coverage_policy": "complete periods unless experiment declares otherwise",
+        "latest_observed_period": str(cutoff_row[0])[:10],
+        "coverage_policy": (
+            "all observations through latest cutoff; partial annual rows are labelled "
+            "and level comparisons use matched YTD periods"
+        ),
     }
     return cutoff, dependency_facts
 

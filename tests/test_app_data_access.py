@@ -1,4 +1,5 @@
 import duckdb
+import pytest
 
 from complexity_lab.app_state import GlobalContext
 from complexity_lab.data.access import market_annual, vahan_cutoff, vahan_period_status
@@ -32,6 +33,8 @@ def test_vahan_status_finds_complete_year_and_partial_cutoff():
     assert status["completeness_status"].tolist() == ["complete", "partial"]
     assert cutoff.latest_complete_year == 2024
     assert cutoff.latest_period == "April 2025"
+    assert cutoff.latest_observed_year == 2025
+    assert cutoff.latest_observed_month == 4
     assert cutoff.observed_months_latest_year == 4
 
 
@@ -45,3 +48,13 @@ def test_market_annual_scopes_total_to_selected_fuels():
     assert annual.loc[0, "ev_regs"] == 120
     assert annual.loc[0, "ev_share"] == 1.0
     assert "cng_regs" not in annual.columns
+
+
+def test_market_annual_uses_matched_ytd_window():
+    con = _connection()
+    context = GlobalContext(2024, 2025)
+
+    annual = market_annual(con, context, through_month=4)
+
+    assert annual["total_regs"].tolist() == [400, 480]
+    assert annual.loc[1, "yoy_growth"] == pytest.approx(0.2)

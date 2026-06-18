@@ -22,14 +22,14 @@ from complexity_lab.complexity.regimes import fit_fuel_regimes
 from complexity_lab.complexity.survival import (
     build_risk_set, discrete_hazard_model, kaplan_meier,
 )
+from complexity_lab.data.access import matched_ytd_state_year
 
 con = duckdb.connect(str(settings.db_path), read_only=True)
-panel = con.execute(
-    "SELECT state_code, year, petrol_share, diesel_share, cng_share, ev_share, hybrid_share, "
-    "real_pc_income_inr, real_gsdp_growth_pct, broad_credit_per_capita_inr "
-    "FROM experiment_state_year "
-    "WHERE year < (SELECT MAX(year) FROM experiment_state_year) "
-    "ORDER BY state_code, year").df()
+latest_date = con.execute(
+    "SELECT MAX(date) FROM panel_state_month WHERE state_code = 'ALL'"
+).fetchone()[0]
+panel = matched_ytd_state_year(con, latest_date.month)
+panel = panel[panel["state_code"] != "ALL"]
 regimes = fit_fuel_regimes(panel)
 COVS = ["real_pc_income_inr", "real_gsdp_growth_pct", "broad_credit_per_capita_inr"]
 risk = build_risk_set(regimes["calendar"], panel, COVS)

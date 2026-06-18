@@ -11,6 +11,8 @@ from common import get_connection, render_app_shell
 
 from complexity_lab.config import settings
 from complexity_lab.data.intelligence import data_health
+from complexity_lab.experiments.params import dependency_gate
+from complexity_lab.experiments.registry import list_experiments
 
 st.set_page_config(page_title="Data Health | Complexity Lab", layout="wide")
 page = render_app_shell(
@@ -37,8 +39,15 @@ c2.metric("Latest status", latest["completeness_status"])
 c3.metric("Reference datasets", len(references))
 c4.metric("Unavailable references", int((references["status"] == "unavailable").sum()))
 
-tab_periods, tab_refs, tab_wholesale, tab_truth, tab_refresh = st.tabs(
-    ["Period completeness", "Reference quality", "Wholesale mapping", "Data Truth", "Refresh"]
+tab_periods, tab_refs, tab_wholesale, tab_gates, tab_truth, tab_refresh = st.tabs(
+    [
+        "Period completeness",
+        "Reference quality",
+        "Wholesale mapping",
+        "Experiment gates",
+        "Data Truth",
+        "Refresh",
+    ]
 )
 with tab_periods:
     st.plotly_chart(
@@ -83,7 +92,36 @@ with tab_wholesale:
             "Wholesale has no fuel cut. Mapping coverage refers only to city-to-state assignment."
         )
 
+with tab_gates:
+    tables = set(health["tables"]["table_name"])
+    rows = []
+    for experiment in list_experiments():
+        gate = dependency_gate(experiment.name, tables)
+        rows.append(
+            {
+                "experiment": experiment.name,
+                "available": gate.available,
+                "missing_dependencies": ", ".join(gate.missing),
+                "message": gate.message,
+            }
+        )
+    st.dataframe(rows, hide_index=True, width="stretch")
+    st.caption(
+        "These gates are structural availability checks. Passing a gate does not upgrade "
+        "a constrained reference source or make an observational result causal."
+    )
+
 with tab_truth:
+    st.markdown(
+        """
+        #### Truth contract quick links
+        - Truth labels: Observed, Mapped, Derived, Estimated, Simulated
+        - Vahan: All India is observed separately; 2026 is partial
+        - Wholesale: no fuel cut; use full coverage from 2022-04 onward
+        - Geography: Telangana absent from Vahan; AP/TS state joins are unsafe
+        - Strong Hybrid: 2024 classification break prevents continuous pre-2024 adoption claims
+        """
+    )
     st.markdown((settings.root / "DATA_TRUTH.md").read_text(encoding="utf-8"))
 
 with tab_refresh:

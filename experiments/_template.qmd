@@ -8,6 +8,13 @@ draft: true
 
 State the hypothesis precisely. What would confirm it, what would refute it?
 
+## Data Contract
+
+- **Primary tables:** list every DuckDB table or reference CSV used.
+- **Cutoff:** record the Vahan/wholesale latest period and whether the latest year is partial.
+- **Evidence label:** Observed, Mapped, Derived, Estimated, or Simulated.
+- **Coverage rules:** note matched-YTD policy, wholesale `coverage = 'full'`, AP/Telangana join limits, and Strong Hybrid classification breaks when relevant.
+
 ## Setup
 
 ```{python}
@@ -19,13 +26,42 @@ panel = con.execute("SELECT * FROM panel_state_year WHERE state_code <> 'ALL'").
 panel.head()
 ```
 
+## Method
+
+Name the method family, cite the package function used, and explain why this method
+answers the question without overstating causality.
+
 ## Analysis
 
 ```{python}
 # Use complexity_lab.analysis / networks / complexity / simulation modules here.
 ```
 
+## Robustness
+
+Record sensitivity checks, null models, holdout windows, placebo tests, or why a
+robustness check is not applicable for this exploratory run.
+
 ## Finding
 
 One paragraph: what did the data say? Note caveats (covariate quality flags,
 partial years, AP/Telangana caveat — see docs/data-dictionary.md).
+
+## Limits And Do-Not-Claim
+
+- State what this experiment cannot identify.
+- Separate observational association from causal claims.
+- Keep proprietary wholesale boundaries explicit.
+
+## Related
+
+Link related app pages, experiment cards, prior notebooks, and follow-up questions.
+
+## Reproduce
+
+```bash
+uv run lab run <experiment-slug> --params '{}'
+```
+
+Save the corresponding app research session or Gallery manifest when this notebook
+originates from an interactive run.
