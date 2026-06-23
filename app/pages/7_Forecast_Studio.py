@@ -41,6 +41,15 @@ SERIES = {
     "Strong Hybrid registrations": "Strong Hybrid",
 }
 
+st.markdown(
+    """
+    <div class="lab-section-band">
+      Forecast workflow: choose a series, run rolling-origin backtests, inspect the
+      champion against seasonal naive, then save the result as a dated forecast vintage.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 with st.form("forecast_controls"):
     c1, c2, c3, c4, c5 = st.columns(5)
     scope = c1.selectbox("Scope", ["National", "State", "OEM"])
@@ -70,7 +79,7 @@ with st.form("forecast_controls"):
         )
     else:
         entity = "ALL"
-    submitted = st.form_submit_button("Run backtest and forecast", type="primary")
+    submitted = st.form_submit_button("Run benchmark", type="primary")
 
 if not submitted and "forecast_result" not in st.session_state:
     st.info("Choose a scope and run the benchmark. Results can be saved as a forecast vintage.")
@@ -156,6 +165,9 @@ result_payload = {
 st.session_state["forecast_result"] = result_payload
 
 st.subheader("Model scorecard")
+st.caption(
+    "Champion selection is only useful when it beats seasonal naive and its historical interval coverage is credible."
+)
 st.dataframe(
     bench.style.format(
         {
@@ -217,6 +229,7 @@ st.plotly_chart(figure, width="stretch")
 
 left, right = st.columns(2)
 with left:
+    st.markdown("#### Forecast table")
     st.dataframe(forecast.round(0), width="stretch")
     st.download_button(
         "Download forecast CSV",
@@ -224,6 +237,7 @@ with left:
         f"forecast_{scope}_{entity}_{series_label}.csv",
     )
 with right:
+    st.markdown("#### Save forecast vintage")
     notes = st.text_area("Forecast notes")
     if st.button("Save forecast vintage"):
         save_research_item(

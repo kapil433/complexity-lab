@@ -56,6 +56,15 @@ c1, c2, c3 = st.columns(3)
 c1.metric("Research cards", len(items))
 c2.metric("Watchlist items", len(watchlist))
 c3.metric("Latest cutoff", page.cutoff.latest_period)
+st.markdown(
+    """
+    <div class="lab-section-band">
+      Research memory preserves the cutoff, method, notes, and restore context for each
+      saved question. Treat every rerun as a new vintage rather than overwriting the old one.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 tab_inbox, tab_watchlist, tab_export = st.tabs(["Inbox", "Watchlist", "Export brief"])
 with tab_inbox:

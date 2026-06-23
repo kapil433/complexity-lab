@@ -145,16 +145,24 @@ st.markdown("\n".join(brief_lines))
 st.subheader("Start a research path")
 path_cols = st.columns(5)
 paths = [
-    ("EV transition", "Thresholds, diffusion, contagion, and regime shifts.", "pages/6_Phase_Transitions.py"),
-    ("Channel stress", "Wholesale-retail nowcast and shock scenarios.", "pages/5_Wholesale.py"),
-    ("OEM structure", "Network position, communities, and state strength.", "pages/2_Networks.py"),
-    ("SHEV policy", "Hybrid isolation, tax wedge, and counterfactuals.", "pages/4_Hypothesis_Tester.py"),
-    ("SUV shift", "Segment transition and model lifecycle evidence.", "pages/11_OEM_Model_Intelligence.py"),
+    ("EV transition", "Thresholds, diffusion, contagion, and regime shifts.", "Explain", "pages/6_Phase_Transitions.py"),
+    ("Channel stress", "Wholesale-retail nowcast and shock scenarios.", "Observe", "pages/5_Wholesale.py"),
+    ("OEM structure", "Network position, communities, and state strength.", "Explain", "pages/2_Networks.py"),
+    ("SHEV policy", "Hybrid isolation, tax wedge, and counterfactuals.", "Explain", "pages/4_Hypothesis_Tester.py"),
+    ("SUV shift", "Segment transition and model lifecycle evidence.", "Observe", "pages/11_OEM_Model_Intelligence.py"),
 ]
-for col, (label, detail, page_path) in zip(path_cols, paths, strict=True):
+for col, (label, detail, mode, page_path) in zip(path_cols, paths, strict=True):
     with col:
-        st.markdown(f"**{label}**")
-        st.caption(detail)
+        st.markdown(
+            f"""
+            <div class="lab-path-card">
+              <strong>{label}</strong>
+              <span>{mode}</span>
+              <span>{detail}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.page_link(page_path, label="Open path")
 
 st.subheader("The observed market trajectory")
@@ -301,6 +309,7 @@ st.warning(
 
 watchlist = list_watchlist()
 saved = list_saved_views()
+st.subheader("Research memory")
 left_memory, right_memory = st.columns(2)
 with left_memory:
     st.markdown("#### Pinned watchlist")

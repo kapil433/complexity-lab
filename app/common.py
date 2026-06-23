@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
+from html import escape
 
 import duckdb
 import pandas as pd
@@ -19,7 +21,7 @@ from complexity_lab.data.access import (
     vahan_cutoff,
 )
 from complexity_lab.persistence import list_saved_views, save_view
-from complexity_lab.research_graph import get_page_node
+from complexity_lab.research_graph import PAGE_GRAPH, PageNode, get_page_node
 from complexity_lab.research_session import ResearchSession
 from complexity_lab.viz import use_lab_theme
 
@@ -30,6 +32,213 @@ use_lab_theme()
 class PageContext:
     filters: GlobalContext
     cutoff: DataCutoff
+
+
+NAV_SECTIONS = ("Observe", "Explain", "Anticipate", "Research", "System")
+
+
+def _page_link_path(node: PageNode) -> str:
+    return node.app_path.removeprefix("app/")
+
+
+def _page_route(node: PageNode) -> str:
+    if node.app_path == "app/Home.py":
+        return "/"
+    stem = _page_link_path(node).removesuffix(".py").split("/")[-1]
+    return "/" + re.sub(r"^\d+_", "", stem)
+
+
+def _inject_lab_css() -> None:
+    st.markdown(
+        """
+        <style>
+        [data-testid="stSidebarNav"],
+        [data-testid="stSidebarNavItems"] {
+          display: none !important;
+          height: 0 !important;
+          overflow: hidden !important;
+        }
+        .block-container {
+          padding-top: 1.15rem;
+          padding-bottom: 3rem;
+          max-width: 1280px;
+        }
+        .stApp {
+          background:
+            linear-gradient(180deg, rgba(250,249,244,.96), rgba(245,246,241,.96));
+        }
+        section[data-testid="stSidebar"] {
+          background: #171b1a;
+          border-right: 1px solid rgba(255,255,255,.08);
+        }
+        section[data-testid="stSidebar"] * {color: rgba(255,255,255,.88);}
+        section[data-testid="stSidebar"] a,
+        section[data-testid="stSidebar"] a *,
+        section[data-testid="stSidebar"] p {
+          color: rgba(255,255,255,.9) !important;
+          opacity: 1 !important;
+        }
+        section[data-testid="stSidebar"] a {
+          border-radius:.45rem;
+        }
+        section[data-testid="stSidebar"] label,
+        section[data-testid="stSidebar"] .stCaptionContainer {color: rgba(255,255,255,.72);}
+        section[data-testid="stSidebar"] .stButton button,
+        section[data-testid="stSidebar"] [data-testid="stBaseButton-secondary"] {
+          border-color: rgba(255,255,255,.18);
+          background: rgba(255,255,255,.06);
+        }
+        .lab-nav-brand {
+          display:flex; align-items:center; gap:.65rem; margin:.2rem 0 1rem;
+        }
+        .lab-nav-mark {
+          width:2.15rem; height:2.15rem; border-radius:.5rem; display:grid; place-items:center;
+          background:#E4572E; color:#fff; font-weight:800; letter-spacing:0;
+        }
+        .lab-nav-title {font-size:.95rem; font-weight:760; line-height:1.1;}
+        .lab-nav-subtitle {font-size:.72rem; color:rgba(255,255,255,.6);}
+        .lab-nav-section {
+          margin:.85rem 0 .25rem; font-size:.68rem; font-weight:760; letter-spacing:.12em;
+          text-transform:uppercase; color:rgba(255,255,255,.48);
+        }
+        .lab-nav-link {
+          display:block; padding:.45rem .6rem; margin:.12rem 0; border-radius:.45rem;
+          color:rgba(255,255,255,.9) !important; text-decoration:none !important;
+          font-size:.86rem; line-height:1.25;
+        }
+        .lab-nav-link.active {
+          background:rgba(165,174,192,.2); font-weight:760;
+        }
+        .lab-nav-link:hover {background:rgba(255,255,255,.08);}
+        .lab-data-pill {
+          border:1px solid rgba(255,255,255,.16); border-radius:.55rem;
+          background:rgba(255,255,255,.06); padding:.7rem .78rem; margin:1rem 0 .45rem;
+        }
+        .lab-data-pill strong {display:block; font-size:.78rem;}
+        .lab-data-pill span {display:block; margin-top:.25rem; color:rgba(255,255,255,.62); font-size:.72rem;}
+        .lab-shell {
+          border:1px solid rgba(40,45,42,.12); background:rgba(255,255,255,.74);
+          color:#101412 !important;
+          border-radius:.65rem; padding:1.05rem 1.15rem .9rem; margin:.15rem 0 1rem;
+          box-shadow:0 10px 28px rgba(28,32,28,.05);
+        }
+        .lab-shell * {color:inherit;}
+        .lab-shell-top {
+          display:flex; justify-content:space-between; align-items:flex-start; gap:1.25rem;
+        }
+        .lab-eyebrow {font-size:.72rem; font-weight:800; letter-spacing:.12em;
+          text-transform:uppercase; color:#E4572E; margin-bottom:.2rem}
+        .lab-title {font-size:2.25rem; line-height:1.06; font-weight:790; letter-spacing:0; margin:0; color:#101412 !important;}
+        .lab-deck {font-size:1.01rem; color:rgba(16,20,18,.68) !important; max-width:820px; margin:.55rem 0 .8rem}
+        .lab-actions {min-width:280px; display:flex; flex-direction:column; gap:.65rem; align-items:flex-end;}
+        .lab-command {
+          width:100%; border:1px solid rgba(40,45,42,.13); border-radius:.55rem; padding:.58rem .72rem;
+          background:#fff; color:rgba(16,20,18,.55); font-size:.82rem;
+        }
+        .lab-badges {display:flex; gap:.4rem; flex-wrap:wrap;}
+        .lab-badge {display:inline-flex; align-items:center; min-height:1.72rem; padding:.18rem .58rem;
+          border:1px solid rgba(40,45,42,.14); border-radius:999px; font-size:.74rem; font-weight:650;
+          background:#fff; color:rgba(16,20,18,.78) !important;}
+        .lab-badge.evidence {border-color:rgba(228,87,46,.38); color:#A63B1E !important; background:rgba(228,87,46,.08);}
+        .lab-finding {border-left:4px solid #E4572E; border-radius:.35rem; padding:.75rem 1rem;
+          background:rgba(228,87,46,.08); margin:.8rem 0 1.05rem}
+        .lab-warning {
+          border:1px solid rgba(181,133,0,.28); border-left:4px solid #D49A00;
+          border-radius:.55rem; padding:.75rem .95rem; margin:.8rem 0 1rem;
+          background:rgba(255,246,181,.92); color:#101412 !important; font-weight:650;
+        }
+        .lab-compass {
+          display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:.75rem;
+          margin:.7rem 0 1.1rem;
+        }
+        .lab-compass-card {
+          border:1px solid rgba(40,45,42,.12); border-radius:.55rem; background:rgba(255,255,255,.7);
+          padding:.75rem .85rem; min-height:5.2rem;
+        }
+        .lab-compass-card h4 {
+          margin:0 0 .35rem; color:#E4572E; font-size:.74rem; letter-spacing:.08em;
+          text-transform:uppercase;
+        }
+        .lab-compass-card p {margin:0; color:rgba(16,20,18,.68); font-size:.81rem; line-height:1.35;}
+        .lab-section-band {
+          border:1px solid rgba(40,45,42,.12); border-radius:.55rem; background:rgba(255,255,255,.72);
+          padding:1rem; margin:.75rem 0 1rem;
+        }
+        .lab-path-card {
+          border:1px solid rgba(40,45,42,.13); border-radius:.55rem; background:#fff;
+          padding:.85rem; min-height:7rem;
+        }
+        .lab-path-card strong {display:block; margin-bottom:.35rem; font-size:.9rem;}
+        .lab-path-card span {display:block; color:rgba(16,20,18,.62); font-size:.78rem; line-height:1.35;}
+        div[data-testid="stMetric"] {
+          border:1px solid rgba(40,45,42,.12); background:rgba(255,255,255,.78);
+          border-radius:.55rem; padding:.8rem .85rem;
+        }
+        div[data-testid="stMetric"] label {font-weight:700; color:rgba(16,20,18,.62);}
+        div[data-testid="stDataFrame"], div[data-testid="stPlotlyChart"] {
+          border-radius:.55rem; overflow:hidden;
+        }
+        div[data-testid="stAlert"] {
+          border-radius:.55rem;
+          background:rgba(255,246,181,.88);
+        }
+        div[data-testid="stAlert"] *,
+        div[data-testid="stAlert"] p {
+          color:#101412 !important;
+          opacity:1 !important;
+        }
+        .stTabs [data-baseweb="tab-list"] {gap:.35rem;}
+        .stTabs [data-baseweb="tab"] {
+          border:1px solid rgba(40,45,42,.12); border-radius:999px; padding:.35rem .7rem;
+          background:rgba(255,255,255,.62);
+        }
+        @media (max-width: 900px) {
+          .lab-shell-top, .lab-compass {display:block;}
+          .lab-actions {align-items:stretch; margin-top:.9rem;}
+          .lab-compass-card {margin-bottom:.55rem;}
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def _render_sidebar_nav(current_title: str) -> None:
+    st.markdown(
+        """
+        <div class="lab-nav-brand">
+          <div class="lab-nav-mark">CL</div>
+          <div>
+            <div class="lab-nav-title">Complexity Lab</div>
+            <div class="lab-nav-subtitle">research cockpit</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    query_text = st.text_input(
+        "Jump/search",
+        key="lab_nav_search",
+        placeholder="State, OEM, forecast, experiment",
+        label_visibility="collapsed",
+    ).strip().lower()
+    for section in NAV_SECTIONS:
+        nodes = [node for node in PAGE_GRAPH if node.section == section]
+        if query_text:
+            nodes = [
+                node for node in nodes
+                if query_text in node.title.lower() or query_text in section.lower()
+            ]
+        if not nodes:
+            continue
+        st.markdown(f'<div class="lab-nav-section">{section}</div>', unsafe_allow_html=True)
+        for node in nodes:
+            label = f"{'● ' if node.title == current_title else ''}{node.title}"
+            active = " active" if node.title == current_title else ""
+            st.markdown(
+                f'<a class="lab-nav-link{active}" href="{_page_route(node)}" target="_self">{escape(label)}</a>',
+                unsafe_allow_html=True,
+            )
 
 
 @st.cache_resource
@@ -75,7 +284,7 @@ def _sync_url(context: GlobalContext) -> None:
         st.query_params.from_dict(merged)
 
 
-def global_filters() -> PageContext:
+def global_filters(current_title: str) -> PageContext:
     states, oems, cutoff, has_wholesale = _shell_options()
     min_year = int(query("SELECT MIN(year) AS y FROM panel_state_year")["y"][0])
     max_year = int(query("SELECT MAX(year) AS y FROM panel_state_year")["y"][0])
@@ -110,6 +319,16 @@ def global_filters() -> PageContext:
 
     state_names = dict(zip(states["state_code"], states["state_name"], strict=True))
     with st.sidebar:
+        _render_sidebar_nav(current_title)
+        st.markdown(
+            f"""
+            <div class="lab-data-pill">
+              <strong>Vahan through {cutoff.latest_period}</strong>
+              <span>{'wholesale available locally' if has_wholesale else 'public build: retail only'}</span>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
         st.markdown("### Research context")
         coverage = st.radio(
             "Period policy",
@@ -171,26 +390,8 @@ def render_app_shell(
     evidence: str = "Observed",
     limitations: tuple[str, ...] = (),
 ) -> PageContext:
-    context = global_filters()
-    st.markdown(
-        """
-        <style>
-        .lab-eyebrow {font-size:.76rem; font-weight:700; letter-spacing:.12em;
-          text-transform:uppercase; color:#E4572E; margin-bottom:.15rem}
-        .lab-title {font-size:2.35rem; line-height:1.08; font-weight:720; margin:0 0 .35rem}
-        .lab-deck {font-size:1.05rem; color:var(--text-color); opacity:.76;
-          max-width:850px; margin-bottom:.65rem}
-        .lab-badge {display:inline-block; padding:.2rem .55rem; margin:0 .35rem .35rem 0;
-          border:1px solid rgba(128,128,128,.35); border-radius:999px; font-size:.76rem}
-        .lab-finding {border-left:4px solid #E4572E; padding:.7rem 1rem;
-          background:rgba(228,87,46,.08); margin:.7rem 0 1rem}
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(f'<div class="lab-eyebrow">{section}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="lab-title">{title}</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="lab-deck">{description}</div>', unsafe_allow_html=True)
+    _inject_lab_css()
+    context = global_filters(title)
     filter_scope = (
         f"{len(context.filters.states)} selected states"
         if context.filters.states
@@ -202,12 +403,37 @@ def render_app_shell(
         f"Latest observed {context.cutoff.latest_period}",
         f"{filter_scope}, {context.filters.year_start}-{context.filters.year_end}",
     ]
+    badge_html = "".join(
+        f'<span class="lab-badge {"evidence" if index == 0 else ""}">{escape(badge)}</span>'
+        for index, badge in enumerate(badges)
+    )
     st.markdown(
-        "".join(f'<span class="lab-badge">{badge}</span>' for badge in badges),
+        f"""
+        <section class="lab-shell">
+          <div class="lab-shell-top">
+            <div>
+              <div class="lab-eyebrow">{escape(section)}</div>
+              <div class="lab-title">{escape(title)}</div>
+              <div class="lab-deck">{escape(description)}</div>
+              <div class="lab-badges">{badge_html}</div>
+            </div>
+            <div class="lab-actions">
+              <div class="lab-command">Search states, OEMs, experiments</div>
+              <div class="lab-badges">
+                <span class="lab-badge">Save locally</span>
+                <span class="lab-badge">Export context</span>
+              </div>
+            </div>
+          </div>
+        </section>
+        """,
         unsafe_allow_html=True,
     )
     if context.filters.coverage == "available" and context.filters.year_end > context.cutoff.latest_complete_year:
-        st.warning(context.cutoff.warning)
+        st.markdown(
+            f'<div class="lab-warning">{escape(context.cutoff.warning)}</div>',
+            unsafe_allow_html=True,
+        )
 
     with st.expander("Methodology, provenance, and shareable context"):
         st.markdown(
@@ -249,21 +475,31 @@ def render_app_shell(
     except KeyError:
         node = None
     if node is not None:
-        with st.expander("Research compass", expanded=False):
-            st.markdown("**Use this page to**")
-            for action in node.research_actions:
-                st.markdown(f"- {action}")
-            if node.experiment_slugs:
-                st.markdown("**Runnable methods**")
-                st.markdown(", ".join(f"`{slug}`" for slug in node.experiment_slugs))
-            if node.notebooks:
-                st.markdown("**Notebook links**")
-                for notebook in node.notebooks:
-                    st.markdown(f"- `{notebook}`")
-            if node.truth_guardrails:
-                st.markdown("**Truth guardrails**")
-                for guardrail in node.truth_guardrails:
-                    st.markdown(f"- {guardrail}")
+        methods = ", ".join(node.experiment_slugs[:3]) if node.experiment_slugs else "No direct experiment"
+        notebook = node.notebooks[0] if node.notebooks else "No notebook mapped"
+        st.markdown(
+            f"""
+            <div class="lab-compass">
+              <div class="lab-compass-card">
+                <h4>Use this page to</h4>
+                <p>{escape('; '.join(node.research_actions[:3]) or 'Explore the current context')}</p>
+              </div>
+              <div class="lab-compass-card">
+                <h4>Truth guardrails</h4>
+                <p>{escape('; '.join(node.truth_guardrails[:2]) or 'Respect evidence labels and data cutoff')}</p>
+              </div>
+              <div class="lab-compass-card">
+                <h4>Runnable methods</h4>
+                <p>{escape(methods)}</p>
+              </div>
+              <div class="lab-compass-card">
+                <h4>Notebook link</h4>
+                <p>{escape(notebook)}</p>
+              </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     with st.sidebar.expander("Save this view"):
         saved_title = st.text_input("Title", value=title, key=f"save-title-{title}")

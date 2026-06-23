@@ -87,6 +87,16 @@ st.caption(
 )
 
 st.subheader("Frame the hypothesis")
+st.markdown(
+    """
+    <div class="lab-section-band">
+      Choose the question before the model. The audit below keeps missingness,
+      within-state variation, fixed-effects risk, and data cutoff visible before a
+      result can be saved.
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 h1, h2, h3, h4 = st.columns(4)
 hypothesis_outcome = h1.selectbox(
     "Outcome",
@@ -135,6 +145,9 @@ st.dataframe(
     hide_index=True,
     width="stretch",
 )
+st.caption(
+    "Model audit: low within-state variation can make fixed-effects estimates weak even when a variable is non-missing."
+)
 
 tab_corr, tab_reg, tab_cp = st.tabs(["Descriptive association", "Econometric model", "Changepoints"])
 
@@ -177,6 +190,7 @@ with tab_reg:
     fe_entity = st.checkbox("State fixed effects", value=True)
     fe_time = st.checkbox("Year fixed effects", value=True)
     if x and st.button("Run regression"):
+        st.markdown("#### Model audit before saving")
         near_invariant = [
             variable
             for variable in x
