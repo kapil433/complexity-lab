@@ -40,7 +40,7 @@ inputs when the service starts. Proprietary wholesale files are intentionally no
 deployed, and the Wholesale page reports that limitation instead of substituting
 modeled data.
 
-## The interactive lab (15 specialist pages)
+## The interactive lab (16 specialist pages)
 
 Home is a context-aware **Market Brief**. Its year, state, fuel, and OEM filters
 persist across navigation and in shareable URLs; every page displays evidence type,
@@ -50,7 +50,17 @@ saved to the local research library.
 Market Pulse · Compare and Explore · Network Lab · Diffusion Lab · Causal Lab ·
 Wholesale and Channel · Transitions and Regimes · Forecast Studio · Scenario and
 Shock Lab · Reference Lab · State Intelligence · OEM and Model Intelligence ·
-Experiment Gallery · Saved Questions · Data Health. Light/dark via app menu → Settings.
+Experiment Gallery · Science Playground · Saved Questions · Data Health.
+Light/dark via app menu → Settings.
+
+The Science Playground runs 50 pre-specified experiments — data-contract checks,
+descriptive statistics, association and panel tests, forecast backtests,
+simulated scenarios, and complexity measures. Each one states a hypothesis,
+exposes the knobs that can change the result, and refuses to fill a missing
+series. Optional Autiqa Supabase credentials are probed with `uv run lab autiqa-status`;
+they do not replace the local bundle until a pull passes the registration contract.
+`uv run lab macro-refresh` fetches World Bank national accounts for India and
+will not write a payload that fails a plausibility gate.
 
 The bipartite Network Lab includes stable communities, complete community-member
 lists, cross-community OEM-state links, a community flow matrix, edge births/deaths,

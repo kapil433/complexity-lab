@@ -77,6 +77,60 @@ def cmd_references(_args) -> None:
     print(report[cols].to_string(index=False))
 
 
+def _print_playground_result(result) -> None:
+    payload = {
+        "id": result.experiment_id,
+        "status": result.status,
+        "evidence": result.evidence,
+        "metrics": result.metrics,
+        "checks": result.checks,
+        "interpretation": result.interpretation,
+        "do_not_infer": result.do_not_infer,
+        "data_notes": result.data_notes,
+    }
+    print(json.dumps(payload, indent=2, default=str))
+
+
+def cmd_playground(args) -> None:
+    from complexity_lab.data.ingest import connect
+    from complexity_lab.playground.catalog import experiments
+
+    if args.list or not (args.run or args.suite):
+        for spec in experiments():
+            print(f"{spec.experiment_id:4s}  {spec.title}")
+        if not (args.run or args.suite):
+            return
+    from complexity_lab.playground.service import run_experiment, run_validation_suite
+
+    overrides = json.loads(args.params) if args.params else None
+    con = connect(read_only=True)
+    try:
+        if args.suite:
+            for result in run_validation_suite(con):
+                failed = len(result.failed_checks)
+                print(f"{result.experiment_id}  {result.status}  failed_checks={failed}")
+        if args.run:
+            _print_playground_result(run_experiment(con, args.run, overrides))
+    finally:
+        con.close()
+
+
+def cmd_autiqa_status(_args) -> None:
+    from complexity_lab.data.autiqa import autiqa_status
+
+    status = autiqa_status()
+    print(json.dumps({"status": status.status, "detail": status.detail, "table": status.table}, indent=2))
+
+
+def cmd_macro_refresh(_args) -> None:
+    from complexity_lab.data.public_macro import refresh_world_bank
+
+    result = refresh_world_bank()
+    print(json.dumps({"status": result.status, "detail": result.detail, "rows": result.rows, "path": result.path}, indent=2))
+    if result.status != "retrieved":
+        raise SystemExit(1)
+
+
 def cmd_app(_args) -> None:
     app_path = settings.root / "app" / "Home.py"
     subprocess.run([sys.executable, "-m", "streamlit", "run", str(app_path)], check=False)
@@ -108,6 +162,21 @@ def main() -> None:
     ).set_defaults(fn=cmd_references)
 
     sub.add_parser("app", help="Launch the Streamlit lab").set_defaults(fn=cmd_app)
+
+    play = sub.add_parser("playground", help="List or run a science-playground experiment")
+    play.add_argument("--list", action="store_true", help="Print the 50 experiment contracts")
+    play.add_argument("--run", help="Experiment id, for example D01 or V02")
+    play.add_argument("--suite", action="store_true", help="Run the V01–V10 validation suite")
+    play.add_argument("--params", help="JSON object of knob overrides")
+    play.set_defaults(fn=cmd_playground)
+
+    sub.add_parser("autiqa-status", help="Probe the optional Autiqa Supabase API").set_defaults(
+        fn=cmd_autiqa_status
+    )
+    sub.add_parser(
+        "macro-refresh",
+        help="Fetch World Bank India annual series and refuse an implausible payload",
+    ).set_defaults(fn=cmd_macro_refresh)
 
     args = parser.parse_args()
     args.fn(args)

@@ -21,7 +21,7 @@ def test_market_brief_smoke():
 def test_every_page_uses_shared_truth_shell():
     pages = sorted((ROOT / "app" / "pages").glob("*.py"))
 
-    assert len(pages) == 15
+    assert len(pages) == 16
     for page in pages:
         source = page.read_text(encoding="utf-8")
         assert "render_app_shell(" in source, page.name

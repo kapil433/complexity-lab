@@ -198,6 +198,21 @@ PAGE_GRAPH: tuple[PageNode, ...] = (
         research_actions=("Check freshness", "Inspect dependency gates", "Run refresh checklist"),
         truth_guardrails=("The data truth contract wins over older chart text or comments.",),
     ),
+    PageNode(
+        "Science Playground",
+        "app/pages/15_Science_Playground.py",
+        "Research",
+        research_actions=(
+            "Choose one pre-specified experiment",
+            "Move a knob and read the new sentence",
+            "Run the validation suite before trusting a join",
+        ),
+        truth_guardrails=(
+            "A missing API or covariate stays missing.",
+            "Knobs change the procedure. They do not create a causal effect.",
+            "World Bank series are national and do not replace state GSDP or the population estimate.",
+        ),
+    ),
 )
 
 

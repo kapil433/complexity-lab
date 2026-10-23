@@ -45,7 +45,7 @@ def granger(
     Expects a time-ordered dataframe; differencing/stationarity is the caller's job.
     """
     d = df[[effect, cause]].dropna()
-    res = grangercausalitytests(d, maxlag=maxlag)
+    res = grangercausalitytests(d, maxlag=maxlag, verbose=False)
     rows = [
         {"lag": lag, "f_pvalue": out[0]["ssr_ftest"][1], "f_stat": out[0]["ssr_ftest"][0]}
         for lag, out in res.items()
