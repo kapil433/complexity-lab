@@ -165,6 +165,11 @@ for col, (label, detail, mode, page_path) in zip(path_cols, paths, strict=True):
         )
         st.page_link(page_path, label="Open path")
 
+st.page_link(
+    "pages/15_Science_Playground.py",
+    label="Open the Science Playground — 50 pre-specified tests",
+)
+
 st.subheader("The observed market trajectory")
 fuel_columns = [column for column in FUEL_COLUMNS.values() if column in monthly]
 plot = monthly[["date", *fuel_columns]].melt(

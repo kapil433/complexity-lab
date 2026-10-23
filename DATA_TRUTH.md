@@ -701,3 +701,25 @@ The automated truth audit should additionally fail when:
 - A proxy/approximate covariate is displayed without its quality.
 - Any experiment manifest lacks data cutoff, input hashes, code commit, figures,
   and limitations.
+
+## 11. Science Playground, Autiqa, and national macro series
+
+The Science Playground reads the same DuckDB panels as the rest of the lab. It
+does not create a second extract.
+
+- A playground result is labelled Validation, Derived, Estimated, or Simulated.
+  Simulated paths state the knob that produced them.
+- If `LAB_AUTIQA_SUPABASE_URL` and `LAB_AUTIQA_SUPABASE_KEY` are unset, the API
+  status is `not_configured` and no registration rows are invented. A configured
+  pull is rejected when fuel labels, state codes, or keys do not match the
+  contract. Rejection does not relabel the payload and does not replace
+  `lab.duckdb`.
+- World Bank India series, when fetched, are national calendar-year context
+  (real GDP growth, real GDP per capita growth, population, CPI inflation).
+  They are not state covariates and they are not substitutes for RBI GSDP,
+  RBI income, or the estimated state population denominator. A payload outside
+  the plausibility gate is not written.
+- data.gov.in was not added. No keyless city-day fuel extract was verified from
+  this environment. The audited annual fuel file remains the fuel-price source.
+- Vehicle finance and dealer history remain unavailable. Personal loans are
+  still not auto finance.

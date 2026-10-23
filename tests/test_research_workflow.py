@@ -68,7 +68,7 @@ def test_page_method_graph_covers_all_streamlit_pages_and_experiment_links():
 
     graph = complete_page_graph(root)
 
-    assert len(graph) == 16
+    assert len(graph) == 17
     assert page_files <= {Path(node.app_path).name for node in graph}
     assert get_page_node("Experiment Gallery").experiment_slugs
     assert app_page_for_experiment("ev-contagion").title == "Network Lab"

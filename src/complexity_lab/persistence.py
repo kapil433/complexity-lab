@@ -17,60 +17,105 @@ def _path(path: Path | None = None) -> Path:
     return path or (settings.root / "data" / "user_lab.duckdb")
 
 
+_OPEN: dict[str, duckdb.DuckDBPyConnection] = {}
+
+
+class _Held:
+    """Connection handle. close() detaches the file once.
+
+    A cancelled Streamlit rerun can skip finally. The next call reuses the
+    connection still in this process instead of attaching the file twice.
+    A finished call closes it, so another process can open the research library.
+    """
+
+    def __init__(self, key: str, connection: duckdb.DuckDBPyConnection) -> None:
+        self._key = key
+        self._connection = connection
+        self._closed = False
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        current = _OPEN.get(self._key)
+        if current is self._connection:
+            _OPEN.pop(self._key, None)
+            self._connection.close()
+
+    def __getattr__(self, name: str):
+        return getattr(self._connection, name)
+
+
+def _ensure(db_path: Path) -> duckdb.DuckDBPyConnection:
+    key = str(db_path.resolve())
+    current = _OPEN.get(key)
+    if current is not None:
+        try:
+            current.execute("SELECT 1")
+            return current
+        except duckdb.Error:
+            _OPEN.pop(key, None)
+    db_path.parent.mkdir(parents=True, exist_ok=True)
+    opened = duckdb.connect(key)
+    _OPEN[key] = opened
+    return opened
+
+
+def _open(db_path: Path) -> _Held:
+    key = str(db_path.resolve())
+    return _Held(key, _ensure(db_path))
+
+
 def initialize(path: Path | None = None) -> Path:
     db_path = _path(path)
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-    con = duckdb.connect(str(db_path))
-    try:
+    con = _ensure(db_path)
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS saved_view (
+            id VARCHAR PRIMARY KEY,
+            title VARCHAR NOT NULL,
+            page VARCHAR NOT NULL,
+            parameter_payload JSON NOT NULL,
+            data_cutoff VARCHAR NOT NULL,
+            package_version VARCHAR NOT NULL,
+            notes VARCHAR NOT NULL,
+            created_at TIMESTAMP NOT NULL
+        )
+        """
+    )
+    con.execute(
+        """
+        CREATE TABLE IF NOT EXISTS watchlist_item (
+            id VARCHAR PRIMARY KEY,
+            item_type VARCHAR NOT NULL,
+            item_key VARCHAR NOT NULL,
+            label VARCHAR NOT NULL,
+            notes VARCHAR NOT NULL,
+            created_at TIMESTAMP NOT NULL
+        )
+        """
+    )
+    for table in (
+        "research_note",
+        "hypothesis_run",
+        "forecast_run",
+        "scenario_run",
+        "experiment_run",
+    ):
         con.execute(
-            """
-            CREATE TABLE IF NOT EXISTS saved_view (
+            f"""
+            CREATE TABLE IF NOT EXISTS {table} (
                 id VARCHAR PRIMARY KEY,
                 title VARCHAR NOT NULL,
-                page VARCHAR NOT NULL,
                 parameter_payload JSON NOT NULL,
+                result_payload JSON NOT NULL,
                 data_cutoff VARCHAR NOT NULL,
-                package_version VARCHAR NOT NULL,
+                method_version VARCHAR NOT NULL,
                 notes VARCHAR NOT NULL,
                 created_at TIMESTAMP NOT NULL
             )
             """
         )
-        con.execute(
-            """
-            CREATE TABLE IF NOT EXISTS watchlist_item (
-                id VARCHAR PRIMARY KEY,
-                item_type VARCHAR NOT NULL,
-                item_key VARCHAR NOT NULL,
-                label VARCHAR NOT NULL,
-                notes VARCHAR NOT NULL,
-                created_at TIMESTAMP NOT NULL
-            )
-            """
-        )
-        for table in (
-            "research_note",
-            "hypothesis_run",
-            "forecast_run",
-            "scenario_run",
-            "experiment_run",
-        ):
-            con.execute(
-                f"""
-                CREATE TABLE IF NOT EXISTS {table} (
-                    id VARCHAR PRIMARY KEY,
-                    title VARCHAR NOT NULL,
-                    parameter_payload JSON NOT NULL,
-                    result_payload JSON NOT NULL,
-                    data_cutoff VARCHAR NOT NULL,
-                    method_version VARCHAR NOT NULL,
-                    notes VARCHAR NOT NULL,
-                    created_at TIMESTAMP NOT NULL
-                )
-                """
-            )
-    finally:
-        con.close()
     return db_path
 
 
@@ -86,7 +131,7 @@ def save_view(
 ) -> str:
     db_path = initialize(path)
     view_id = uuid4().hex
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         con.execute(
             """
@@ -111,7 +156,7 @@ def save_view(
 
 def list_saved_views(path: Path | None = None) -> pd.DataFrame:
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path), read_only=True)
+    con = _open(db_path)
     try:
         return con.execute(
             """
@@ -154,7 +199,7 @@ def save_research_item(
     table = _table_for_kind(kind)
     db_path = initialize(path)
     item_id = uuid4().hex
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         con.execute(
             f"""
@@ -187,7 +232,7 @@ def update_research_item_notes(
     """Update notes for a saved research item; returns whether a row changed."""
     table = _table_for_kind(kind)
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         con.execute(
             f"UPDATE {table} SET notes = ? WHERE id = ?",
@@ -206,7 +251,7 @@ def delete_research_item(kind: str, item_id: str, *, path: Path | None = None) -
     """Delete one saved research item; returns False if the item was absent."""
     table = _table_for_kind(kind)
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         existing = con.execute(
             f"SELECT COUNT(*) FROM {table} WHERE id = ?",
@@ -223,7 +268,7 @@ def delete_research_item(kind: str, item_id: str, *, path: Path | None = None) -
 def delete_saved_view(item_id: str, *, path: Path | None = None) -> bool:
     """Delete one saved view; returns False if the view was absent."""
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         existing = con.execute(
             "SELECT COUNT(*) FROM saved_view WHERE id = ?",
@@ -245,7 +290,7 @@ def update_saved_view_notes(
 ) -> bool:
     """Update notes for a saved view; returns whether a row changed."""
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         con.execute(
             "UPDATE saved_view SET notes = ? WHERE id = ?",
@@ -262,7 +307,7 @@ def update_saved_view_notes(
 
 def list_research_items(path: Path | None = None) -> pd.DataFrame:
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path), read_only=True)
+    con = _open(db_path)
     try:
         frames = []
         for kind, table in RESEARCH_TABLES.items():
@@ -343,7 +388,7 @@ def add_watchlist_item(
 ) -> str:
     db_path = initialize(path)
     item_id = uuid4().hex
-    con = duckdb.connect(str(db_path))
+    con = _open(db_path)
     try:
         con.execute(
             """
@@ -366,7 +411,7 @@ def add_watchlist_item(
 
 def list_watchlist(path: Path | None = None) -> pd.DataFrame:
     db_path = initialize(path)
-    con = duckdb.connect(str(db_path), read_only=True)
+    con = _open(db_path)
     try:
         return con.execute(
             """
